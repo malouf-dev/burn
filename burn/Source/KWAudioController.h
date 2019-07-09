@@ -8,44 +8,45 @@
 
 #import <Cocoa/Cocoa.h>
 #import "KWMediaListController.h"
-#import <KWDVDAuthorizer.h>
-#ifdef USE_QTKIT
-#import <QTKit/QTKit.h>
-#endif
+#import "KWDVDAuthorizer.h"
+#import "KWMediaPlayButton.h"
+//#ifdef USE_QTKIT
+//#import <QTKit/QTKit.h>
+//#endif
 
 @interface KWAudioController : KWMediaListController {
 
-	//Main Window
-	IBOutlet id previousButton;
-	IBOutlet id playButton;
-	IBOutlet id nextButton;
-	IBOutlet id stopButton;
-	
-	//Options menu
-	IBOutlet id audioOptionsPopup;
-	IBOutlet id mp3OptionsPopup;
-	
-	//Variables
-	NSMutableArray *audioTableData;
-	NSMutableArray *mp3TableData;
-	NSMutableArray *dvdTableData;
-	#ifdef QTKIT_EXTERN
-	QTMovie *movie;
-	#endif
-	NSInteger playingSong;
-	NSInteger display;
-	BOOL pause;
-	NSTimer *displayTimer;
-	KWDVDAuthorizer *DVDAuthorizer;
-	
-	NSArray *audioOptionsMappings;
-	NSArray *mp3OptionsMappings;
-	NSDictionary *cueMappings;
-	
-	NSMutableArray *tracks;
-	#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-	DRCDTextBlock *cdtext;
-	#endif
+    //Main Window
+    IBOutlet id previousButton;
+    IBOutlet KWMediaPlayButton *playButton;
+    IBOutlet id nextButton;
+    IBOutlet id stopButton;
+    
+    //Options menu
+    IBOutlet id audioOptionsPopup;
+    IBOutlet id mp3OptionsPopup;
+    
+    //Variables
+    NSMutableArray *audioTableData;
+    NSMutableArray *mp3TableData;
+    NSMutableArray *dvdTableData;
+    #ifdef QTKIT_EXTERN
+    QTMovie *movie;
+    #endif
+    NSInteger playingSong;
+    NSInteger display;
+    BOOL pause;
+    NSTimer *displayTimer;
+    KWDVDAuthorizer *DVDAuthorizer;
+    
+    NSArray *audioOptionsMappings;
+    NSArray *mp3OptionsMappings;
+    NSDictionary *cueMappings;
+    
+    NSMutableArray *tracks;
+    #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
+    DRCDTextBlock *cdtext;
+    #endif
 }
 
 //Main actions
@@ -55,7 +56,6 @@
 //Disc creation actions
 //Create a track for burning
 - (id)myTrackWithBurner:(KWBurner *)burner errorString:(NSString **)error;
-- (NSInteger)authorizeFolderAtPathIfNeededAtPath:(NSString *)path errorString:(NSString **)error;
 
 //Player actions
 - (IBAction)play:(id)sender;
@@ -83,7 +83,6 @@
 
 //External actions
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-- (BOOL)hasCDText;
 - (DRCDTextBlock *)myTextBlock;
 #endif
 - (NSMutableArray *)myTracks;

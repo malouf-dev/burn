@@ -7,41 +7,41 @@
 @interface KWPreferences : NSWindowController
 {
     //Preferences window outlets
-	IBOutlet id generalView;
-	IBOutlet id burnerView;
-	IBOutlet id dataView;
-	IBOutlet id audioView;
-	IBOutlet id videoView;
-	IBOutlet id advancedView;
-	
-	//Save tabviewitems
-	NSTabViewItem *savedAudioItem;
-	
-	//General outlets
+    IBOutlet id generalView;
+    IBOutlet id burnerView;
+    IBOutlet id dataView;
+    IBOutlet id audioView;
+    IBOutlet id videoView;
+    IBOutlet id advancedView;
+    
+    //Save tabviewitems
+    NSTabViewItem *savedAudioItem;
+    
+    //General outlets
     IBOutlet id temporaryFolderPopup;
-	//Burner outlets
+    //Burner outlets
     IBOutlet id burnerPopup;
     IBOutlet id completionActionMatrix;
-	IBOutlet id cdPopup;
-	IBOutlet id dvdPopup;
-	//Audio outlets
-	IBOutlet id audioTab;
-	IBOutlet id audioTabGeneral;
-	IBOutlet id cdTextCheckbox;
-	//Video outlets
-	IBOutlet id videoTab;
-	IBOutlet id themePopup;
+    IBOutlet id cdPopup;
+    IBOutlet id dvdPopup;
+    //Audio outlets
+    IBOutlet id audioTab;
+    IBOutlet id audioTabGeneral;
+    IBOutlet id cdTextCheckbox;
+    //Video outlets
+    IBOutlet id videoTab;
+    IBOutlet id themePopup;
     IBOutlet id previewImagePopup;
     IBOutlet id previewImageView;
     IBOutlet id previewWindow;
-	
-	//Toolbar outlets
-	NSToolbar *toolbar;
-	NSMutableDictionary *itemsList;
-	
-	NSArray *preferenceMappings;
-	NSInteger dataViewHeight;
-	NSMutableArray *themePaths;
+    
+    //Toolbar outlets
+    NSToolbar *toolbar;
+    NSMutableDictionary *itemsList;
+    
+    NSArray *preferenceMappings;
+    NSInteger dataViewHeight;
+    NSMutableArray *themePaths;
 }
 //PrefPane actions
 - (void)showPreferences;
@@ -67,7 +67,6 @@
 
 //Other actions
 - (void)mediaChanged:(NSNotification *)notification;
-//MatPeterson http://www.cocoadev.com/index.pl?NSWindow
 - (void)resizeWindowOnSpotWithRect:(NSRect)aRect;
 - (void)settingsChangedByOptionsMenuInMainWindow;
 - (void)addThemeAndShow:(NSArray *)files;

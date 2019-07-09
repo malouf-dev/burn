@@ -11,7 +11,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -51,27 +51,24 @@
 
 @interface HFSPlusController : FSPropertiesController 
 {
-	IBOutlet id	tecHint;
-	IBOutlet id	nodeID;
-	IBOutlet id	creator;
-	IBOutlet id	type;
-	IBOutlet id	finderFlags;
-	IBOutlet id	extFinderFlags;
-	IBOutlet id	iconPosX;
-	IBOutlet id	iconPosY;
-	IBOutlet id	boundsTop;
-	IBOutlet id	boundsLeft;
-	IBOutlet id	boundsBottom;
-	IBOutlet id	boundsRight;
-	IBOutlet id	scrollPosX;
-	IBOutlet id	scrollPosY;
-	IBOutlet id	viewType;
-	IBOutlet id setHiddenExtension;
+    IBOutlet id    tecHint;
+    IBOutlet id    nodeID;
+    IBOutlet id    creator;
+    IBOutlet id    type;
+    IBOutlet id    iconPosX;
+    IBOutlet id    iconPosY;
+    IBOutlet id    boundsTop;
+    IBOutlet id    boundsLeft;
+    IBOutlet id    boundsBottom;
+    IBOutlet id    boundsRight;
+    IBOutlet id    scrollPosX;
+    IBOutlet id    scrollPosY;
+    IBOutlet id    viewType;
+    IBOutlet id setHiddenExtension;
 }
 
 - (IBAction)setTypeCreatorProperty:(id)sender;
 - (IBAction)setIconPositionProperty:(id)sender;
-- (IBAction)setFlagsProperty:(id)sender;
 - (IBAction)setFolderBoundsProperty:(id)sender;
 - (IBAction)setFolderScrollPositionProperty:(id)sender;
 - (IBAction)setHiddenExtension:(id)sender;

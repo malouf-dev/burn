@@ -14,22 +14,22 @@
 
 @interface KWTrackProducer : NSObject 
 {
-	FILE     *file;
-	NSFileHandle *readHandle;
-	NSFileHandle *writeHandle;
-	NSFileHandle *calcHandle;
-	NSPipe *calcPipe;
-	NSString *folderPath;
-	NSString *discName;
-	NSArray *mpegFiles;
-	//Types 1 = hfsstandard; 2 = udf; 3 = dvd-video; 4 = vcd; 5 = svcd; 6 = audiocd 7 = dvd-audio
-	NSInteger	type;
-	BOOL createdTrack;
-	NSTask *trackCreator;
-	NSPipe *trackPipe;
-	NSInteger currentImageSize;
-	NSTimer *prepareTimer;
-	NSString *currentAudioTrack;
+    FILE     *file;
+    NSFileHandle *readHandle;
+    NSFileHandle *writeHandle;
+    NSFileHandle *calcHandle;
+    NSPipe *calcPipe;
+    NSString *folderPath;
+    NSString *discName;
+    NSArray *mpegFiles;
+    //Types 1 = hfsstandard; 2 = udf; 3 = dvd-video; 4 = vcd; 5 = svcd; 6 = audiocd 7 = dvd-audio
+    NSInteger    type;
+    BOOL createdTrack;
+    NSTask *trackCreator;
+    NSPipe *trackPipe;
+    NSInteger currentImageSize;
+    NSTimer *prepareTimer;
+    NSString *currentAudioTrack;
 }
 
 //Track actions
@@ -40,9 +40,7 @@
 - (NSArray *)getTracksOfLayout:(NSString *)layout withTotalSize:(NSInteger)size;
 - (NSArray *)getTracksOfVcd;
 - (NSArray *)getTracksOfAudioCD:(NSString *)path withToc:(NSDictionary *)toc;
-- (NSArray *)getTracksFromLoxiFile:(NSString *)loxiFile;
 - (DRTrack *)getAudioTrackForPath:(NSString *)path;
-- (DRTrack *)getTrackWithTrackProperties:(NSDictionary *)trackProperties;
 
 //Stream actions
 - (void)createImage;
@@ -50,8 +48,8 @@
 - (void)createAudioTrack:(NSString *)path;
 
 //Other
-- (CGFloat)imageSize;
+- (float)imageSize;
 - (DRTrack *)createDefaultTrackWithSize:(NSInteger)size;
-- (CGFloat)audioTrackSizeAtPath:(NSString *)path;
+- (float)audioTrackSizeAtPath:(NSString *)path;
 
 @end

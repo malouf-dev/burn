@@ -7,21 +7,19 @@
 @interface KWEraser : NSWindowController
 {
     //Interface outlets
-	IBOutlet id burnerPopup;
+    IBOutlet id burnerPopup;
     IBOutlet id closeButton;
     IBOutlet id completelyErase;
     IBOutlet id eraseButton;
     IBOutlet id quicklyErase;
     IBOutlet id statusText;
-	
-	//Variables
-	BOOL shouldClose;
-	SEL endSelector;
-	id endDelegate;
+    
+    //Variables
+    BOOL shouldClose;
 }
 //Main actions
 - (void)setupWindow;
-- (void)beginEraseSheetForWindow:(NSWindow *)window modalDelegate:(id)delegate didEndSelector:(SEL)selector;
+- (void)beginEraseSheetForWindow:(NSWindow *)window completion:(void (^)(NSModalResponse returnCode))completion;
 - (NSInteger)beginEraseWindow;
 - (void)erase;
 - (void)updateDevice:(DRDevice *)device;

@@ -13,7 +13,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -54,31 +54,31 @@
 
 @interface NSView (EnablingHelper)
 
-- (void)setEnabled:(BOOL)enabledFlag deep:(BOOL)goDeep;
+- (void) setEnabled:(BOOL)enabledFlag deep:(BOOL)goDeep;
 
 @end
 
 @implementation NSView (EnablingHelper)
 
-- (void)setEnabled:(BOOL)enabledFlag deep:(BOOL)goDeep
+- (void) setEnabled:(BOOL)enabledFlag deep:(BOOL)goDeep
 {
-	// Dis/Enable ourselfs first.
-	if ([self respondsToSelector:@selector(setEnabled:)])
-		[(id)self setEnabled:enabledFlag];
-	
-	if (goDeep)
-	{
-		NSEnumerator*	iter = [[self subviews] objectEnumerator];
-		NSControl*		subView;
+    // Dis/Enable ourselves first.
+    if ([self respondsToSelector:@selector(setEnabled:)])
+	    [(id)self setEnabled:enabledFlag];
+    
+    if (goDeep)
+    {
+	    NSEnumerator*    iter = [[self subviews] objectEnumerator];
+	    NSControl*	    subView;
 
-		// Iiterate over all of the subviews. If they respond to the 
-		// -setEnabled: method, call it to enable/disable the item.
-		// Then recurse to handle that object's subviews.
-		while ((subView = [iter nextObject]) != NULL)
-		{
-			[subView setEnabled:enabledFlag deep:goDeep];
-		}
-	}
+	    // Iiterate over all of the subviews. If they respond to the 
+	    // -setEnabled: method, call it to enable/disable the item.
+	    // Then recurse to handle that object's subviews.
+	    while ((subView = [iter nextObject]) != NULL)
+	    {
+    	    [subView setEnabled:enabledFlag deep:goDeep];
+	    }
+    }
 }
 
 @end
@@ -87,239 +87,235 @@
 
 - (NSString*) filesystem
 {
-	return @"";
+    return @"";
 }
 
 - (DRFilesystemInclusionMask) mask
 {
-	return 0xFFFFFFFF;
+    return 0xFFFFFFFF;
 }
 
 - (void)inspect:(NSArray *)items
 {
-	inspectedItems = items;
+    inspectedItems = items;
 
-	[included setEnabled:[self checkForFileSystemMasksInParentsOfObjects:inspectedItems]];
-	[included setState:[self checkForFileSystemMasksInObjects:inspectedItems]];
-	[contentView setEnabled:([included state] && [included isEnabled]) deep:YES];
+    [included setEnabled:[self checkForFileSystemMasksInParentsOfObjects:inspectedItems]];
+    [included setState:[self checkForFileSystemMasksInObjects:inspectedItems]];
+    [contentView setEnabled:([included state] && [included isEnabled]) deep:YES];
 
-	if ([inspectedItems count] == 1)
-		[self updateNames];
-	else
-		[self clearForMultipleSelection];
+    if ([inspectedItems count] == 1)
+	    [self updateNames];
+    else
+	    [self clearForMultipleSelection];
 
-	[self updateDates];
-	[self updatePOSIX];
-	[self updateSpecific];
+    [self updateDates];
+    [self updatePOSIX];
+    [self updateSpecific];
 }
 
 - (BOOL)checkForFileSystemMasksInObjects:(NSArray *)objects
 {
-	NSInteger x;
-	for (x = 0; x < [objects count]; x ++)
-	{
-		if ([[objects objectAtIndex:x] explicitFilesystemMask] & [self mask])
-			return YES;
-	}
-	
-	return NO;
+    NSInteger x;
+    for (x=0;x<[objects count];x++)
+    {
+	    if ([[objects objectAtIndex:x] explicitFilesystemMask] & [self mask])
+    	    return YES;
+    }
+    
+    return NO;
 }
 
 - (BOOL)checkForFileSystemMasksInParentsOfObjects:(NSArray *)objects
 {
-	NSInteger x;
-	for (x = 0; x < [objects count]; x ++)
-	{
-		if ([[(DRFSObject *)[objects objectAtIndex:x] parent] effectiveFilesystemMask] & [self mask])
-			return YES;
-	}
-	
-	return NO;
+    NSInteger x;
+    for (x=0;x<[objects count];x++)
+    {
+	    if ([[(DRFSObject *)[objects objectAtIndex:x] parent] effectiveFilesystemMask] & [self mask])
+    	    return YES;
+    }
+    
+    return NO;
 }
 
 - (id)getPropertyForKey:(NSString *)key
 {
-	id object = [[inspectedItems objectAtIndex:0] propertyForKey:key inFilesystem:[self filesystem] mergeWithOtherFilesystems:NO];
+    id object = [[inspectedItems objectAtIndex:0] propertyForKey:key inFilesystem:[self filesystem] mergeWithOtherFilesystems:NO];
 
-	NSInteger x;
-	for ( x = 0; x < [inspectedItems count]; x ++)
-	{
-		if (![object isEqualTo:[[inspectedItems objectAtIndex:x] propertyForKey:key inFilesystem:[self filesystem] mergeWithOtherFilesystems:NO]])
-			return nil;
-	}
-	
-	return object;
+    NSInteger x;
+    for (x=0;x<[inspectedItems count];x++)
+    {
+	    if (![object isEqualTo:[[inspectedItems objectAtIndex:x] propertyForKey:key inFilesystem:[self filesystem] mergeWithOtherFilesystems:NO]])
+    	    return nil;
+    }
+    
+    return object;
 }
 
 - (IBAction)setIncludedBit:(id)sender
 {
-	NSInteger x;
-	for (x = 0; x < [inspectedItems count]; x ++)
-	{
-		id currentItem = [inspectedItems objectAtIndex:x];
-	
-		DRFilesystemInclusionMask	mask = [currentItem explicitFilesystemMask];
-	
-	if ([sender state])
-		mask |= [self mask];
-	else
-		mask &= ~[self mask];
-	
-		[currentItem setExplicitFilesystemMask:mask];
-	}
-	
-	[contentView setEnabled:([sender state]) deep:YES];
+    NSInteger x;
+    for (x=0;x<[inspectedItems count];x++)
+    {
+	    id currentItem = [inspectedItems objectAtIndex:x];
+    
+	    DRFilesystemInclusionMask    mask = [currentItem explicitFilesystemMask];
+    
+    if ([sender state])
+	    mask |= [self mask];
+    else
+	    mask &= ~[self mask];
+    
+	    [currentItem setExplicitFilesystemMask:mask];
+    }
+    
+    [contentView setEnabled:([sender state]) deep:YES];
 
-	NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
-	[defaultCenter postNotificationName:@"KWLeaveTab" object:nil];
-	[defaultCenter postNotificationName:@"KWReloadRequested" object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWLeaveTab" object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWReloadRequested" object:nil];
 }
 
 - (void)clearForMultipleSelection
 {
-	[specificName setStringValue:@""];
-	[mangledName setStringValue:@""];
-	[specificName setEnabled:NO];
+    [specificName setStringValue:@""];
+    [mangledName setStringValue:@""];
+    [specificName setEnabled:NO];
 }
 
 - (void)updateNames
-{	
-	DRFSObject *firstItem = [inspectedItems objectAtIndex:0];
-	
-	[baseName setStringValue:[firstItem baseName]];
-	
-	NSString *fileSystem = [self filesystem];
-	[specificName setStringValue:[firstItem specificNameForFilesystem:fileSystem]];
-	[mangledName setStringValue:[firstItem mangledNameForFilesystem:fileSystem]];
+{    
+    DRFSObject *firstItem = [inspectedItems objectAtIndex:0];
+    
+    [baseName setStringValue:[firstItem baseName]];
+    [specificName setStringValue:[firstItem specificNameForFilesystem:[self filesystem]]];
+    [mangledName setStringValue:[firstItem mangledNameForFilesystem:[self filesystem]]];
 }
 
 - (void)updateDates
 {
-	// Each subclass sets up an array of property keys. Tags of the object in the view 
-	// hierarchy are set to the index of the tag that corresponds to the particular item
-	// in the property array. So we go and look up the correct property to set by
-	// querying this array by using the tag obtained from the object whose value we need to set
-	// [propertyMappings objectAtIndex:[foo tag]]
+    // Each subclass sets up an array of property keys. Tags of the object in the view 
+    // hierarchy are set to the index of the tag that corresponds to the particular item
+    // in the property array. So we go and look up the correct property to set by
+    // querying this array by using the tag obtained from the object whose value we need to set
+    // [propertyMappings objectAtIndex:[foo tag]]
 
-	[creationDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[creationDate tag]]]];
-	
-	[contentModDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[contentModDate tag]]]];
-	
-	[attributeModDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[attributeModDate tag]]]];
-	
-	[lastAccessedDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[lastAccessedDate tag]]]];
-	
-	[backupDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[backupDate tag]]]];
+    [creationDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[creationDate tag]]]];
+    
+    [contentModDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[contentModDate tag]]]];
+    
+    [attributeModDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[attributeModDate tag]]]];
+    
+    [lastAccessedDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[lastAccessedDate tag]]]];
+    
+    [backupDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[backupDate tag]]]];
 }
 
 - (void)updatePOSIX
 {
-	unsigned short	mode;
-	
-	// Each subclass sets up an array of property keys. Tags of the object in the view 
-	// hierarchy are set to the index of the tag that corresponds to the particular item
-	// in the property array. So we go and look up the correct property to set by
-	// querying this array by using the tag obtained from the object whose value we need to set
-	// [propertyMappings objectAtIndex:[foo tag]]
+    unsigned short    mode;
+    
+    // Each subclass sets up an array of property keys. Tags of the object in the view 
+    // hierarchy are set to the index of the tag that corresponds to the particular item
+    // in the property array. So we go and look up the correct property to set by
+    // querying this array by using the tag obtained from the object whose value we need to set
+    // [propertyMappings objectAtIndex:[foo tag]]
 
-	[uid setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[uid tag]]]];
-	[gid setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[gid tag]]]];
+    [uid setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[uid tag]]]];
+    [gid setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[gid tag]]]];
 
-	mode = [[self getPropertyForKey:[propertyMappings objectAtIndex:[perms tag]]] unsignedShortValue];
-	
-	// All we're doing here is breaking out the bits of the POSIX mode into
-	// descrete pieces so we can set the checkboxes in the tab.
-	[[perms cellWithTag:2] setState:(0x0001 & (mode >> 6))];
-	[[perms cellWithTag:1] setState:(0x0001 & (mode >> 7))];
-	[[perms cellWithTag:0] setState:(0x0001 & (mode >> 8))];
+    mode = [[self getPropertyForKey:[propertyMappings objectAtIndex:[perms tag]]] unsignedShortValue];
+    
+    // All we're doing here is breaking out the bits of the POSIX mode into
+    // descrete pieces so we can set the checkboxes in the tab.
+    [[perms cellWithTag:2] setState:(0x0001 & (mode >> 6))];
+    [[perms cellWithTag:1] setState:(0x0001 & (mode >> 7))];
+    [[perms cellWithTag:0] setState:(0x0001 & (mode >> 8))];
 
-	[[perms cellWithTag:5] setState:(0x0001 & (mode >> 3))];	
-	[[perms cellWithTag:4] setState:(0x0001 & (mode >> 4))];
-	[[perms cellWithTag:3] setState:(0x0001 & (mode >> 5))];
-	
-	[[perms cellWithTag:8] setState:(0x0001 & (mode >> 0))];
-	[[perms cellWithTag:7] setState:(0x0001 & (mode >> 1))];
-	[[perms cellWithTag:6] setState:(0x0001 & (mode >> 2))];
+    [[perms cellWithTag:5] setState:(0x0001 & (mode >> 3))];    
+    [[perms cellWithTag:4] setState:(0x0001 & (mode >> 4))];
+    [[perms cellWithTag:3] setState:(0x0001 & (mode >> 5))];
+    
+    [[perms cellWithTag:8] setState:(0x0001 & (mode >> 0))];
+    [[perms cellWithTag:7] setState:(0x0001 & (mode >> 1))];
+    [[perms cellWithTag:6] setState:(0x0001 & (mode >> 2))];
 
-	[[perms cellWithTag:11] setState:(0x0001 & (mode >> 9))];
-	[[perms cellWithTag:10] setState:(0x0001 & (mode >> 10))];
-	[[perms cellWithTag:9] setState:(0x0001 & (mode >> 11))];
+    [[perms cellWithTag:11] setState:(0x0001 & (mode >> 9))];
+    [[perms cellWithTag:10] setState:(0x0001 & (mode >> 10))];
+    [[perms cellWithTag:9] setState:(0x0001 & (mode >> 11))];
 }
 
 - (void)updateSpecific
 {
-	// nothing to do, this is for subclasses to handle their specific needs
+    // nothing to do, this is for subclasses to handle their specific needs
 }
 
 - (IBAction)setFileName:(id)sender
 {
-	// Each subclass sets up an array of property keys. Tags of the object in the view 
-	// hierarchy are set to the index of the tag that corresponds to the particular item
-	// in the property array. So we go and look up the correct property to set by
-	// querying this array by using the tag obtained from the sender
-	// [propertyMappings objectAtIndex:[sender tag]]
-	
-	[[inspectedItems objectAtIndex:0] setSpecificName:[sender objectValue] forFilesystem:[self filesystem]];
-	
-	[self updateNames];
+    // Each subclass sets up an array of property keys. Tags of the object in the view 
+    // hierarchy are set to the index of the tag that corresponds to the particular item
+    // in the property array. So we go and look up the correct property to set by
+    // querying this array by using the tag obtained from the sender
+    // [propertyMappings objectAtIndex:[sender tag]]
+    
+    [[inspectedItems objectAtIndex:0] setSpecificName:[sender objectValue] forFilesystem:[self filesystem]];
+    
+    [self updateNames];
 }
 
 - (IBAction)setProperty:(id)sender
 {
-	id objValue = [sender objectValue];
-	
-	if (!objValue && [sender isKindOfClass:[NSTextField class]])
-		objValue = @"";
+    id objValue = [sender objectValue];
+    
+    if (!objValue && [sender isKindOfClass:[NSTextField class]])
+	    objValue = @"";
 
-	if (objValue)
-	{
-		NSInteger x;
-		for (x = 0; x < [inspectedItems count]; x ++)
-		{
-			[[inspectedItems objectAtIndex:x] setProperty:objValue forKey:[propertyMappings objectAtIndex:[sender tag]] inFilesystem:[self filesystem]];
-		}
-	}
-	
-	if ([[propertyMappings objectAtIndex:[sender tag]] isEqualTo:DRInvisible])
-	{
-		NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
-		[defaultCenter postNotificationName:@"KWLeaveTab" object:nil];
-		[defaultCenter postNotificationName:@"KWReloadRequested" object:nil];
-	}
+    if (objValue)
+    {
+	    NSInteger x;
+	    for (x=0;x<[inspectedItems count];x++)
+	    {
+    	    [[inspectedItems objectAtIndex:x] setProperty:objValue forKey:[propertyMappings objectAtIndex:[sender tag]] inFilesystem:[self filesystem]];
+	    }
+    }
+    
+    if ([[propertyMappings objectAtIndex:[sender tag]] isEqualTo:DRInvisible])
+    {
+	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWLeaveTab" object:nil];
+	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWReloadRequested" object:nil];
+    }
 }
 
 - (IBAction) setPOSIXModeProperty:(id)sender
 {
-	unsigned short mode = 0;
-	
-	// combine all of the checkbox states into bit values for the POSIX mode.
-	mode |= [[sender cellWithTag:2] integerValue] << 6;
-	mode |= [[sender cellWithTag:1] integerValue] << 7;
-	mode |= [[sender cellWithTag:0] integerValue] << 8;
+    unsigned short mode = 0;
+    
+    // combine all of the checkbox states into bit values for the POSIX mode.
+    mode |= [[sender cellWithTag:2] intValue] << 6;
+    mode |= [[sender cellWithTag:1] intValue] << 7;
+    mode |= [[sender cellWithTag:0] intValue] << 8;
 
-	mode |= [[sender cellWithTag:5] integerValue] << 3;	
-	mode |= [[sender cellWithTag:4] integerValue] << 4;
-	mode |= [[sender cellWithTag:3] integerValue] << 5;
-	
-	mode |= [[sender cellWithTag:8] integerValue] << 0;
-	mode |= [[sender cellWithTag:7] integerValue] << 1;
-	mode |= [[sender cellWithTag:6] integerValue] << 2;
+    mode |= [[sender cellWithTag:5] intValue] << 3;    
+    mode |= [[sender cellWithTag:4] intValue] << 4;
+    mode |= [[sender cellWithTag:3] intValue] << 5;
+    
+    mode |= [[sender cellWithTag:8] intValue] << 0;
+    mode |= [[sender cellWithTag:7] intValue] << 1;
+    mode |= [[sender cellWithTag:6] intValue] << 2;
 
-	mode |= [[sender cellWithTag:11] integerValue] << 9;
-	mode |= [[sender cellWithTag:10] integerValue] << 10;
-	mode |= [[sender cellWithTag:9] integerValue] << 11;
-	
-	// Each subclass sets up an array of property keys. Tags of the object in the view 
-	// hierarchy are set to the index of the tag that corresponds to the particular item
-	// in the property array. So we go and look up the correct property to set by
-	// querying this array by using the tag obtained from the sender
-	// [propertyMappings objectAtIndex:[sender tag]]
+    mode |= [[sender cellWithTag:11] intValue] << 9;
+    mode |= [[sender cellWithTag:10] intValue] << 10;
+    mode |= [[sender cellWithTag:9] intValue] << 11;
+    
+    // Each subclass sets up an array of property keys. Tags of the object in the view 
+    // hierarchy are set to the index of the tag that corresponds to the particular item
+    // in the property array. So we go and look up the correct property to set by
+    // querying this array by using the tag obtained from the sender
+    // [propertyMappings objectAtIndex:[sender tag]]
 
-	NSInteger x;
-	for (x = 0; x < [inspectedItems count]; x ++)
-	{
-		[[inspectedItems objectAtIndex:x] setProperty:[NSNumber numberWithUnsignedShort:mode] forKey:[propertyMappings objectAtIndex:[sender tag]] inFilesystem:[self filesystem]];
-	}
+    NSInteger x;
+    for (x=0;x<[inspectedItems count];x++)
+    {
+	    [[inspectedItems objectAtIndex:x] setProperty:[NSNumber numberWithUnsignedShort:mode] forKey:[propertyMappings objectAtIndex:[sender tag]] inFilesystem:[self filesystem]];
+    }
 }
-	
+    
 @end

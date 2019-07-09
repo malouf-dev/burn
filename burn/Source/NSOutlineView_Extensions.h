@@ -2,7 +2,7 @@
      File:       NSOutlineView_Extensions.h
  
      Contains:   NSOutlineView category (MyExtensions), and subclass (MyOutlineView).
- 				 
+ 	    	     
      Version:    Technology: Mac OS X
                  Release:    Mac OS X
  
@@ -11,7 +11,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*

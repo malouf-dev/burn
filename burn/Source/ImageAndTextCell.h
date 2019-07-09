@@ -11,7 +11,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -51,7 +51,7 @@
 
 @interface ImageAndTextCell : NSTextFieldCell {
 @private
-    NSImage	*image;
+    NSImage    *image;
 }
 
 - (void)setImage:(NSImage *)anImage;

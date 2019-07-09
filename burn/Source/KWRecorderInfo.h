@@ -12,8 +12,8 @@
     IBOutlet id recorderProduct;
     IBOutlet id recorderVendor;
     IBOutlet id recorderWrites;
-	
-	NSDictionary *discTypes;
+    
+    NSDictionary *discTypes;
 }
 
 //Main actions

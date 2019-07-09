@@ -6,7 +6,7 @@
 
 @interface KWBurner : NSWindowController
 {
-	//Main Sheet outlets
+    //Main Sheet outlets
     IBOutlet id burnButton;
     IBOutlet id burnerPopup;
     IBOutlet id closeButton;
@@ -14,38 +14,35 @@
     IBOutlet id sessionsCheckBox;
     IBOutlet id speedPopup;
     IBOutlet id statusText;
-	IBOutlet id combineCheckBox;
-	IBOutlet id numberOfCopiesText;
-	IBOutlet id numberOfCopiesBox;
-	
-	//Session Panel Outlets
-	IBOutlet id sessionsPanel;
-	IBOutlet id sessions;
-	IBOutlet id dataSession;
-	IBOutlet id audioSession;
-	IBOutlet id videoSession;
-	
-	//Variables
-	BOOL shouldClose;
-	NSInteger size;
-	NSInteger trackNumber; //Must delete
-	DRDevice *savedDevice;
-	NSDictionary *properties;
-	DRBurn *burn;
-	NSDictionary *extraBurnProperties;
-	BOOL userCanceled;
-	NSInteger currentType;
-	NSArray *combinableTypes;
-	NSString *imagePath;
-	id currentCombineCheckBox;
-	BOOL ignoreMode;
-	BOOL isOverwritable;
-	NSNumber *layerBreak;
-	id currentTrack;
+    IBOutlet id combineCheckBox;
+    IBOutlet id numberOfCopiesText;
+    IBOutlet id numberOfCopiesBox;
+    
+    //Session Panel Outlets
+    IBOutlet id sessionsPanel;
+    IBOutlet id sessions;
+    IBOutlet id dataSession;
+    IBOutlet id audioSession;
+    IBOutlet id videoSession;
+    
+    //Variables
+    BOOL shouldClose;
+    NSInteger size;
+    NSInteger trackNumber; //Must delete
+    DRDevice *savedDevice;
+    NSDictionary *properties;
+    DRBurn *burn;
+    NSDictionary *extraBurnProperties;
+    BOOL userCanceled;
+    NSString *imagePath;
+    id currentCombineCheckBox;
+    BOOL ignoreMode;
+    BOOL isOverwritable;
+    NSNumber *layerBreak;
 }
 
 //Main actions
-- (void)beginBurnSetupSheetForWindow:(NSWindow *)window modalDelegate:(id)delegate didEndSelector:(SEL)selector contextInfo:(void *)contextInfo;
+- (void)beginBurnSetupSheetForWindow:(NSWindow *)window completion:(void (^)(NSModalResponse returnCode))completion;
 - (void)burnDiskImageAtPath:(NSString *)path;
 - (void)writeTrack:(id)track;
 - (void)setLayerBreak:(id)layerBreak;
@@ -74,18 +71,24 @@
 - (void)populateSpeeds:(DRDevice *)device;
 - (DRDevice *)savedDevice;
 - (BOOL)canBurn;
-- (void)stopBurning:(NSNotification *)notif;
 - (BOOL)isCD;
-- (void)setType:(NSInteger)type;
-- (void)setCombinableTypes:(NSArray *)types;
-- (NSArray *)types;
-- (NSInteger)currentType;
 - (void)addBurnProperties:(NSDictionary *)properties;
 - (NSDictionary *)properties;
 
+@property (nonatomic) NSInteger type;
+@property (nonatomic, getter = isCombineSessionsEnabled) BOOL combineSessionsEnabled;
+@property (nonatomic, getter = isCombinedDataSessionEnabled) BOOL combinedDataSessionEnabled;
+@property (nonatomic, getter = isCombinedAudioSessionEnabled) BOOL combinedAudioSessionEnabled;
+@property (nonatomic, getter = isCombinedVideoSessionEnabled) BOOL combinedVideoSessionEnabled;
+- (NSArray *)types;
+
+@property (nonatomic, strong) NSArray *combinableTypes; // TODO: Is this used or usefull to expose?
+
 @end
 
-@interface DRCallbackDevice : DRDevice {}
+@interface DRCallbackDevice : DRDevice {
+
+}
 - (void)initWithConsumer:(id)consumer;
 
 @end

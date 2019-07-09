@@ -12,17 +12,16 @@
 
 @interface KWDRFolder : DRFolder
 {
-	NSImage *folderIcon;
-	NSString *folderSize;
-	NSDictionary *properties;
-	BOOL expanded;
-	BOOL filePackage;
-	BOOL hfsStandard;
-	NSString *displayName;
-	NSString *originalName;
+    NSImage *folderIcon;
+    NSString *folderSize;
+    NSDictionary *properties;
+    BOOL expanded;
+    BOOL filePackage;
+    BOOL hfsStandard;
+    NSString *displayName;
+    NSString *originalName;
 
-	NSInteger myNumber;
-	BOOL calculating;
+    NSInteger myNumber;
 }
 
 - (void)setFolderIcon:(NSImage *)image;

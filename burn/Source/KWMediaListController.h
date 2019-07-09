@@ -7,52 +7,55 @@
 //
 
 #import <Cocoa/Cocoa.h>
-#import <KWProgress.h>
-#import <KWConverter.h>
-#import <KWBurner.h>
+#import "KWProgressManager.h"
+#import "KWConverter.h"
+#import "KWBurner.h"
 #import "KWMediaListController.h"
 #import "KWTextField.h"
+#import "KWWindowController.h"
 
-@interface KWMediaListController : NSObject {
+@interface KWMediaListController : NSObject <NSTableViewDelegate, NSTableViewDataSource> {
+    
+    //Main Window
+    IBOutlet KWWindowController *windowController;
+    IBOutlet id mainWindow;
+    IBOutlet id popupIcon;
+    IBOutlet id nameTextField;
+    IBOutlet id discLabel;
+    IBOutlet id totalText;
+    IBOutlet id tableViewPopup;
+    IBOutlet NSTableView *tableView;
+    IBOutlet id accessOptions;
+    
+    //Disc creation
+    IBOutlet id myDiscCreationController;
+    
+    //Save View
+    IBOutlet id saveView;
+    IBOutlet id regionPopup;
+    
+    //Variables
+    NSMutableArray *tableData;
+    NSMutableArray *incompatibleFiles;
+    NSMutableArray *protectedFiles;
+    NSMutableArray *knownProtectedFiles;
+    NSMutableArray *temporaryFiles;
+    NSArray *allowedFileTypes;
+    NSArray *optionsMappings;
+    NSString *dvdFolderName;
+    NSString *convertExtension;
+    NSInteger convertKind;
+    NSString *currentFileSystem;
+    BOOL useRegion;
+    BOOL isDVD;
+    BOOL canBeReorderd;
+    BOOL cancelAddingFiles;
+    NSInteger currentDropRow;
+    NSInteger currentType;
+    NSInteger selectedTypeIndex;
 
-	//Main Window
-	IBOutlet id mainWindow;
-	IBOutlet id popupIcon;
-	IBOutlet id discName;
-	IBOutlet id discLabel;
-	IBOutlet id totalText;
-	IBOutlet id tableViewPopup;
-	IBOutlet id tableView;
-	IBOutlet id accessOptions;
-	
-	//Disc creation
-	IBOutlet id myDiscCreationController;
-	
-	//Save View
-	IBOutlet id saveView;
-	IBOutlet id regionPopup;
-	
-	//Variables
-	NSMutableArray *tableData;
-	NSMutableArray *incompatibleFiles;
-	NSMutableArray *protectedFiles;
-	NSMutableArray *knownProtectedFiles;
-	NSMutableArray *temporaryFiles;
-	NSArray *allowedFileTypes;
-	NSArray *optionsMappings;
-	NSString *dvdFolderName;
-	NSString *convertExtension;
-	NSInteger convertKind;
-	NSString *currentFileSystem;
-	BOOL useRegion;
-	BOOL isDVD;
-	BOOL canBeReorderd;
-	BOOL cancelAddingFiles;
-	NSInteger currentDropRow;
-	NSInteger currentType;
-	KWProgress *progressPanel;
-	KWConverter *converter;
-	id optionsPopup;
+    KWConverter *converter;
+    id optionsPopup;
 }
 
 //Main actions
@@ -96,18 +99,12 @@
 //Save actions
 //Open .burn document
 - (void)openBurnDocument:(NSString *)path;
-//Set extra information to save(like CD-Text)
-- (void)setExtraInformation:(NSDictionary *)information;
 //Save .burn document
 - (void)saveDocument:(id)sender;
-//Get extra information to save(like CD-Text)
-- (NSDictionary *)extraInformation;
 
 //Tableview actions
 //Bogusmethod used in subclass
 - (IBAction)tableViewPopup:(id)sender;
-//Bogusmethod used in subclass
-- (void)saveTableViewPopup:(id)sender;
 //Method used in subclass to sort if needed
 - (void)sortIfNeeded;
 
@@ -124,5 +121,10 @@
 - (NSString *)getRealPath:(NSString *)inPath;
 //Return tableData to external objects
 - (NSMutableArray *)myDataSource;
+
+// Table view data source methods
+- (BOOL)tableView:(NSTableView *)tableView acceptDrop:(id <NSDraggingInfo>)info row:(NSInteger)row dropOperation:(NSTableViewDropOperation)dropOperation;
+
+@property (nonatomic, strong) NSString *discName;
 
 @end

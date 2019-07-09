@@ -9,17 +9,17 @@
 
 @interface KWDataInspector : NSObject 
 {
-	IBOutlet id tabs;
-	IBOutlet id hfsController;
-	IBOutlet id isoController;
-	IBOutlet id jolietController;
-	IBOutlet id udfController;
-	IBOutlet id iconView;
-	IBOutlet id nameField;
-	IBOutlet id sizeField;
-	IBOutlet id	myView;
-	
-	BOOL shouldChangeTab;
+    IBOutlet id tabs;
+    IBOutlet id hfsController;
+    IBOutlet id isoController;
+    IBOutlet id jolietController;
+    IBOutlet id udfController;
+    IBOutlet id iconView;
+    IBOutlet id nameField;
+    IBOutlet id sizeField;
+    IBOutlet id    myView;
+    
+    BOOL shouldChangeTab;
 }
 
 //Main Actions

@@ -11,7 +11,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -53,148 +53,123 @@
 
 @implementation FSNodeData
 
-- (id)initWithFSObject:(DRFSObject*)obj
+- (id)initWithFSObject:(DRFSObject *)obj
 {
-	if (self = [super init])
-	{
-		fsObj = [obj retain];
-	
-		if (![fsObj isVirtual])
-		{
-			NSFileManager *defaultManager = [NSFileManager defaultManager];
-			NSString *sourcePath = [fsObj sourcePath];
-		
-			if (![KWCommonMethods isDRFSObjectVisible:fsObj])
-			{
-				NSNumber *yesNumber = [NSNumber numberWithBool:YES];
-			
-				[fsObj setProperty:yesNumber forKey:DRInvisible inFilesystem:DRHFSPlus];
-				[fsObj setProperty:yesNumber forKey:DRInvisible inFilesystem:DRISO9660];
-				[fsObj setProperty:yesNumber forKey:DRInvisible inFilesystem:DRJoliet];
-				#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1050
-				[fsObj setProperty:yesNumber forKey:DRInvisible inFilesystem:DRUDF];
-				#else
-				if ([KWCommonMethods OSVersion] >= 0x1040)
-					[fsObj setProperty:yesNumber forKey:DRInvisible inFilesystem:@"DRUDF"];
-				#endif
-			}
-			
-			NSDictionary *atributes = [defaultManager fileAttributesAtPath:sourcePath traverseLink:YES];
-			unsigned long permissions = [[atributes objectForKey:NSFilePosixPermissions] unsignedLongValue];
-			NSNumber *permissionNumber = [NSNumber numberWithUnsignedLong:permissions];
-			
-			[fsObj setProperty:permissionNumber forKey:DRPosixFileMode inFilesystem:DRHFSPlus];
-			[fsObj setProperty:permissionNumber forKey:DRPosixFileMode inFilesystem:DRISO9660];
-			[fsObj setProperty:permissionNumber forKey:DRPosixFileMode inFilesystem:DRJoliet];
-			#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1050
-			[fsObj setProperty:permissionNumber forKey:DRPosixFileMode inFilesystem:DRUDF];
-			#else
-			if ([KWCommonMethods OSVersion] >= 0x1040)
-				[fsObj setProperty:permissionNumber forKey:DRPosixFileMode inFilesystem:@"DRUDF"];
-			#endif
-			
-			[fsObj setProperty:[NSNumber numberWithUnsignedShort:[KWCommonMethods getFinderFlagsAtPath:sourcePath]] forKey:DRMacFinderFlags inFilesystem:DRHFSPlus];
-		
-			if ([atributes objectForKey:NSFileHFSCreatorCode])
-			{
-				OSType type = [[atributes objectForKey:NSFileHFSCreatorCode] unsignedLongValue];
-				NSData *data = [NSData dataWithBytes:&type length:4];
-				[fsObj setProperty:data forKey:DRMacFileCreator inFilesystem:DRHFSPlus];
-				type = [[atributes objectForKey:NSFileHFSTypeCode] unsignedLongValue];
-				data = [NSData dataWithBytes:&type length:4];
-				[fsObj setProperty:data forKey:DRMacFileType inFilesystem:DRHFSPlus];
-			}
-		
-			BOOL isDir;
-			[defaultManager fileExistsAtPath:sourcePath isDirectory:&isDir];
-			if (isDir)
-			{
-				[(KWDRFolder *)fsObj setIsFilePackage:[[NSWorkspace sharedWorkspace] isFilePackageAtPath:sourcePath]];
-				
-				NSString *baseName = [fsObj baseName];
-				if ([[baseName pathExtension] isEqualTo:@"app"] | [KWCommonMethods isDRFolderIsLocalized:(DRFolder *)fsObj])
-				{
-					[(KWDRFolder *)fsObj setDisplayName:[defaultManager displayNameAtPath:sourcePath]];
-					[(KWDRFolder *)fsObj setOriginalName:baseName];
-				}
-			}
-		}
-	}	
+    if (self = [super init])
+    {
+	    fsObj = obj;
+    
+	    if (![fsObj isVirtual])
+	    {
+    	    if (![KWCommonMethods isDRFSObjectVisible:fsObj])
+    	    {
+	    	    [fsObj setProperty:[NSNumber numberWithBool:YES] forKey:DRInvisible inFilesystem:DRHFSPlus];
+	    	    [fsObj setProperty:[NSNumber numberWithBool:YES] forKey:DRInvisible inFilesystem:DRISO9660];
+	    	    [fsObj setProperty:[NSNumber numberWithBool:YES] forKey:DRInvisible inFilesystem:DRJoliet];
+                [fsObj setProperty:[NSNumber numberWithBool:YES] forKey:DRInvisible inFilesystem:DRUDF];
+    	    }
+	    
+    	    NSDictionary *atributes = [[NSFileManager defaultManager] attributesOfItemAtPath:[fsObj sourcePath] error:nil];
+    	    unsigned long permissions = [[atributes objectForKey:NSFilePosixPermissions] unsignedLongValue];
+    	    [fsObj setProperty:[NSNumber numberWithUnsignedLong:permissions] forKey:DRPosixFileMode inFilesystem:DRHFSPlus];
+    	    [fsObj setProperty:[NSNumber numberWithUnsignedLong:permissions] forKey:DRPosixFileMode inFilesystem:DRISO9660];
+    	    [fsObj setProperty:[NSNumber numberWithUnsignedLong:permissions] forKey:DRPosixFileMode inFilesystem:DRJoliet];
+            [fsObj setProperty:[NSNumber numberWithUnsignedLong:permissions] forKey:DRPosixFileMode inFilesystem:DRUDF];
+    	    
+    	    if ([atributes objectForKey:NSFileHFSCreatorCode])
+    	    {
+	    	    OSType type = [[atributes objectForKey:NSFileHFSCreatorCode] unsignedLongValue];
+	    	    NSData *data = [NSData dataWithBytes:&type length:4];
+	    	    [fsObj setProperty:data forKey:DRMacFileCreator inFilesystem:DRHFSPlus];
+	    	    type = [[atributes objectForKey:NSFileHFSTypeCode] unsignedLongValue];
+	    	    data = [NSData dataWithBytes:&type length:4];
+	    	    [fsObj setProperty:data forKey:DRMacFileType inFilesystem:DRHFSPlus];
+    	    }
+	    
+    	    BOOL isDir;
+    	    [[NSFileManager defaultManager] fileExistsAtPath:[fsObj sourcePath] isDirectory:&isDir];
+    	    if (isDir)
+    	    {
+	    	    [(KWDRFolder *)fsObj setIsFilePackage:[[NSWorkspace sharedWorkspace] isFilePackageAtPath:[fsObj sourcePath]]];
 
-	return self;
+	    	    if ([[[fsObj baseName] pathExtension] isEqualTo:@"app"] || [KWCommonMethods isDRFolderIsLocalized:(DRFolder *)fsObj])
+	    	    {
+    	    	    [(KWDRFolder *)fsObj setDisplayName:[[NSFileManager defaultManager] displayNameAtPath:[fsObj sourcePath]]];
+    	    	    [(KWDRFolder *)fsObj setOriginalName:[fsObj baseName]];
+	    	    }
+    	    }
+	    }
+    }    
+
+    return self;
 }
 
 - (void)dealloc
 {
-	[[fsObj parent] removeChild:fsObj];
-	[fsObj release];
-	fsObj = nil;
-	
-	[super dealloc];
+    [[fsObj parent] removeChild:fsObj];
 }
 
-+ (FSNodeData*) nodeDataWithPath:(NSString*)path;
++ (FSNodeData *)nodeDataWithPath:(NSString*)path;
 {
-	FSNodeData*	nodeData = nil;
-	BOOL		isDir;
-	
-	if ([[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir])
-	{
-		if (isDir)
-			nodeData = [[FSFolderNodeData alloc] initWithPath:path];
-		else
-			nodeData = [[FSFileNodeData alloc] initWithPath:path];
-	}
-	
-	return [nodeData autorelease];
+    FSNodeData *nodeData = nil;
+    BOOL isDir;
+    
+    if ([[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir])
+    {
+	    if (isDir)
+    	    nodeData = [[FSFolderNodeData alloc] initWithPath:path];
+	    else
+    	    nodeData = [[FSFileNodeData alloc] initWithPath:path];
+    }
+    
+    return nodeData;
 }
 
-+ (FSNodeData*) nodeDataWithName:(NSString*)name
++ (FSNodeData *)nodeDataWithName:(NSString*)name
 {
-	return [[[FSFolderNodeData alloc] initWithName:name] autorelease];
+    return [[FSFolderNodeData alloc] initWithName:name];
 }
 
-+ (FSNodeData*) nodeDataWithFSObject:(DRFSObject*)obj
++ (FSNodeData *)nodeDataWithFSObject:(DRFSObject*)obj
 {
-	if ([obj isKindOfClass:[DRFile class]])
-		return [[[FSFileNodeData alloc] initWithFSObject:obj] autorelease];
-	else
-		return [[[FSFolderNodeData alloc] initWithFSObject:obj] autorelease];
+    if ([obj isKindOfClass:[DRFile class]])
+	    return [[FSFileNodeData alloc] initWithFSObject:obj];
+    else
+	    return [[FSFolderNodeData alloc] initWithFSObject:obj];
 }
 
-- (DRFSObject*) fsObject
+- (DRFSObject *)fsObject
 {
-	return fsObj;
+    return fsObj;
 }
 
 - (void)setName:(NSString *)str 
 {
-	KWDRFolder *parent = (KWDRFolder *)[fsObj parent];
-	NSString *newName = str;
-	NSString *baseName = [fsObj baseName];
+    KWDRFolder *parent = (KWDRFolder *)[fsObj parent];
+    NSString *newName = str;
 
-	if ([baseName isEqualTo:@"Icon\r"] && parent)
-		[parent setFolderIcon:nil];
-	
-	if ([[baseName pathExtension] isEqualTo:@"app"] && ![fsObj isKindOfClass:[DRFile class]] && ![[str pathExtension] isEqualTo:@"app"])
-		newName = [str stringByAppendingPathExtension:@"app"];
-	
-	if (![fsObj isKindOfClass:[DRFile class]] && [KWCommonMethods isBundleExtension:[newName pathExtension]])
-		[(KWDRFolder *)fsObj setIsFilePackage:YES];
-	else if (![fsObj isKindOfClass:[DRFile class]])
-		[(KWDRFolder *)fsObj setIsFilePackage:NO];
-	
-	[fsObj setBaseName:newName];
+    if ([[fsObj baseName] isEqualTo:@"Icon\r"] && parent)
+	    [parent setFolderIcon:nil];
+    
+    if ([[[fsObj baseName] pathExtension] isEqualTo:@"app"] && ![fsObj isKindOfClass:[DRFile class]] && ![[str pathExtension] isEqualTo:@"app"])
+	    newName = [str stringByAppendingPathExtension:@"app"];
+    
+    if (![fsObj isKindOfClass:[DRFile class]] && [KWCommonMethods isBundleExtension:[newName pathExtension]])
+	    [(KWDRFolder *)fsObj setIsFilePackage:YES];
+    else if (![fsObj isKindOfClass:[DRFile class]])
+	    [(KWDRFolder *)fsObj setIsFilePackage:NO];
+    
+    [fsObj setBaseName:newName];
 }
 
 - (NSString*)name 
 {
-	return [KWCommonMethods fsObjectFileName:fsObj];
+    return [KWCommonMethods fsObjectFileName:fsObj];
 }
 
 - (NSString*) kind
 {
-	return @"Unknown";
+    return @"Unknown";
 }
 
 - (NSImage*)icon 
@@ -214,68 +189,84 @@
 
 - (NSComparisonResult)compare:(TreeNodeData*)other 
 {
-	return [[self name] caseInsensitiveCompare:[(FSNodeData *)other name]];
+    return [[self name] caseInsensitiveCompare:[(FSNodeData *)other name]];
 }
 
 @end
 
 @implementation FSFileNodeData
 
-- (id) initWithPath:(NSString*)path
+- (id)initWithPath:(NSString*)path
 {
-	return [super initWithFSObject:[DRFile fileWithPath:path]];
+    return [super initWithFSObject:[DRFile fileWithPath:path]];
 }
 
 - (NSImage*)icon
 {
-	return [KWCommonMethods getIcon:fsObj];
+    return [KWCommonMethods getIcon:fsObj];
 }
 
 - (NSString *)kind
 {
-	return [KWCommonMethods makeSizeFromFloat:[[[[NSFileManager defaultManager] fileAttributesAtPath:[fsObj sourcePath] traverseLink:YES] objectForKey:NSFileSize] cgfloatValue]];
+    NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:[fsObj sourcePath] error:nil];
+    return [KWCommonMethods makeSizeFromFloat:[attributes[NSFileSize] floatValue]];
 }
 
 @end
 
 @implementation FSFolderNodeData
 
-- (id) initWithPath:(NSString*)path
+- (id)initWithPath:(NSString*)path
 {
-	return [super initWithFSObject:[[[KWDRFolder alloc] initWithPath:path] autorelease]];
+    return [super initWithFSObject:[[KWDRFolder alloc] initWithPath:path]];
 }
 
 - (id) initWithName:(NSString*)name
 {
-	return [super initWithFSObject:[[[KWDRFolder alloc] initWithName:name] autorelease]];
+    return [super initWithFSObject:[[KWDRFolder alloc] initWithName:name]];
 }
 
 - (NSImage*)icon
 {
-	return [KWCommonMethods getIcon:fsObj];
+    return [KWCommonMethods getIcon:fsObj];
 }
 
 - (NSString*) kind
 {
-	if (([self isExpandable] && [[NSUserDefaults standardUserDefaults] boolForKey:@"KWCalculateFolderSizes"] == YES) | (![self isExpandable] && [[NSUserDefaults standardUserDefaults] boolForKey:@"KWCalculateFilePackageSizes"] == YES))
-	{
-		if ([(KWDRFolder *)fsObj folderSize])
-			return [(KWDRFolder *)fsObj folderSize];
-		else
-			return @"--";
-	}
-	else
-	{
-		return @"--";
-	}
+    if (([self isExpandable] && [[NSUserDefaults standardUserDefaults] boolForKey:@"KWCalculateFolderSizes"] == YES) || (![self isExpandable] && [[NSUserDefaults standardUserDefaults] boolForKey:@"KWCalculateFilePackageSizes"] == YES))
+    {
+	    if ([(KWDRFolder *)fsObj folderSize])
+	    {
+    	    return [(KWDRFolder *)fsObj folderSize];
+	    }
+	    else
+	    {
+    	    [NSThread detachNewThreadSelector:@selector(setFolderSize) toTarget:self withObject:nil];
+    	    return @"--";
+	    }
+    }
+    else
+    {
+	    return @"--";
+    }
+}
+
+- (void)setFolderSize
+{
+    if (![fsObj isVirtual])
+	    [(KWDRFolder *)fsObj setFolderSize:[KWCommonMethods makeSizeFromFloat:[KWCommonMethods calculateRealFolderSize:[fsObj sourcePath]] * 2048]];
+    else
+	    [(KWDRFolder *)fsObj setFolderSize:[KWCommonMethods makeSizeFromFloat:[KWCommonMethods calculateVirtualFolderSize:fsObj] * 2048]];
+
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWReloadRequested" object:nil];
 }
 
 - (BOOL)isExpandable 
 {
-	if (![(KWDRFolder *)fsObj isFilePackage] | [[NSUserDefaults standardUserDefaults] boolForKey:@"KWShowFilePackagesAsFolder"] == YES | ([[[self name] pathExtension] isEqualTo:@""] && ![[[fsObj baseName] stringByDeletingPathExtension] isEqualTo:[self name]] && ![[self name] isEqualTo:[(KWDRFolder *)fsObj displayName]]))
-		return YES;
+    if ((![(KWDRFolder *)fsObj isFilePackage]) || [[NSUserDefaults standardUserDefaults] boolForKey:@"KWShowFilePackagesAsFolder"] == YES || ([[[self name] pathExtension] isEqualTo:@""] && ![[[fsObj baseName] stringByDeletingPathExtension] isEqualTo:[self name]] && ![[self name] isEqualTo:[(KWDRFolder *)fsObj displayName]]))
+	    return YES;
 
-	return NO;
+    return NO;
 }
 
 @end
@@ -284,190 +275,192 @@
 
 - (void)addChild:(TreeNode*)child
 {
-	KWDRFolder*	selfObj = (KWDRFolder*)[(FSNodeData*)nodeData fsObject];
-	DRFSObject*	childObj = [(FSNodeData*)[child nodeData] fsObject];
-	BOOL emptyFolder = NO;
-		
-		if ([childObj isVirtual])
-		{
-			NSString *folderSize = [(KWDRFolder *)childObj folderSize];
-			
-			if (folderSize && [folderSize isEqualTo:[NSString localizedStringWithFormat:NSLocalizedString(@"%.0f KB", nil), 0]])
-				emptyFolder = YES;
-		}
-	
-	if (!emptyFolder)
-		[selfObj setFolderSize:nil];
-
-	if (![childObj isVirtual] && [[[[NSFileManager defaultManager] fileAttributesAtPath:[childObj sourcePath] traverseLink:YES] objectForKey:NSFileSize] unsignedLongLongValue] / 1024 / 1024 > 2048 && [[(FSNodeData*)nodeData fsObject] effectiveFilesystemMask] & DRFilesystemInclusionMaskJoliet | [[(FSNodeData*)nodeData fsObject] effectiveFilesystemMask] & DRFilesystemInclusionMaskISO9660)
-	{
-		if ([[NSApp mainWindow] attachedSheet] == nil)
-		{
-		NSAlert *alert = [[[NSAlert alloc] init] autorelease];
-		[alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
-		[alert setMessageText:NSLocalizedString(@"Some files are to large",nil)];
-		[alert setInformativeText:NSLocalizedString(@"The PC (Joliet) or ISO9660 filesystem can only handle files smaller than 2GB",nil)];
-		[alert setAlertStyle:NSWarningAlertStyle];
-		[alert beginSheetModalForWindow:[NSApp mainWindow] modalDelegate:self didEndSelector:nil contextInfo:nil];
-		}
-	}
-	else
-	{
-		NSArray *children = [selfObj children];
-		NSMutableArray *baseNames = [NSMutableArray array];
-		NSString *newName = [NSString stringWithString:[childObj baseName]];
-		
-		NSInteger i = 0;
-		for (i = 0; i < [children count]; i ++)
-		{
-			[baseNames addObject:[[children objectAtIndex:i] baseName]];
-		}
-			
-		NSInteger x = 1;
-		while ([baseNames containsObject:newName])
-		{
-			newName = [NSString stringWithFormat:@"%@ %ld", newName, (long)x];
-			x = x + 1;
-		}
-		
-		[childObj setBaseName:newName];
-	
-			if (!emptyFolder)
-			{
-				TreeNode *node = self;
-				
-				while ([node nodeParent])
-				{
-					[(KWDRFolder *)[(FSNodeData*)[[node nodeParent] nodeData] fsObject] setFolderSize:nil];
-					node = [node nodeParent];
-				}
-			}
-		
-		[self children];
-		
-		[selfObj addChild:childObj];	
-		[super addChild:child];
-	}
+    KWDRFolder*    selfObj = (KWDRFolder*)[(FSNodeData*)nodeData fsObject];
+    DRFSObject*    childObj = [(FSNodeData*)[child nodeData] fsObject];
+    BOOL emptyFolder = NO;
+	    
+	    if ([childObj isVirtual])
+	    {
+    	    NSString *folderSize = [(KWDRFolder *)childObj folderSize];
+    	    
+    	    if (folderSize && [folderSize isEqualTo:[NSString localizedStringWithFormat:NSLocalizedString(@"%.0f KB", nil), 0]])
+	    	    emptyFolder = YES;
+	    }
+    
+    if (!emptyFolder)
+    {
+	    [selfObj setFolderSize:nil];
+    }   
+    
+    if ((![childObj isVirtual]) && ([ [[NSFileManager defaultManager] attributesOfItemAtPath:[childObj sourcePath] error:nil][NSFileSize] unsignedLongLongValue] / 1024 / 1024 > 2048) && ([[(FSNodeData*)nodeData fsObject] effectiveFilesystemMask] & DRFilesystemInclusionMaskJoliet || [[(FSNodeData*)nodeData fsObject] effectiveFilesystemMask] & DRFilesystemInclusionMaskISO9660))
+    {
+	    if ([[NSApp mainWindow] attachedSheet] == nil)
+	    {
+	    NSAlert *alert = [[NSAlert alloc] init];
+	    [alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
+	    [alert setMessageText:NSLocalizedString(@"Some files are to large",nil)];
+	    [alert setInformativeText:NSLocalizedString(@"The PC (Joliet) or ISO9660 filesystem can only handle files smaller than 2GB",nil)];
+	    [alert setAlertStyle:NSWarningAlertStyle];
+	    [alert beginSheetModalForWindow:[NSApp mainWindow] modalDelegate:self didEndSelector:nil contextInfo:nil];
+	    }
+    }
+    else
+    {
+	    NSArray *children = [selfObj children];
+	    NSMutableArray *baseNames = [NSMutableArray array];
+	    NSString *newName = [childObj baseName];
+	    
+	    NSInteger i = 0;
+	    for (i=0;i<[children count];i++)
+	    {
+    	    [baseNames addObject:[[children objectAtIndex:i] baseName]];
+	    }
+    	    
+	    NSInteger x = 1;
+	    while ([baseNames containsObject:newName])
+	    {
+    	    newName = [NSString stringWithFormat:@"%@ %ld", [childObj baseName], (long)x];
+    	    x = x + 1;
+	    }
+	    
+	    [childObj setBaseName:newName];
+    
+    	    if (!emptyFolder)
+    	    {
+	    	    TreeNode *node = self;
+	    	    
+	    	    while ([node nodeParent])
+	    	    {
+    	    	    [(KWDRFolder *)[(FSNodeData*)[[node nodeParent] nodeData] fsObject] setFolderSize:nil];
+    	    	    node = [node nodeParent];
+	    	    }
+    	    }
+	    
+	    [self children];
+	    
+	    [selfObj addChild:childObj];    
+	    [super addChild:child];
+    }
 }
 
 - (void)removeChild:(TreeNode*)child
 {
-	KWDRFolder*	selfObj = (KWDRFolder*)[(FSNodeData*)nodeData fsObject];
-	DRFSObject* childObj = [(FSNodeData*)[child nodeData] fsObject];
-	
-	if ([[childObj baseName] isEqualTo:@"Icon\r"])
-		[selfObj setFolderIcon:nil];
-		
-	[selfObj setFolderSize:nil];
-		
-		TreeNode *node = self;
-		while ([node nodeParent])
-		{
-			[(KWDRFolder *)[(FSNodeData*)[[node nodeParent] nodeData] fsObject] setFolderSize:nil];
-			node = [node nodeParent];
-		}
-
-	[selfObj removeChild:childObj];
-	[super removeChild:child];
+    KWDRFolder *selfObj = (KWDRFolder*)[(FSNodeData*)nodeData fsObject];
+    DRFSObject *childObj = [(FSNodeData*)[child nodeData] fsObject];
+    
+    if ([[childObj baseName] isEqualTo:@"Icon\r"])
+	    [selfObj setFolderIcon:nil];
+	    
+    [selfObj setFolderSize:nil];
+	    
+    TreeNode *node = self;
+    while ([node nodeParent])
+    {
+        [(KWDRFolder *)[(FSNodeData*)[[node nodeParent] nodeData] fsObject] setFolderSize:nil];
+        node = [node nodeParent];
+    }
+    
+    // TODO: see why this might not be the case, old versions ignored the crash
+    if ([[selfObj children] containsObject:childObj])
+    {
+        [selfObj removeChild:childObj];
+    }
+    
+    [super removeChild:child];
 }
 
 - (NSArray *)children
 {
-	KWDRFolder*	selfObj = (KWDRFolder*)[(FSNodeData*)nodeData fsObject];
-	if ([selfObj isVirtual] == NO)
-	{
-		NSString *currentName = [selfObj baseName];
-		NSImage *folderIcon = nil;
-		if ([KWCommonMethods hasCustomIcon:selfObj])
-			folderIcon = [[NSWorkspace sharedWorkspace] iconForFile:[selfObj sourcePath]];
-		[selfObj makeVirtual];
-		[selfObj setBaseName:currentName];
-		if (folderIcon)
-			[selfObj setFolderIcon:folderIcon];
-		
-		NSFileManager *defaultManager = [NSFileManager defaultManager];
-		NSArray *objects = [selfObj children];
+    KWDRFolder *selfObj = (KWDRFolder *)[(FSNodeData *)nodeData fsObject];
+    if ([selfObj isVirtual] == NO)
+    {
+        NSString *currentName = [selfObj baseName];
+        NSImage *folderIcon = nil;
+        if ([KWCommonMethods hasCustomIcon:selfObj])
+            folderIcon = [[NSWorkspace sharedWorkspace] iconForFile:[selfObj sourcePath]];
+        [selfObj makeVirtual];
+        [selfObj setBaseName:currentName];
+        if (folderIcon)
+            [selfObj setFolderIcon:folderIcon];
+        
+        NSArray *objects = [selfObj children];
 
-		NSInteger i;
-		for (i = 0; i < [objects count]; i ++)
-		{
-			NSAutoreleasePool *subPool = [[NSAutoreleasePool alloc] init];
-			
-			id object = [objects objectAtIndex:i];
-			NSString *sourcePath = [object sourcePath];
-		
-			BOOL isDir;
-			if ([defaultManager fileExistsAtPath:sourcePath isDirectory:&isDir] && isDir)
-			{
-				KWDRFolder *folder = [[KWDRFolder alloc] initWithPath:sourcePath];
-				[selfObj addChild:folder];
-				FSTreeNode*	child = [FSTreeNode treeNodeWithData:[FSNodeData nodeDataWithFSObject:folder]];
-				[super addChild:child];
-				[selfObj removeChild:object];
-			}
-			else
-			{
-				FSTreeNode*	child = [FSTreeNode treeNodeWithData:[FSNodeData nodeDataWithFSObject:(DRFSObject *)object]];
-				[super addChild:child];
-			}
-			
-			[subPool release];
-			subPool = nil;
-		}
-	}
+        NSInteger i;
+        for (i=0;i<[objects count];i++)
+        {
+            BOOL isDir;
+            if ([[NSFileManager defaultManager] fileExistsAtPath:[[objects objectAtIndex:i] sourcePath] isDirectory:&isDir] && isDir)
+            {
+                KWDRFolder *folder = [[KWDRFolder alloc] initWithPath:[[objects objectAtIndex:i] sourcePath]];
+                [selfObj addChild:folder];
+                FSTreeNode *child = [FSTreeNode treeNodeWithData:[FSNodeData nodeDataWithFSObject:folder]];
+                [super addChild:child];
+                [selfObj removeChild:[objects objectAtIndex:i]];
+            }
+            else
+            {
+                FSTreeNode *child = [FSTreeNode treeNodeWithData:[FSNodeData nodeDataWithFSObject:(DRFSObject *)[objects objectAtIndex:i]]];
+                [super addChild:child];
+            }
+        }
+    }
 
-	return [super children];
+    return [super children];
 }
 
-- (NSInteger) numberOfChildren
+- (NSInteger)numberOfChildren
 {
-	KWDRFolder*	selfObj = (KWDRFolder*)[(FSNodeData*)nodeData fsObject];
+    KWDRFolder *selfObj = (KWDRFolder *)[(FSNodeData *)nodeData fsObject];
 
-	if ([selfObj isVirtual])
-	{
-		return [super numberOfChildren];
-	}
-	else
-	{
-		const char *	fsRep = [[[(FSNodeData*)nodeData fsObject] sourcePath] fileSystemRepresentation];
-		CFURLRef		tempURL = CFURLCreateFromFileSystemRepresentation(kCFAllocatorDefault, (const UInt8 *)fsRep, strlen(fsRep), true);
-		FSRef			theRef;
-		FSCatalogInfo	catInfo;
-
-		CFURLGetFSRef(tempURL, &theRef);
-		CFRelease(tempURL);
-		
-		if (FSGetCatalogInfo(&theRef, kFSCatInfoValence, &catInfo, NULL, NULL, NULL) == noErr)
-			return catInfo.valence;
-		else
-			return 0;
-	}
+    if ([selfObj isVirtual])
+    {
+	    return [super numberOfChildren];
+    }
+    else
+    {
+        return [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:[[(FSNodeData *)nodeData fsObject] sourcePath] error:nil] count];
+        
+        // TODO: is this fast enough, to replace the Carbon method???
+//        const char*        fsRep = [[[(FSNodeData *)nodeData fsObject] sourcePath] fileSystemRepresentation];
+//        CFURLRef        tempURL = CFURLCreateFromFileSystemRepresentation(kCFAllocatorDefault, (const UInt8 *)fsRep, strlen(fsRep), true);
+//        FSRef            theRef;
+//        FSCatalogInfo    catInfo;
+//
+//        CFURLGetFSRef(tempURL, &theRef);
+//        CFRelease(tempURL);
+//        
+//        if (FSGetCatalogInfo(&theRef, kFSCatInfoValence, &catInfo, NULL, NULL, NULL) == noErr)
+//            return catInfo.valence;
+//        else
+//            return 0;
+    }
 }
 
 - (id)initWithCoder:(NSCoder *)pCoder;
 {
-	if ((self = [super init]) == nil)
-		return self;
-	
-	[pCoder decodeValueOfObjCType:@encode(NSInteger) at:&myNumber]; 
-	
-	if (myNumber)
-		myNumber++;
-	else
-		myNumber = 1;
-	
-	return self;
-	
-}
+    if ((self = [super init]) == nil) {
+	    return self;
+    } // end if    
+    
+    [pCoder decodeValueOfObjCType:@encode(NSInteger) at: &myNumber]; 
+    
+    if (myNumber) {
+	    myNumber++;
+    } else {
+	    myNumber = 1;
+    } // end if
+    
+    return self;
+    
+}// end initWithCoder
 
 - (void)encodeWithCoder:(NSCoder *)pCoder;
 {
-	[pCoder encodeValueOfObjCType:@encode(NSInteger) at:&myNumber];
-}
+    [pCoder encodeValueOfObjCType:@encode(NSInteger) at: &myNumber];
+}// end encodeWithCoder
 
-- (NSInteger) myNumber
-{
-	return myNumber;
-}
+- (NSInteger) myNumber {
+    return myNumber;
+} // end myNumber
 
 @end

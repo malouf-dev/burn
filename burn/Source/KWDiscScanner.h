@@ -5,14 +5,14 @@
 @interface KWDiscScanner : NSWindowController
 {
     //Sheet outlets
-	IBOutlet id tableView;
-	IBOutlet id chooseScan;
-	IBOutlet id cancelScan;
-	IBOutlet id progressScan;
-	IBOutlet id progressTextScan;
-	
-	//Variables
-	NSMutableArray *tableData;
+    IBOutlet id tableView;
+    IBOutlet id chooseScan;
+    IBOutlet id cancelScan;
+    IBOutlet id progressScan;
+    IBOutlet id progressTextScan;
+    
+    //Variables
+    NSMutableArray *tableData;
 }
 
 //Main actions

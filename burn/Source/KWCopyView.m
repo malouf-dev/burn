@@ -5,22 +5,21 @@
 
 - (void)awakeFromNib
 {
-	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(setViewState:) name:@"KWSetDropState" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(setViewState:) name:@"KWSetDropState" object:nil];
 }
 
 - (id)initWithFrame:(NSRect)frameRect
 {
-	if ((self = [super initWithFrame:frameRect]) != nil)
-		[self registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
-	
-	return self;
+    if ((self = [super initWithFrame:frameRect]) != nil)
+	    [self registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
+    
+    return self;
 }
 
 - (void)dealloc
 {
-	[[NSNotificationCenter defaultCenter] removeObserver:self];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
     [self unregisterDraggedTypes];
-    [super dealloc];
 }
 
 - (void)drawRect:(NSRect)rect
@@ -93,7 +92,7 @@
             NSString *path = [fileArray objectAtIndex:0];
 
                 //assume that we can ignore all but the first path in the list
-			[imageControl checkImage:path];
+    	    [imageControl checkImage:path];
         }
         else
         {
@@ -101,16 +100,16 @@
             return NO;
         }
     }
-	
+    
     return YES;
 }
 
 - (void)setViewState:(NSNotification *)notif
 {
-	if ([[notif object] boolValue])
-		[self registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
-	else
-		[self unregisterDraggedTypes];
+    if ([[notif object] boolValue])
+	    [self registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
+    else
+	    [self unregisterDraggedTypes];
 }
 
 @end

@@ -11,7 +11,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -55,44 +55,44 @@
 
 @interface FSNodeData : TreeNodeData 
 {
-	DRFSObject*	fsObj;
+    DRFSObject*    fsObj;
 }
 
-+ (FSNodeData*) nodeDataWithPath:(NSString*)path;
-+ (FSNodeData*) nodeDataWithName:(NSString*)name;
-+ (FSNodeData*) nodeDataWithFSObject:(DRFSObject*)obj;
-- (id) initWithFSObject:(DRFSObject*)obj;
++ (FSNodeData *)nodeDataWithPath:(NSString *)path;
++ (FSNodeData *)nodeDataWithName:(NSString *)name;
++ (FSNodeData *)nodeDataWithFSObject:(DRFSObject *)obj;
+- (instancetype)initWithFSObject:(DRFSObject*)obj;
 
 - (void)setName:(NSString*)name;
-- (NSString*)name;
-- (NSImage*)icon;
-- (NSString*)kind;
+- (NSString *)name;
+- (NSImage *)icon;
+- (NSString *)kind;
 - (BOOL)isExpandable;
-- (DRFSObject *)fsObject;
+- (DRFSObject *) fsObject;
 
 @end
 
 @interface FSFileNodeData : FSNodeData
+- (instancetype)initWithPath:(NSString *)path;
 @end
 
 @interface FSFolderNodeData : FSNodeData
-{
-	NSMutableArray *calculationFolders;
-}
+- (instancetype)initWithPath:(NSString *)path;
+- (instancetype)initWithName:(NSString *)name;
 @end
 
 @interface FSTreeNode : TreeNode
 {
-NSInteger myNumber;
+    NSInteger myNumber;
 }
 
 - (void)addChild:(TreeNode*)child;
-- (NSInteger) numberOfChildren;
-- (NSArray*) children;
+- (NSInteger)numberOfChildren;
+- (NSArray *)children;
 
-- (id)initWithCoder:(NSCoder *)pCoder;
+- (instancetype)initWithCoder:(NSCoder *)pCoder;
 - (void)encodeWithCoder:(NSCoder *)pCoder;
 
-- (NSInteger) myNumber;
+- (NSInteger)myNumber;
 
 @end

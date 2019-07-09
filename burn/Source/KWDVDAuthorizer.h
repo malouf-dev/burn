@@ -12,25 +12,21 @@
 
 @interface KWDVDAuthorizer : NSObject 
 {
-	NSTask *dvdauthor;
-	BOOL userCanceled;
-	NSTimer *timer;
-	NSTask *ffmpeg;
-	NSTask *spumux;
-	
-	NSDictionary *theme;
-	
-	NSNumber *progressSize;
-	NSInteger fileSize;
+    NSTask *dvdauthor;
+    BOOL userCanceled;
+    NSTimer *timer;
+    NSTask *ffmpeg;
+    NSTask *spumux;
+    
+    NSDictionary *theme;
+    
+    NSNumber *progressSize;
+    NSInteger fileSize;
 }
 
 //Standard DVD-Video
 - (NSInteger)createStandardDVDFolderAtPath:(NSString *)path withFileArray:(NSArray *)fileArray withSize:(NSNumber *)size errorString:(NSString **)error;
 - (void)createStandardDVDXMLAtPath:(NSString *)path withFileArray:(NSArray *)fileArray errorString:(NSString **)error;
-//Standard DVD-Audio
-- (NSInteger)createStandardDVDAudioFolderAtPath:(NSString *)path withFiles:(NSArray *)files errorString:(NSString **)error;
-- (void)startTimer:(NSArray *)object;
-- (void)imageProgress:(NSTimer *)theTimer;
 
 //DVD-Video with menu
 //Create a menu with given files and chapters

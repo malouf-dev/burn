@@ -10,8 +10,8 @@
     IBOutlet id recorderPopup;
     IBOutlet id usedSpaceDisk;
     IBOutlet id writableDisk;
-	
-	NSDictionary *discTypes;
+    
+    NSDictionary *discTypes;
 }
 
 //Main actions

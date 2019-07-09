@@ -4,7 +4,7 @@
 
 @interface KWDataView : NSView
 {
-	IBOutlet id myController;
+    IBOutlet id myController;
 }
 
 - (void)setViewState:(NSNotification *)notif;

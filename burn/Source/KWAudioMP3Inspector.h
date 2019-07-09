@@ -5,20 +5,20 @@
 
 @interface KWAudioMP3Inspector : NSObject
 {
-	IBOutlet id nameField;
-	IBOutlet id sizeField;
-	IBOutlet id iconView;
-	IBOutlet id tabView;
-	
+    IBOutlet id nameField;
+    IBOutlet id sizeField;
+    IBOutlet id iconView;
+    IBOutlet id tabView;
+    
     IBOutlet id imageString;
     IBOutlet id imageView;
     
-	IBOutlet id myView;
+    IBOutlet id myView;
 
-	//Variables
-	NSTableView *currentTableView;
-	NSArray *methodMappings;
-	NSInteger currentIndex;
+    //Variables
+    NSTableView *currentTableView;
+    NSArray *methodMappings;
+    NSInteger currentIndex;
 }
 - (void)updateView:(id)object;
 - (id)getObjectWithSelector:(SEL)selector fromObjects:(NSArray *)objects;

@@ -10,29 +10,30 @@
 #import <DiscRecording/DiscRecording.h>
 #import "KWEraser.h"
 #import "KWEjecter.h"
-#import "KWProgress.h"
+#import "KWProgressManager.h"
 
-@interface KWWindowController : NSObject 
+@interface KWWindowController : NSObject <NSApplicationDelegate, NSUserNotificationCenterDelegate>
 {
-	//Main outlets
-	IBOutlet id burnButton;
-	IBOutlet id defaultBurner;
-	IBOutlet id mainTabView;
-	IBOutlet id mainWindow;
-	IBOutlet id newTabView;
-	IBOutlet id itemHelp;
-	
-	//Toolbar related
-	NSToolbar *toolbar;
-	NSToolbarItem *mainItem;
-	
-	//Variables
-	NSDictionary *myDeviceIdentifier;
-	KWEraser *eraser;
-	KWEjecter *ejecter;
-	KWProgress *progressPanel;
-	BOOL discInserted;
+    //Main outlets
+    IBOutlet id burnButton;
+    IBOutlet id defaultBurner;
+    IBOutlet id mainTabView;
+    IBOutlet id mainWindow;
+    IBOutlet id newTabView;
+    IBOutlet id itemHelp;
+    
+    //Toolbar related
+    NSToolbar *toolbar;
+    NSToolbarItem *mainItem;
+    
+    //Variables
+    NSDictionary *myDeviceIdentifier;
+    KWEraser *eraser;
+    KWEjecter *ejecter;
+    BOOL discInserted;
 }
+
+- (void)showNotificationWithTitle:(NSString *)title withMessage:(NSString *)message withImage:(NSImage *)image;
 
 //Main window actions
 - (IBAction)changeRecorder:(id)sender;

@@ -5,62 +5,45 @@
 #import "KWDiscCreator.h"
 #import "KWTrackProducer.h"
 #import "KWAlert.h"
-#import "LOXI.h"
 
 @implementation KWCopyController
 
-- (id)init
+- (id) init
 {
-	self = [super init];
+    awakeFromNib = NO;
+    
+    self = [super init];
 
-	temporaryFiles = [[NSMutableArray alloc] init];
-	currentInformation = [[NSMutableDictionary alloc] init];
+    temporaryFiles = [[NSMutableArray alloc] init];
 
-	//The user hasn't canceled yet :-)
-	userCanceled = NO;
-	
-	awake = NO;
-	
-	#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-	cdTextBlocks = nil;
-	#endif
+    //The user hasn't canceled yet :-)
+    userCanceled = NO;
 
-	return self;
+    return self;
 }
 
 - (void)dealloc
 {
-	//Stop listening to those notifications
-	[[[NSWorkspace sharedWorkspace] notificationCenter] removeObserver:self];
-	[[NSNotificationCenter defaultCenter] removeObserver:self];
+    //Stop listening to those notifications
+    [[[NSWorkspace sharedWorkspace] notificationCenter] removeObserver:self];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 
-	[temporaryFiles release];
-	temporaryFiles = nil;
-	
-	[currentInformation release];
-	currentInformation = nil;
-	
-	#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-	if (cdTextBlocks)
-	{
-		[cdTextBlocks release];
-		cdTextBlocks = nil;
-	}
-	#endif
 
-	[super dealloc];
+    //Release our strings if needed
+    
+    
+
 }
 
 - (BOOL)acceptsFirstResponder
 {
-	return YES;
+    return YES;
 }
 
 - (void)awakeFromNib
 {
-	[self clearDisk:self];
-	
-	awake = YES;
+    awakeFromNib = YES;
+    [self clearDisk:self];
 }
 
 //////////////////
@@ -73,418 +56,380 @@
 //Show open panel to open a image file
 - (IBAction)openFiles:(id)sender
 {
-	if ([[browseButton title] isEqualTo:NSLocalizedString(@"Open...", nil)])
-	{
-		NSOpenPanel *sheet = [NSOpenPanel openPanel];
-		[sheet setMessage:NSLocalizedString(@"Choose an image file", nil)];
-
-		[sheet beginSheetForDirectory:nil file:nil types:[KWCommonMethods diskImageTypes] modalForWindow:mainWindow modalDelegate:self didEndSelector:@selector(openPanelDidEnd:returnCode:contextInfo:) contextInfo:nil];	
-	}
-	else
-	{
-		[self saveImage:self];
-	}
-}
-
-//If the user clicked OK check the image file
-- (void)openPanelDidEnd:(NSOpenPanel *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
-{
-	[sheet orderOut:self];
-
-	if (returnCode == NSOKButton) 
-		[self checkImage:[sheet filename]];
+    if ([[browseButton title] isEqualTo:NSLocalizedString(@"Open...",nil)])
+    {
+	    NSOpenPanel *sheet = [NSOpenPanel openPanel];
+	    [sheet setMessage:NSLocalizedString(@"Choose an image file",nil)];
+        [sheet beginSheetModalForWindow:mainWindow completionHandler:^(NSModalResponse response)
+        {
+            if (response == NSModalResponseOK)
+            {
+                [self checkImage:[[sheet URL] path]];
+            }
+        }];
+    }
+    else
+    {
+	    [self saveImage:self];
+    }
 }
 
 //Mount a image using hdiutil
 - (IBAction)mountDisc:(id)sender
 {
-	NSString *path = [currentInformation objectForKey:@"Path"];
-
-	if ([[mountButton title] isEqualTo:NSLocalizedString(@"Mount", nil)])
-	{
-		progressPanel = [[KWProgress alloc] init];
-		[progressPanel setTask:NSLocalizedString(@"Mounting disk image", nil)];
-		[progressPanel setStatus:[NSString stringWithFormat:NSLocalizedString(@"Mounting: %@", nil), [nameField stringValue]]];
-		[progressPanel setIcon:[[NSWorkspace sharedWorkspace] iconForFileType:@"iso"]];
-		[progressPanel setMaximumValue:[NSNumber numberWithDouble:0]];
-		[progressPanel setCanCancel:NO];
-		[progressPanel beginSheetForWindow:mainWindow];
-		
-		[NSThread detachNewThreadSelector:@selector(mount:) toTarget:self withObject:path];
-	}
-	else
-	{
-		NSString *unmountPath;
-		
-		if ([[mountButton title] isEqualTo:NSLocalizedString(@"Eject", nil)])
-			unmountPath = [currentInformation objectForKey:@"Mounted Path"];
-		else if ([[mountButton title] isEqualTo:NSLocalizedString(@"Unmount", nil)])
-			unmountPath = [currentInformation objectForKey:@"Image Mounted Path"];
-		
-		[[NSWorkspace sharedWorkspace] unmountAndEjectDeviceAtPath:unmountPath];
-	}
+    if (![currentPath isEqualTo:@""] && [[mountButton title] isEqualTo:NSLocalizedString(@"Mount",nil)])
+    {
+	    progressPanel = [[KWProgressManager alloc] init];
+	    [progressPanel setTask:NSLocalizedString(@"Mounting disk image",nil)];
+	    [progressPanel setStatus:[NSString stringWithFormat:NSLocalizedString(@"Mounting: %@", nil), [nameField stringValue]]];
+	    [progressPanel setIconImage:[[NSWorkspace sharedWorkspace] iconForFileType:@"iso"]];
+	    [progressPanel setMaximumValue:0.0];
+	    [progressPanel setAllowCanceling:NO];
+	    [progressPanel beginSheetForWindow:mainWindow];
+    
+	    [NSThread detachNewThreadSelector:@selector(mount:) toTarget:self withObject:currentPath];
+    }
+    else
+    {
+	    NSString *unmountPath;
+	    
+	    if ([[mountButton title] isEqualTo:NSLocalizedString(@"Eject",nil)]) //&& ![mountedPath isEqualTo:@""])
+    	    unmountPath = mountedPath;
+	    else if ([[mountButton title] isEqualTo:NSLocalizedString(@"Unmount",nil)])
+    	    unmountPath = imageMountedPath;
+	    
+	    [[NSWorkspace sharedWorkspace] unmountAndEjectDeviceAtPath:unmountPath];
+    }
 }
 
 - (void)mount:(NSString *)path
 {
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	
-	NSString *realPath = path;
-	
-	if ([[path pathExtension] isEqualTo:@"dvd"])
-		realPath = [self getIsoForDvdFileAtPath:path];
+    NSString *string;
+    NSArray *arguments = [NSArray arrayWithObjects:@"mount",@"-plist",@"-noverify",@"-noautofsck",path, nil];
+    BOOL status = [KWCommonMethods launchNSTaskAtPath:@"/usr/bin/hdiutil" withArguments:arguments outputError:NO outputString:YES output:&string];
 
-	NSString *string;
-	NSArray *arguments = [NSArray arrayWithObjects:@"mount", @"-plist", @"-noverify", @"-noautofsck", realPath, nil];
-	BOOL status = [KWCommonMethods launchNSTaskAtPath:@"/usr/bin/hdiutil" withArguments:arguments outputError:NO outputString:YES output:&string];
-	
-	[progressPanel endSheet];
-	[progressPanel release];
-	progressPanel = nil;
+    if (!status || [string rangeOfString:@"<key>mount-point</key>"].length == 0)
+    {
+        [progressPanel endSheetWithCompletion:^
+        {
+            KWAlert *alert = [[KWAlert alloc] init];
+            [alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
+            [alert setMessageText:NSLocalizedString(@"Mounting image failed",nil)];
+            [alert setInformativeText:NSLocalizedString(@"There was a problem mounting the image",nil)];
+            [alert setDetails:string];
+            [alert setAlertStyle:NSWarningAlertStyle];
+            
+            [alert beginSheetModalForWindow:mainWindow modalDelegate:self didEndSelector:nil contextInfo:nil];
+        }];
+    }
+    else
+    {
+        [progressPanel endSheet];
+        
+	    if (imageMountedPath)
+	    {
+    	    imageMountedPath = nil;
+	    }
 
-	if (status && [string rangeOfString:realPath].length > 0 && [string rangeOfString:@"mount-point"].length > 0)
-	{
-		NSString *mountPoint = [[[[[[string componentsSeparatedByString:@"<key>mount-point</key>"] objectAtIndex:1] componentsSeparatedByString:@"<string>"] objectAtIndex:1] componentsSeparatedByString:@"</string>"] objectAtIndex:0];
-		[currentInformation setObject:mountPoint forKey:@"Image Mounted Path"];
-	}
-
-	[pool release];
-	pool = nil;
+	    imageMountedPath = [[[[[[[string componentsSeparatedByString:@"<key>mount-point</key>"] objectAtIndex:1] componentsSeparatedByString:@"<string>"] objectAtIndex:1] componentsSeparatedByString:@"</string>"] objectAtIndex:0] copy];
+    }
 }
 
 //Here we will be checking if it is a valid image / if the file exists
 //Also we get the properties
 - (BOOL)checkImage:(NSString *)path
 {
-	#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-	if (cdTextBlocks)
-	{
-		[cdTextBlocks release];
-		cdTextBlocks = nil;
-	}
-	#endif
+    NSFileManager *defaultManager = [NSFileManager defaultManager];
+    NSWorkspace *sharedWorkspace = [NSWorkspace sharedWorkspace];
 
-	NSFileManager *defaultManager = [NSFileManager defaultManager];
-	NSWorkspace *sharedWorkspace = [NSWorkspace sharedWorkspace];
-	
-	NSString *workingPath = path;
-	NSString *fileSystem;
-	long long size = 0;
-	BOOL canBeMounted = YES;
-	NSString *browseButtonText = nil;
-	NSString *currentMountedPath = nil;
-	NSString *realPath;
+    NSString *fileSystem = nil;
+    long long size = 0;
+    BOOL canBeMounted = YES;
+    NSString *browseButtonText = nil;
+    NSString *realPath = nil;
+    NSString *currentMountedPath = nil;
 
-	NSString *alertMessage = nil;
-	NSString *alertInformation;
-	
-	NSString *string;
+    NSString *alertMessage = nil;
+    NSString *alertInformation = nil;
+    
+    NSString *workingPath = path;
+    NSString *string;
+    	    
+    if ([self isImageMounted:path])
+	    workingPath = imageMountedPath;
+    
+    if ([[sharedWorkspace mountedLocalVolumePaths] containsObject:workingPath])
+	    realPath = [self getRealDevicePath:workingPath];
+    else
+	    realPath = workingPath;
 
-	BOOL isPanther = ([KWCommonMethods OSVersion] < 0x1040);
-			
-	if ([KWCommonMethods OSVersion] >= 0x1060 && [self isImageMounted:path])
-		workingPath = [currentInformation objectForKey:@"Image Mounted Path"];
-		
-	if ([[sharedWorkspace mountedLocalVolumePaths] containsObject:workingPath])
-		realPath = [self getRealDevicePath:workingPath];
-	else
-		realPath = workingPath;
-		
-	NSString *pathExtension = [[workingPath pathExtension] lowercaseString];
+    if ([defaultManager fileExistsAtPath:workingPath])
+    {
+	    if ([[[workingPath pathExtension] lowercaseString] isEqualTo:@"dvd"])
+    	    realPath = [self getIsoForDvdFileAtPath:workingPath];
+	    
+	    if ([[[workingPath pathExtension] lowercaseString] isEqualTo:@"cue"])
+	    {
+    	    fileSystem = NSLocalizedString(@"Cue file",nil);
+    	    size = [self cueImageSizeAtPath:workingPath];
+    	    canBeMounted = NO;
+    	    
+    	    if (size == -1)
+    	    {
+	    	    alertMessage = NSLocalizedString(@"Missing files",nil);
+	    	    alertInformation = [NSString stringWithFormat:NSLocalizedString(@"Some files specified in the %@ file are missing.", nil), @"cue"];
+    	    }
+    	    
+	    }
+	    else if ([[[workingPath pathExtension] lowercaseString] isEqualTo:@"isoinfo"])
+	    {
+    	    fileSystem = NSLocalizedString(@"Audio-CD Image",nil);
+    	    NSDictionary *infoDict = [NSDictionary dictionaryWithContentsOfFile:workingPath];
+    	    
+    	    NSArray *sessions = [infoDict objectForKey:@"Sessions"];
 
-	if (isPanther && [[NSArray arrayWithObjects:@"sparseimage", @"img", @"dmg", nil] containsObject:pathExtension])
-	{
-		alertMessage = NSLocalizedString(@"Unsupported Image", nil);
-		alertInformation = NSLocalizedString(@"Image not supported on Panther.\n\nTo still use it:\nMount the image and drop the mounted image in the window.", nil);
-	}
-	else if ([defaultManager fileExistsAtPath:workingPath])
-	{
-		if ([pathExtension isEqualTo:@"dvd"])
-			realPath = [self getIsoForDvdFileAtPath:workingPath];
-		
-		if ([pathExtension isEqualTo:@"cue"])
-		{
-			fileSystem = NSLocalizedString(@"Cue file",nil);
-			size = [self cueImageSizeAtPath:workingPath];
-			canBeMounted = NO;
-			
-			if (size == -1)
-			{
-				alertMessage = NSLocalizedString(@"Missing files",nil);
-				alertInformation = [NSString stringWithFormat:NSLocalizedString(@"Some files specified in the %@ file are missing.", nil), @"cue"];
-			}
-			
-		}
-		else if ([pathExtension isEqualTo:@"loxi"])
-		{
-			fileSystem = NSLocalizedString(@"Loxi image", nil);
-		
-			NSXMLElement *rootElement = [[LOXI LOXIXmlDocumentForFileAtPath:workingPath] rootElement];
-			NSArray *textBlocks = [rootElement elementsForName:@"cdtext"];
-			
-			if (textBlocks)
-				cdTextBlocks = [[LOXI arrayOfCDTextBlocksForXMLElement:[textBlocks objectAtIndex:0]] retain];
-				
-			NSArray *tracks = [[KWTrackProducer alloc] getTracksFromLoxiFile:workingPath];
+    	    NSInteger y = 0;
+    	    size = 0;
+    	    for (y=0;y<[sessions count];y++)
+    	    {
+	    	    NSDictionary *session = [sessions objectAtIndex:y];
+	    	    
+	    	    size = size + [[session objectForKey:@"Leadout Block"] intValue];
+    	    }
+    	    
+    	    
+    	    size = size * 2352;
 
-			NSInteger i;
-			size = 0;
-			for (i = 0; i < [tracks count]; i ++)
-			{
-				DRTrack *track = [tracks objectAtIndex:i];
-				
-				NSInteger trackSize = [[[track properties] objectForKey:DRTrackLengthKey] integerValue];
-				NSInteger blockSize = [[[track properties] objectForKey:DRBlockSizeKey] integerValue];
-				
-				size = size + (trackSize * blockSize);
-			}
-			
-			size = size;
-			
-			canBeMounted = NO;
-		}
-		else if ([pathExtension isEqualTo:@"isoinfo"])
-		{
-			fileSystem = NSLocalizedString(@"Audio-CD Image",nil);
-			NSDictionary *infoDict = [NSDictionary dictionaryWithContentsOfFile:workingPath];
-			
-			NSArray *sessions = [infoDict objectForKey:@"Sessions"];
+    	    canBeMounted = NO;
+    	    
+    	    /*if (size == -1)
+    	    {
+	    	    alertMessage = NSLocalizedString(@"Missing files",nil);
+	    	    alertInformation = [NSString stringWithFormat:NSLocalizedString(@"Some files specified in the %@ file are missing.", nil), @"info"];
+    	    }*/
+    	    
+	    }
+	    else if ([[[workingPath pathExtension] lowercaseString] isEqualTo:@"toc"])
+	    {
+    	    //Check if there is a mode2, if so it's not supported by
+    	    //Apple's Disc burning framework, so show a allert
+    	    if ([[KWCommonMethods stringWithContentsOfFile:workingPath] rangeOfString:@"MODE2"].length == 0)
+    	    {
+	    	    NSDictionary *attrib;
+	    	    NSArray *paths = [[KWCommonMethods stringWithContentsOfFile:workingPath] componentsSeparatedByString:@"FILE \""];
+	    	    NSString *filePath;
+	    	    NSString *previousPath;
+	    	    BOOL fileAreCorrect = YES;
+	    	    
+	    	    NSInteger z;
+	    	    for (z=1;z<[paths count];z++)
+	    	    {
+    	    	    filePath = [[[paths objectAtIndex:z] componentsSeparatedByString:@"\""] objectAtIndex:0];
+    	    
+    	    	    if ([[filePath stringByDeletingLastPathComponent] isEqualTo:@""])
+	    	    	    filePath = [[workingPath stringByDeletingLastPathComponent] stringByAppendingPathComponent:filePath];
+    	    	    
+    	    	    if ([defaultManager fileExistsAtPath:filePath])
+    	    	    {
+	    	    	    if (![filePath isEqualTo:previousPath])
+	    	    	    {
+    	    	    	    attrib = [defaultManager attributesOfItemAtPath:filePath error:nil];
+    	    	    	    size = size + [attrib[NSFileSize] intValue];
+	    	    	    }
+    	    	    }
+    	    	    else
+    	    	    {
+	    	    	    fileAreCorrect = NO;
+	    	    	    break;
+    	    	    }
+	    	    
+    	    	    previousPath = filePath;
+	    	    }
+	    	    
+	    	    if (fileAreCorrect)
+	    	    {
+    	    	    fileSystem = NSLocalizedString(@"Toc file",nil);
+    	    	    size = [self cueImageSizeAtPath:workingPath];
+    	    	    canBeMounted = NO;
+	    	    }
+	    	    else
+	    	    {
+    	    	    alertMessage = NSLocalizedString(@"Missing files",nil);
+    	    	    alertInformation = [NSString stringWithFormat:NSLocalizedString(@"Some files specified in the %@ file are missing.", nil), @"toc"];
+	    	    }
+    	    }
+    	    else
+    	    {
+	    	    alertMessage = NSLocalizedString(@"Unsuported Toc file",nil);
+	    	    alertInformation = NSLocalizedString(@"Only Mode1 and Audio tracks are supported",nil);
+    	    }
+	    }
+	    else
+	    {
+    	    NSArray *arguments = [NSArray arrayWithObjects:@"imageinfo",@"-plist",realPath, nil];
+    	    BOOL status = [KWCommonMethods launchNSTaskAtPath:@"/usr/bin/hdiutil" withArguments:arguments outputError:NO outputString:YES output:&string];
+    	    
+    	    if (status)
+    	    {
+	    	    if(![string isEqualToString:@""])
+	    	    {
+    	    	    NSDictionary *root = [string propertyList];
+	    	    
+    	    	    fileSystem = NSLocalizedString([root objectForKey:@"Format"],nil);
 
-			NSInteger i;
-			size = 0;
-			for (i = 0; i < [sessions count]; i++)
-			{
-				NSDictionary *session = [sessions objectAtIndex:i];
-				
-				size = size + [[session objectForKey:@"Leadout Block"] integerValue];
-			}
-			
-			size = size * 2352;
+    	    	    if ([[workingPath pathExtension] isEqualTo:@""])
+                    {
+	    	    	    size = [KWCommonMethods getSizeFromMountedVolume:workingPath] * 512;
+                    }
+    	    	    else
+                    {
+	    	    	    size = [[defaultManager attributesOfItemAtPath:realPath error:nil][NSFileSize] longLongValue];
+    	    	    }
+	    	    }
 
-			canBeMounted = NO;
-			
-		}
-		else if ([pathExtension isEqualTo:@"toc"] && !isPanther)
-		{
-			//Check if there is a mode2, if so it's not supported by
-			//Apple's Disc burning framework, so show a alert
-			if (![[KWCommonMethods stringWithContentsOfFile:workingPath] rangeOfString:@"MODE2"].length > 0)
-			{
-				NSDictionary *attrib;
-				NSArray *paths = [[KWCommonMethods stringWithContentsOfFile:workingPath] componentsSeparatedByString:@"FILE \""];
-				NSString *filePath;
-				NSString *previousPath;
-				BOOL fileAreCorrect = YES;
-				
-				NSInteger i;
-				for (i = 1; i < [paths count]; i ++)
-				{
-					filePath = [[[paths objectAtIndex:i] componentsSeparatedByString:@"\""] objectAtIndex:0];
-			
-					if ([[filePath stringByDeletingLastPathComponent] isEqualTo:@""])
-						filePath = [[workingPath stringByDeletingLastPathComponent] stringByAppendingPathComponent:filePath];
-					
-					if ([defaultManager fileExistsAtPath:filePath])
-					{
-						if (![filePath isEqualTo:previousPath])
-						{
-							attrib = [defaultManager fileAttributesAtPath:filePath traverseLink:YES];
-							size = size + [[attrib objectForKey:NSFileSize] integerValue];
-						}
-					}
-					else
-					{
-						fileAreCorrect = NO;
-						break;
-					}
-				
-					previousPath = filePath;
-				}
-				
-				if (fileAreCorrect)
-				{
-					fileSystem = NSLocalizedString(@"Toc file",nil);
-					size = [self cueImageSizeAtPath:workingPath];
-					canBeMounted = NO;
-				}
-				else
-				{
-					alertMessage = NSLocalizedString(@"Missing files",nil);
-					alertInformation = [NSString stringWithFormat:NSLocalizedString(@"Some files specified in the %@ file are missing.", nil), @"toc"];
-				}
-			}
-			else
-			{
-				alertMessage = NSLocalizedString(@"Unsuported Toc file",nil);
-				alertInformation = NSLocalizedString(@"Only Mode1 and Audio tracks are supported",nil);
-			}
-		}
-		else
-		{
-			NSArray *arguments = [NSArray arrayWithObjects:@"imageinfo", @"-plist", realPath, nil];
-			BOOL status = [KWCommonMethods launchNSTaskAtPath:@"/usr/bin/hdiutil" withArguments:arguments outputError:NO outputString:YES output:&string];
-			
-			if (status)
-			{
-				if(![string isEqualToString:@""])
-				{
-					NSDictionary *root = [string propertyList];
-				
-					fileSystem = NSLocalizedString([root objectForKey:@"Format"], nil);
+	    	    if ([[sharedWorkspace mountedLocalVolumePaths] containsObject:workingPath])
+	    	    {
+    	    	    currentMountedPath = workingPath;
+	    	    }
 
-					if ([pathExtension isEqualTo:@""])
-					{
-						size = [KWCommonMethods getSizeFromMountedVolume:workingPath] * 512;
-					}
-					else
-					{
-						id tmp = [[defaultManager fileAttributesAtPath:realPath traverseLink:YES] objectForKey:NSFileSize];
-						size = [tmp longLongValue];
-					}
-				}
+	    	    if ([self isAudioCD])
+    	    	    fileSystem = NSLocalizedString(@"Audio CD",nil);
+	    	    else
+    	    	    browseButtonText = NSLocalizedString(@"Save...",nil);
+    	    }
+    	    else
+    	    {
+	    	    alertMessage = NSLocalizedString(@"Unknown disk image",nil);
+	    	    alertInformation = NSLocalizedString(@"Can't determine disc format",nil);
+    	    }
+    	    
+    	    NSNotificationCenter *workspaceCenter = [sharedWorkspace notificationCenter];
+    	    [workspaceCenter addObserver:self selector:@selector(deviceUnmounted:) name:NSWorkspaceDidUnmountNotification object:nil];
+    	    [workspaceCenter addObserver:self selector:@selector(deviceMounted:) name:NSWorkspaceDidMountNotification object:nil];
+	    }
+    }
+    
+    if (!alertMessage)
+    {
+	    currentPath = [workingPath copy];
+	    [nameField setStringValue:[defaultManager displayNameAtPath:workingPath]];
+	    [iconView setImage:[sharedWorkspace iconForFile:workingPath]];
+	    [fileSystemField setStringValue:fileSystem];
+	    [sizeField setStringValue:[KWCommonMethods makeSizeFromFloat:size]];
+	    blocks = size / 2048;
+	    [mountButton setEnabled:canBeMounted];
+	    	    
+	    if (browseButtonText)
+    	    [browseButton setTitle:browseButtonText];
+    	    
+	    if (currentMountedPath)
+    	    mountedPath = [currentMountedPath copy];
+	    
+	    [dropText setHidden:YES];
+	    [dropIcon setHidden:YES];
+	    [clearDisk setHidden:NO];
+	    
+	    [self changeMountState:YES forDevicePath:workingPath];
+    	    	    
+	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeBurnStatus" object:[NSNumber numberWithBool:YES]];
 
-				if ([[sharedWorkspace mountedLocalVolumePaths] containsObject:workingPath])
-				{
-					currentMountedPath = workingPath;
-				}
-
-				if ([self isAudioCD])
-					fileSystem = NSLocalizedString(@"Audio CD", nil);
-				else
-					browseButtonText = NSLocalizedString(@"Save...", nil);
-			}
-			else
-			{
-				alertMessage = NSLocalizedString(@"Unknown disk image",nil);
-				alertInformation = NSLocalizedString(@"Can't determine disc format",nil);
-			}
-			
-			NSNotificationCenter *workspaceCenter = [sharedWorkspace notificationCenter];
-			[workspaceCenter addObserver:self selector:@selector(deviceUnmounted:) name:NSWorkspaceDidUnmountNotification object:nil];
-			[workspaceCenter addObserver:self selector:@selector(deviceMounted:) name:NSWorkspaceDidMountNotification object:nil];
-		}
-	}
-	
-	if (!alertMessage)
-	{
-		//Set window image information
-		[iconView setImage:[sharedWorkspace iconForFile:workingPath]];
-		[nameField setStringValue:[defaultManager displayNameAtPath:workingPath]];
-		[fileSystemField setStringValue:fileSystem];
-		[sizeField setStringValue:[KWCommonMethods makeSizeFromFloat:size]];
-		[mountButton setEnabled:canBeMounted];
-		
-		//Set current file information for later use
-		[currentInformation setObject:workingPath forKey:@"Path"];
-		[currentInformation setObject:[[workingPath pathExtension] lowercaseString] forKey:@"Extension"];
-		[currentInformation setObject:[NSNumber numberWithCGFloat:size / 2048] forKey:@"Blocks"];
-		
-		if (currentMountedPath)
-		{
-			[currentInformation setObject:currentMountedPath forKey:@"Mounted Path"];
-			[currentInformation setObject:realPath forKey:@"Device Path"];
-		}
-				
-		if (browseButtonText)
-			[browseButton setTitle:browseButtonText];
-		
-		[dropText setHidden:YES];
-		[dropIcon setHidden:YES];
-		[clearDisk setHidden:NO];
-		
-		[self changeMountState:YES forDevicePath:workingPath];
-					
-		[[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeBurnStatus" object:[NSNumber numberWithBool:YES]];
-
-		return YES;
-	}
-	else
-	{
-		KWAlert *alert = [[[KWAlert alloc] init] autorelease];
-		[alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
-		[alert setMessageText:alertMessage];
-		[alert setInformativeText:alertInformation];
-		[alert setAlertStyle:NSWarningAlertStyle];
-		[alert setDetails:string];
-				
-		[alert beginSheetModalForWindow:mainWindow modalDelegate:self didEndSelector:nil contextInfo:nil];
-	
-		return NO;
-	}
+	    return YES;
+    }
+    else
+    {
+	    KWAlert *alert = [[KWAlert alloc] init];
+	    [alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
+	    [alert setMessageText:alertMessage];
+	    [alert setInformativeText:alertInformation];
+	    [alert setAlertStyle:NSWarningAlertStyle];
+	    [alert setDetails:string];
+	    	    
+	    [alert beginSheetModalForWindow:mainWindow modalDelegate:self didEndSelector:nil contextInfo:nil];
+    
+	    return NO;
+    }
 }
 
 - (BOOL)isImageMounted:(NSString *)path
 {
-	NSString *realPath = path;
-	
-	if ([[path pathExtension] isEqualTo:@"dvd"])
-		realPath = [self getIsoForDvdFileAtPath:path];
+    NSString *string;
+    NSArray *arguments = [NSArray arrayWithObjects:@"info",@"-plist", nil];
+    BOOL status = [KWCommonMethods launchNSTaskAtPath:@"/usr/bin/hdiutil" withArguments:arguments outputError:NO outputString:YES output:&string];
 
-	NSString *string;
-	NSArray *arguments = [NSArray arrayWithObjects:@"info",@"-plist", nil];
-	BOOL status = [KWCommonMethods launchNSTaskAtPath:@"/usr/bin/hdiutil" withArguments:arguments outputError:NO outputString:YES output:&string];
+    if (status)
+    {
+	    if ([string rangeOfString:path].length > 0 && [string rangeOfString:@"mount-point"].length > 0)
+	    {
+    	    if (imageMountedPath)
+    	    {
+	    	    imageMountedPath = nil;
+    	    }
+	    
+    	    imageMountedPath = [[[[[[[string componentsSeparatedByString:@"<key>mount-point</key>"] objectAtIndex:1] componentsSeparatedByString:@"<string>"] objectAtIndex:1] componentsSeparatedByString:@"</string>"] objectAtIndex:0] copy];
+    	    
+    	    return YES;
+	    }
+	    else
+	    {
+    	    return NO;
+	    }
+    }
 
-	if (status && [string rangeOfString:realPath].length > 0 && [string rangeOfString:@"mount-point"].length > 0)
-	{
-		NSString *mountPoint = [[[[[[string componentsSeparatedByString:@"<key>mount-point</key>"] objectAtIndex:1] componentsSeparatedByString:@"<string>"] objectAtIndex:1] componentsSeparatedByString:@"</string>"] objectAtIndex:0];
-		[currentInformation setObject:mountPoint forKey:@"Image Mounted Path"];
-		
-		return YES;
-	}
-
-	return NO;
+    return NO;
 }
 
 - (IBAction)scanDisks:(id)sender
 {
-	scanner = [[KWDiscScanner alloc] init];
-	[scanner beginSetupSheetForWindow:mainWindow modelessDelegate:self didEndSelector:@selector(scannerDidEnd:returnCode:contextInfo:) contextInfo:nil];
+    scanner = [[KWDiscScanner alloc] init];
+    [scanner beginSetupSheetForWindow:mainWindow modelessDelegate:self didEndSelector:@selector(scannerDidEnd:returnCode:contextInfo:) contextInfo:nil];
 }
 
 - (void)scannerDidEnd:(NSPanel *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
 {
-	[sheet orderOut:self];
+    [sheet orderOut:self];
 
-	if (returnCode == NSOKButton) 
-	{
-		[self checkImage:[scanner disk]];
-	}
+    if (returnCode == NSOKButton) 
+    {
+	    [self checkImage:[scanner disk]];
+    }
 
-	[scanner release];
-	scanner = nil;
 }
 
 - (IBAction)clearDisk:(id)sender
 {
-	#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-	if (cdTextBlocks)
-	{
-		[cdTextBlocks release];
-		cdTextBlocks = nil;
-	}
-	#endif
+    NSWorkspace *sharedWorkspace = [NSWorkspace sharedWorkspace];
 
-	NSWorkspace *sharedWorkspace = [NSWorkspace sharedWorkspace];
+    [[sharedWorkspace notificationCenter] removeObserver:self];
 
-	[[sharedWorkspace notificationCenter] removeObserver:self];
+    [iconView setImage:[sharedWorkspace iconForFileType:@"iso"]];
+    [nameField setStringValue:NSLocalizedString(@"Copy",nil)];
+    [sizeField setStringValue:@""];
+    [fileSystemField setStringValue:@""];
 
-	[iconView setImage:[sharedWorkspace iconForFileType:@"iso"]];
-	[nameField setStringValue:NSLocalizedString(@"Copy", nil)];
-	[sizeField setStringValue:@""];
-	[fileSystemField setStringValue:@""];
-
-	[currentInformation removeAllObjects];
-	
-	[mountButton setEnabled:NO];
-	[dropText setHidden:NO];
-	[dropIcon setHidden:NO];
-	[clearDisk setHidden:YES];
-	
-	[mountButton setTitle:NSLocalizedString(@"Mount",nil)];
-	[mountMenu setTitle:NSLocalizedString(@"Mount Image", nil)];
-	[browseButton setTitle:NSLocalizedString(@"Open...",nil)];
-	
-	[[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeBurnStatus" object:[NSNumber numberWithBool:NO]];
+    if (currentPath)
+    {
+	    currentPath = nil;
+    }
+    
+    if (mountedPath)
+    {
+	    mountedPath = nil;
+    }
+    
+    if (imageMountedPath)
+    {
+	    imageMountedPath = nil;
+    }
+    
+    [mountButton setEnabled:NO];
+    [dropText setHidden:NO];
+    [dropIcon setHidden:NO];
+    [clearDisk setHidden:YES];
+    [mountButton setTitle:NSLocalizedString(@"Mount",nil)];
+    [mountMenu setTitle:NSLocalizedString(@"Mount Image", nil)];
+    [browseButton setTitle:NSLocalizedString(@"Open...",nil)];
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeBurnStatus" object:[NSNumber numberWithBool:NO]];
 }
 
 ///////////////////////////
@@ -496,261 +441,237 @@
 
 - (void)burn:(id)sender
 {
-	shouldBurn = YES;
+    shouldBurn = YES;
 
-	[myDiscCreationController burnDiscWithName:[nameField stringValue] withType:3];
+    if (mountedPath)
+    {
+	    NSString *workingPath = currentPath;
+	    if ([[[NSWorkspace sharedWorkspace] mountedLocalVolumePaths] containsObject:workingPath])
+    	    workingPath = [self getRealDevicePath:currentPath];
+    
+	    NSString *path = [@"/dev/" stringByAppendingString:[[workingPath componentsSeparatedByString:@"r"] objectAtIndex:1]];
+	    NSString *disc = [@"/dev/disk" stringByAppendingString:[[[[path componentsSeparatedByString:@"/dev/disk"] objectAtIndex:1] componentsSeparatedByString:@"s"] objectAtIndex:0]];
+	    savedPath = [disc copy];
+    }
+
+    [myDiscCreationController burnDiscWithName:[nameField stringValue] withType:3];
 }
 
 - (void)saveImage:(id)sender
 {
-	shouldBurn = NO;
+    shouldBurn = NO;
 
-	[myDiscCreationController saveImageWithName:[nameField stringValue] withType:3 withFileSystem:@""];
+    [myDiscCreationController saveImageWithName:[nameField stringValue] withType:3 withFileSystem:@""];
 }
 
-- (id)myTrackWithBurner:(KWBurner *)burner errorString:(NSString **)error andLayerBreak:(NSNumber **)layerBreak
+- (id)myTrackWithErrorString:(NSString **)error andLayerBreak:(NSNumber**)layerBreak
 {
-	NSString *currentPath = [currentInformation objectForKey:@"Path"];
-	NSString *pathExtension = [currentInformation objectForKey:@"Extension"];
-	NSString *mountedPath = [currentInformation objectForKey:@"Mounted Path"];
-	
-	BOOL isPanther = ([KWCommonMethods OSVersion] < 0x1040);
-	
-	if ([pathExtension isEqualTo:@"loxi"])
-	{
-		#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-		if ([KWCommonMethods OSVersion] >= 0x1040)
-		{
-			NSMutableDictionary *burnProperties = [NSMutableDictionary dictionary];
-			
-			[burnProperties setObject:cdTextBlocks forKey:DRCDTextKey];
-			
-			id firstBlock = [cdTextBlocks objectAtIndex:0];
-			id mcn = [firstBlock objectForKey:DRCDTextMCNISRCKey ofTrack:0];
-			if (mcn)
-				[burnProperties setObject:mcn forKey:DRMediaCatalogNumberKey];
-			
-				[burner addBurnProperties:burnProperties];
-		}
-		#endif
-	
-		return [[KWTrackProducer alloc] getTracksFromLoxiFile:currentPath];
-	}
-	else if ([pathExtension isEqualTo:@"isoinfo"])
-	{
-		NSDictionary *infoDict = [NSDictionary dictionaryWithContentsOfFile:currentPath];
-	
-		return [[KWTrackProducer alloc] getTracksOfAudioCD:[[currentPath stringByDeletingPathExtension] stringByAppendingPathExtension:@"iso"] withToc:infoDict];
-	}
+    if ([[[currentPath pathExtension] lowercaseString] isEqualTo:@"isoinfo"])
+    {
+	    NSDictionary *infoDict = [NSDictionary dictionaryWithContentsOfFile:currentPath];
+    
+	    return [[KWTrackProducer alloc] getTracksOfAudioCD:[[currentPath stringByDeletingPathExtension] stringByAppendingPathExtension:@"iso"] withToc:infoDict];
+    }
 
-	if (!mountedPath)
-	{
-		if ([pathExtension isEqualTo:@"cue"] && isPanther)
-		{
-			return [[KWTrackProducer alloc] getTracksOfCueFile:currentPath];
-		}
-		else
-		{
-			NSString *workPath;
-			if ([pathExtension isEqualTo:@"dvd"]) 
-			{
-				workPath  = [self getIsoForDvdFileAtPath: currentPath];
-				*layerBreak = [self getLayerBreakForDvdFileAtPath: currentPath];
-			}
-			else
-				workPath  = currentPath;
-			
-			if (isPanther)
-				return [[KWTrackProducer alloc] getTrackForImage:workPath withSize:0];
-			#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-			else
-				return [DRBurn layoutForImageFile:workPath];
-			#endif
-		}
-	}
-	else
-	{
-		NSString *deviceMediaPath;
+    if (!mountedPath)
+    {
+        NSString *workPath;
+        if ([[currentPath pathExtension] isEqualTo:@"dvd"])
+        {
+            workPath  = [self getIsoForDvdFileAtPath: currentPath];
+            *layerBreak = [self getLayerBreakForDvdFileAtPath: currentPath];
+        }
+        else
+        {
+            workPath  = currentPath;
+        }
+    
+        return [DRBurn layoutForImageFile:workPath];
+    }
+    else
+    {
+	    NSString *deviceMediaPath;
 
-		if ([[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaInfoKey])
-			deviceMediaPath = [@"/dev/" stringByAppendingString:[[[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaInfoKey] objectForKey:DRDeviceMediaBSDNameKey]];
-		else
-			deviceMediaPath = @"";
-		
-		NSString *workingPath = currentPath;
-		if ([[[NSWorkspace sharedWorkspace] mountedLocalVolumePaths] containsObject:workingPath])
-			workingPath = [self getRealDevicePath:currentPath];
-	
-		NSString *disc = [@"/dev/disk" stringByAppendingString:[[[[workingPath componentsSeparatedByString:@"/dev/disk"] objectAtIndex:1] componentsSeparatedByString:@"s"] objectAtIndex:0]];
-		NSString *outputFile;
-		NSDictionary *tocFile = nil;
-	
-		if (![disc isEqualTo:deviceMediaPath] | shouldBurn == NO)
-		{
-			outputFile = workingPath;
-			[[[NSWorkspace sharedWorkspace] notificationCenter] removeObserver:self];
-		}
-		else
-		{
-			outputFile = [KWCommonMethods temporaryLocation:[[nameField stringValue] stringByAppendingPathExtension:@"iso"] saveDescription:NSLocalizedString(@"Choose a location to save a copy of the disc",nil)];
-			
-			if (outputFile)
-				[temporaryFiles addObject:outputFile];
-			else
-				return [NSNumber numberWithInteger:2];
-		}
-		
-		if ([[NSFileManager defaultManager] fileExistsAtPath:[mountedPath stringByAppendingPathComponent:@".TOC.plist"]])
-		{
-			tocFile = [NSDictionary dictionaryWithContentsOfFile:[mountedPath stringByAppendingPathComponent:@".TOC.plist"]];
-		
-			NSArray *arguments = [NSArray arrayWithObjects:@"unmount",mountedPath,nil];
-			NSString *errorString;
-			BOOL status = [KWCommonMethods launchNSTaskAtPath:@"/usr/bin/hdiutil" withArguments:arguments outputError:NO outputString:YES output:&errorString];
-			
-			if (!status)
-			{
-				*error = [NSString stringWithFormat:@"KWConsole:\nTask: hdiutil\n%@", errorString];
-				return [NSNumber numberWithInteger:0];
-			}
-		}
-	
-		if ([disc isEqualTo:deviceMediaPath] && shouldBurn == YES)
-		{
-			cp = [[NSTask alloc] init];
-			[cp setLaunchPath:@"/bin/cp"];
-			[cp setArguments:[NSArray arrayWithObjects:workingPath, outputFile, nil]];
-			NSFileHandle *handle = [NSFileHandle fileHandleWithNullDevice];
-			NSPipe *errorPipe = [[NSPipe alloc] init];
-			NSFileHandle *errorHandle = [errorPipe fileHandleForReading];
-			[cp setStandardOutput:handle];
-			[cp setStandardError:errorPipe];
-			
-			
-			NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
-			
-			[defaultCenter addObserver:self selector:@selector(stopImageing) name:@"KWStopImaging" object:nil];
-			[defaultCenter postNotificationName:@"KWCancelNotificationChanged" object:@"KWStopImaging"];
-			[defaultCenter postNotificationName:@"KWStatusChanged" object:NSLocalizedString(@"Copying disc", Localized)];
-			[defaultCenter postNotificationName:@"KWMaximumValueChanged" object:[NSNumber numberWithCGFloat:[[self totalSize] cgfloatValue]]];
-		
-			[self performSelectorOnMainThread:@selector(startTimer:) withObject:outputFile waitUntilDone:NO];
-			
-			[KWCommonMethods logCommandIfNeeded:cp];
-			[cp launch];
-			
-			*error = [NSString stringWithFormat:@"KWConsole:\nTask: cp\n%@", [[[NSString alloc] initWithData:[errorHandle readDataToEndOfFile] encoding:NSUTF8StringEncoding] autorelease]];
-			
-			[cp waitUntilExit];
-			
-			[defaultCenter postNotificationName:@"KWCancelNotificationChanged" object:nil];
-			[defaultCenter removeObserver:self name:@"KWStopImaging" object:nil];
-			[timer invalidate];
-			
-			NSInteger status = [cp terminationStatus];
-			
-			[cp release];
-			cp = nil;
-		
-			if (!status == 0 && userCanceled == NO)
-			{
-				[KWCommonMethods removeItemAtPath:outputFile];
-				[self remount:disc];
-				
-				return [NSNumber numberWithInteger:1];
-			}
-			else if (!status == 0 && userCanceled == YES)
-			{
-				[KWCommonMethods removeItemAtPath:outputFile];
-				[self remount:disc];
-				
-				return [NSNumber numberWithInteger:2];
-			}
-			
-			if (![[KWCommonMethods savedDevice] ejectMedia])
-				return [NSNumber numberWithInteger:1];
-		}
-		
-		if (tocFile)
-		{
-			if (![workingPath isEqualTo:deviceMediaPath] | shouldBurn == NO)
-			{
-				[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(remount:) name:@"KWDoneBurning" object:nil];
-			
-				return [[KWTrackProducer alloc] getTracksOfAudioCD:workingPath withToc:tocFile];
-			}
-			else
-			{
-				NSString *infoFile = [[outputFile stringByDeletingPathExtension] stringByAppendingPathExtension:@"isoInfo"];
-				[tocFile writeToFile:infoFile atomically:YES];
-			
-				return [[KWTrackProducer alloc] getTracksOfAudioCD:outputFile withToc:tocFile];
-			}
-		}
-		else if ([KWCommonMethods OSVersion] < 0x1040)
-		{
-			float blocks = [[currentInformation objectForKey:@"Blocks"] cgfloatValue];
-			return [[KWTrackProducer alloc] getTrackForImage:outputFile withSize:blocks];
-		}
-		#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-		else
-		{
-			return [DRBurn layoutForImageFile:outputFile];
-		}
-		#endif
-	}
-	
-	return [NSNumber numberWithInteger:0];
+	    if ([[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaInfoKey])
+    	    deviceMediaPath = [@"/dev/" stringByAppendingString:[[[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaInfoKey] objectForKey:DRDeviceMediaBSDNameKey]];
+	    else
+    	    deviceMediaPath = @"";
+	    
+	    NSString *workingPath = currentPath;
+	    if ([[[NSWorkspace sharedWorkspace] mountedLocalVolumePaths] containsObject:workingPath])
+    	    workingPath = [self getRealDevicePath:currentPath];
+    
+	    NSString *path = [@"/dev/" stringByAppendingString:[[workingPath componentsSeparatedByString:@"r"] objectAtIndex:1]];
+	    NSString *disc = [@"/dev/disk" stringByAppendingString:[[[[path componentsSeparatedByString:@"/dev/disk"] objectAtIndex:1] componentsSeparatedByString:@"s"] objectAtIndex:0]];
+	    NSString *outputFile;
+	    NSDictionary *tocFile = nil;
+	    
+	    
+	    audioDiscPath = disc;
+    
+	    if (![disc isEqualTo:deviceMediaPath] || shouldBurn == NO)
+	    {
+    	    outputFile = workingPath;
+    	    [[[NSWorkspace sharedWorkspace] notificationCenter] removeObserver:self];
+	    }
+	    else
+	    {
+    	    outputFile = [NSTemporaryDirectory() stringByAppendingPathComponent:[[nameField stringValue] stringByAppendingPathExtension:@"iso"]];
+            
+            [temporaryFiles addObject:outputFile];
+	    }
+	    
+	    if ([[NSFileManager defaultManager] fileExistsAtPath:[mountedPath stringByAppendingPathComponent:@".TOC.plist"]])
+	    {
+    	    tocFile = [NSDictionary dictionaryWithContentsOfFile:[mountedPath stringByAppendingPathComponent:@".TOC.plist"]];
+	    
+    	    NSArray *arguments = [NSArray arrayWithObjects:@"unmount",mountedPath,nil];
+    	    NSString *errorString;
+    	    BOOL status = [KWCommonMethods launchNSTaskAtPath:@"/usr/bin/hdiutil" withArguments:arguments outputError:NO outputString:YES output:&errorString];
+    	    
+    	    if (!status)
+    	    {
+	    	    *error = [NSString stringWithFormat:@"KWConsole:\nTask: hdiutil\n%@", errorString];
+	    	    return [NSNumber numberWithInt:0];
+    	    }
+	    }
+	    else
+	    {
+    	    path = workingPath;
+	    }
+    
+	    if ([disc isEqualTo:deviceMediaPath] && shouldBurn == YES)
+	    {
+    	    cp = [[NSTask alloc] init];
+    	    [cp setLaunchPath:@"/bin/cp"];
+    	    [cp setArguments:[NSArray arrayWithObjects:path,outputFile,nil]];
+    	    NSFileHandle *handle = [NSFileHandle fileHandleWithNullDevice];
+    	    NSPipe *errorPipe = [[NSPipe alloc] init];
+    	    NSFileHandle *errorHandle = [errorPipe fileHandleForReading];
+    	    [cp setStandardOutput:handle];
+    	    [cp setStandardError:errorPipe];
+    	    
+            [[KWProgressManager sharedManager] setCancelHandler:^
+            {
+                [self stopImageing];
+            }];
+
+            KWProgressManager *progressManager = [KWProgressManager sharedManager];
+            [progressManager setMaximumValue:[[self totalSize] floatValue]];
+            [progressManager setStatus:NSLocalizedString(@"Copying disc", Localized)];
+	    
+    	    [self performSelectorOnMainThread:@selector(startTimer:) withObject:outputFile waitUntilDone:NO];
+    	    
+    	    [KWCommonMethods logCommandIfNeeded:cp];
+    	    [cp launch];
+    	    
+    	    *error = [NSString stringWithFormat:@"KWConsole:\nTask: cp\n%@", [[NSString alloc] initWithData:[errorHandle readDataToEndOfFile] encoding:NSUTF8StringEncoding]];
+    	    
+    	    [cp waitUntilExit];
+    	    
+            [[KWProgressManager sharedManager] setCancelHandler:nil];
+    	    [timer invalidate];
+    	    
+    	    NSInteger status = [cp terminationStatus];
+    	    
+	    
+    	    if (status != 0 && userCanceled == NO)
+    	    {
+	    	    [KWCommonMethods removeItemAtPath:outputFile];
+	    	    [self remount:disc];
+	    	    
+	    	    return [NSNumber numberWithInt:1];
+    	    }
+    	    else if (status != 0 && userCanceled == YES)
+    	    {
+	    	    [KWCommonMethods removeItemAtPath:outputFile];
+	    	    [self remount:disc];
+	    	    
+	    	    return [NSNumber numberWithInt:2];
+    	    }
+    	    
+    	    if (![[KWCommonMethods savedDevice] ejectMedia])
+	    	    return [NSNumber numberWithInt:1];
+	    }
+	    
+	    if (tocFile)
+	    {
+    	    if (![path isEqualTo:deviceMediaPath] || shouldBurn == NO)
+    	    {
+	    	    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(remount:) name:@"KWDoneBurning" object:nil];
+    	    
+	    	    return [[KWTrackProducer alloc] getTracksOfAudioCD:path withToc:tocFile];
+    	    }
+    	    else
+    	    {
+	    	    NSString *infoFile = [[outputFile stringByDeletingPathExtension] stringByAppendingPathExtension:@"isoInfo"];
+	    	    [tocFile writeToFile:infoFile atomically:YES];
+    	    
+	    	    return [[KWTrackProducer alloc] getTracksOfAudioCD:outputFile withToc:tocFile];
+    	    }
+	    }
+	    else
+	    {
+    	    return [DRBurn layoutForImageFile:outputFile];
+	    }
+    }
+    
+    return [NSNumber numberWithInt:0];
 }
 
 - (void)startTimer:(NSArray *)object
 {
-	timer = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(imageProgress:) userInfo:object repeats:YES];
+    timer = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(imageProgress:) userInfo:object repeats:YES];
 }
 
 - (void)imageProgress:(NSTimer *)theTimer
 {
-	NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
-
-	CGFloat currentSize = [[[[NSFileManager defaultManager] fileAttributesAtPath:[theTimer userInfo] traverseLink:YES] objectForKey:NSFileSize] cgfloatValue] / 2048;
-	CGFloat percent = currentSize / [[self totalSize] cgfloatValue] * 100;
-		
-		if (percent < 101)
-		[defaultCenter postNotificationName:@"KWStatusByAddingPercentChanged" object:[NSString stringWithFormat:@" (%.0f%@)", percent, @"%"]];
-
-	[defaultCenter postNotificationName:@"KWValueChanged" object:[NSNumber numberWithCGFloat:currentSize]];
+    NSFileManager *defaultManager = [NSFileManager defaultManager];
+    
+    NSDictionary *attributes = [defaultManager attributesOfItemAtPath:[theTimer userInfo] error:nil];
+    float currentSize = [attributes[NSFileSize] floatValue] / 2048;
+    float percent = currentSize / [[self totalSize] floatValue] * 100;
+    
+    KWProgressManager *progressManager = [KWProgressManager sharedManager];
+	    
+    if (percent < 101)
+    {
+        [progressManager setStatusByAddingPercent:[NSString stringWithFormat:@" (%.0f%@)", percent, @"%"]];
+    }
+    
+    [progressManager setValue:currentSize];
 }
 
 - (void)stopImageing
 {
-	userCanceled = YES;
-	[cp terminate];
+    userCanceled = YES;
+    [cp terminate];
 }
 
 - (void)remount:(id)object
 {
-	[[NSNotificationCenter defaultCenter] removeObserver:self name:@"KWDoneBurning" object:nil];
-	
-	NSString *path;
-	
-	if (object)
-	{
-		if ([object isKindOfClass:[NSString class]])
-			path = object;
-	}
-	else
-	{
-		path = [currentInformation objectForKey:@"Real Device"];
-	}
-
-	NSArray *arguments = [NSArray arrayWithObjects:@"mount", path, nil];
-	
-	NSString *errorsString;
-	[KWCommonMethods launchNSTaskAtPath:@"/usr/bin/hdiutil" withArguments:arguments outputError:NO outputString:YES output:&errorsString];
-	
-	NSNotificationCenter *workspaceCenter = [[NSWorkspace sharedWorkspace] notificationCenter];
-	[workspaceCenter addObserver:self selector:@selector(deviceUnmounted:) name:NSWorkspaceDidUnmountNotification object:nil];
-	[workspaceCenter addObserver:self selector:@selector(deviceMounted:) name:NSWorkspaceDidMountNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"KWDoneBurning" object:nil];
+    
+    NSString *path;
+    
+    if (object)
+    {
+	    if ([object isKindOfClass:[NSString class]])
+    	    path = object;
+    }
+    else
+    {
+	    path = audioDiscPath;
+    }
+    NSLog(@"Path: %@", path);
+    NSArray *arguments = [NSArray arrayWithObjects:@"mount",path,nil];
+    
+    NSString *errorsString;
+    [KWCommonMethods launchNSTaskAtPath:@"/usr/bin/hdiutil" withArguments:arguments outputError:NO outputString:YES output:&errorsString];
+    
+    NSNotificationCenter *workspaceCenter = [[NSWorkspace sharedWorkspace] notificationCenter];
+    [workspaceCenter addObserver:self selector:@selector(deviceUnmounted:) name:NSWorkspaceDidUnmountNotification object:nil];
+    [workspaceCenter addObserver:self selector:@selector(deviceMounted:) name:NSWorkspaceDidMountNotification object:nil];
 }
 
 ///////////////////
@@ -762,179 +683,166 @@
 
 - (NSString *)myDisc
 {
-	return [currentInformation objectForKey:@"Device Path"];
+    return savedPath;
 }
 
 - (NSNumber *)totalSize
 {
-	return [currentInformation objectForKey:@"Blocks"];
+    return [NSNumber numberWithFloat:blocks];
 }
 
 - (BOOL)respondsToSelector:(SEL)aSelector
 {
-	if (awake == YES)
-	{
-		if (aSelector == @selector(mountDisc:) && ![mountButton isEnabled])
-			return NO;
-		
-		if (aSelector == @selector(burn:) | aSelector == @selector(saveImage:) && [currentInformation objectForKey:@"Path"] == nil)
-			return NO;
-	}
-		
-	return [super respondsToSelector:aSelector];
+    if (awakeFromNib && aSelector == @selector(mountDisc:) && ![mountButton isEnabled])
+	    return NO;
+	    
+    if ((aSelector == @selector(burn:) || aSelector == @selector(saveImage:)) && (currentPath == nil))
+	    return NO;
+	    
+    return [super respondsToSelector:aSelector];
 }
 
 - (NSInteger)numberOfRows
 {
-	NSInteger rows;
-	
-	if ([currentInformation objectForKey:@"Path"] != nil)
-		rows = 1;
-	else 
-		rows = 0;
+    NSInteger rows;
+    
+    if (currentPath != nil)
+	    rows = 1;
+    else 
+	    rows = 0;
 
-	return rows;
+    return rows;
 }
 
 - (BOOL)isMounted
 {
-	return ([[mountButton title] isEqualTo:NSLocalizedString(@"Unmount", nil)]);
+    return ([[mountButton title] isEqualTo:NSLocalizedString(@"Unmount",nil)]);
 }
 
 - (BOOL)isRealDisk
 {
-	return ([[mountButton title] isEqualTo:NSLocalizedString(@"Eject", nil)]);
+    return ([[mountButton title] isEqualTo:NSLocalizedString(@"Eject",nil)]);
 }
 
 - (BOOL)isCompatible
 {
-	return (![self isCueFile] | ![self isAudioCD] | ![[currentInformation objectForKey:@"Extension"] isEqualTo:@"toc"]);
+    return (![self isCueFile] || ![self isAudioCD] || ![[[currentPath pathExtension] lowercaseString] isEqualTo:@"toc"]);
 }
 
 - (BOOL)isCueFile
 {
-	return ([[currentInformation objectForKey:@"Extension"] isEqualTo:@"cue"]);
+    return ([[[currentPath pathExtension] lowercaseString] isEqualTo:@"cue"]);
 }
 
 - (BOOL)isAudioCD
 { 
-	return ([[NSFileManager defaultManager] fileExistsAtPath:[[currentInformation objectForKey:@"Mounted Path"] stringByAppendingPathComponent:@".TOC.plist"]]);
+    return ([[NSFileManager defaultManager] fileExistsAtPath:[mountedPath stringByAppendingPathComponent:@".TOC.plist"]]);
 }
 
 - (NSString *)getRealDevicePath:(NSString *)path
 {
-	NSString *string;
-	NSArray *arguments = [NSArray arrayWithObject:path];
-	[KWCommonMethods launchNSTaskAtPath:@"/bin/df" withArguments:arguments outputError:NO outputString:YES output:&string];
-	
-	NSString *saveDevicePath = [NSString stringWithFormat:@"/dev/r%@", [[[[string componentsSeparatedByString:@"/dev/"] objectAtIndex:1] componentsSeparatedByString:@" "] objectAtIndex:0]];
+    NSString *string;
+    NSArray *arguments = [NSArray arrayWithObject:path];
+    [KWCommonMethods launchNSTaskAtPath:@"/bin/df" withArguments:arguments outputError:NO outputString:YES output:&string];
 
-	return saveDevicePath;
+    string = [@"/dev/r" stringByAppendingString:[[[[string componentsSeparatedByString:@"/dev/"] objectAtIndex:1] componentsSeparatedByString:@" "] objectAtIndex:0]];
+
+    return string;
 }
 
 - (void)changeMountState:(BOOL)state forDevicePath:(NSString *)path
-{	
-	NSString *mountedPath = [currentInformation objectForKey:@"Mounted Path"];
-	NSString *imageMountedPath = [currentInformation objectForKey:@"Image Mounted Path"];
-
-	if (state)
-	{
-		if ([path isEqualTo:mountedPath])
-		{
-			[mountButton setTitle:NSLocalizedString(@"Eject",nil)];
-			[mountMenu setTitle:NSLocalizedString(@"Eject Disc", nil)];
-		}
-		else if ([path isEqualTo:imageMountedPath] | [self isImageMounted:[currentInformation objectForKey:@"Path"]])
-		{
-			[mountButton setTitle:NSLocalizedString(@"Unmount",nil)];
-			[mountMenu setTitle:NSLocalizedString(@"Unmount Image", nil)];
-		}
-	}
-	else 
-	{
-		if ([path isEqualTo:mountedPath])
-		{
-			[self clearDisk:self];
-		}
-		else if ([path isEqualTo:imageMountedPath])
-		{
-			[mountButton setTitle:NSLocalizedString(@"Mount",nil)];
-			[mountMenu setTitle:NSLocalizedString(@"Mount Image", nil)];
-		}
-	}
+{    
+    if (state)
+    {
+	    if ([path isEqualTo:mountedPath])
+	    {
+    	    [mountButton setTitle:NSLocalizedString(@"Eject",nil)];
+    	    [mountMenu setTitle:NSLocalizedString(@"Eject Disc", nil)];
+	    }
+	    else if ([path isEqualTo:imageMountedPath] || [self isImageMounted:currentPath])
+	    {
+    	    [mountButton setTitle:NSLocalizedString(@"Unmount",nil)];
+    	    [mountMenu setTitle:NSLocalizedString(@"Unmount Image", nil)];
+	    }
+    }
+    else 
+    {
+	    if ([path isEqualTo:mountedPath])
+	    {
+    	    [self clearDisk:self];
+	    }
+	    else if ([path isEqualTo:imageMountedPath])
+	    {
+    	    [mountButton setTitle:NSLocalizedString(@"Mount",nil)];
+    	    [mountMenu setTitle:NSLocalizedString(@"Mount Image", nil)];
+	    }
+    }
 
 }
 
 - (void)deviceUnmounted:(NSNotification *)notif
 {
-	[self changeMountState:NO forDevicePath:[[notif userInfo] objectForKey:@"NSDevicePath"]];
+    [self changeMountState:NO forDevicePath:[[notif userInfo] objectForKey:@"NSDevicePath"]];
 }
 
 - (void)deviceMounted:(NSNotification *)notif
 {
-	[self changeMountState:YES forDevicePath:[[notif userInfo] objectForKey:@"NSDevicePath"]];
+    [self changeMountState:YES forDevicePath:[[notif userInfo] objectForKey:@"NSDevicePath"]];
 }
 
-- (void)deleteTemporayFiles:(NSNumber *)needed
+- (void)deleteTemporayFiles:(BOOL)needed
 {
-	if ([needed boolValue])
-	{
-		NSInteger i;
-		for (i=0;i<[temporaryFiles count];i++)
-		{
-			[KWCommonMethods removeItemAtPath:[temporaryFiles objectAtIndex:i]];
-		}
-	}
-	
-	[temporaryFiles removeAllObjects];
+    if (needed)
+    {
+	    NSInteger i;
+	    for (i=0;i<[temporaryFiles count];i++)
+	    {
+    	    [KWCommonMethods removeItemAtPath:[temporaryFiles objectAtIndex:i]];
+	    }
+    }
+    
+    [temporaryFiles removeAllObjects];
 }
 
 - (NSInteger)cueImageSizeAtPath:(NSString *)path
 {
-	return 0;
+    return 0;
 }
 
 
 - (NSString *)getIsoForDvdFileAtPath:(NSString *)path
 {
-	NSString *info = [KWCommonMethods stringWithContentsOfFile:path];
-	NSArray *arrayOfLines = [info componentsSeparatedByString:@"\n"];
-	NSMutableString *iso = [NSMutableString stringWithString:[arrayOfLines objectAtIndex:1]];
-	[iso replaceOccurrencesOfString:@"\r" withString:@"" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [iso length])];
-	if ([iso isAbsolutePath])
-		return iso;
-	return [[path stringByDeletingLastPathComponent] stringByAppendingPathComponent: iso];
+    NSString *info = [KWCommonMethods stringWithContentsOfFile:path];
+    NSArray *arrayOfLines = [info componentsSeparatedByString:@"\n"];
+    NSMutableString *iso = [NSMutableString stringWithString:[arrayOfLines objectAtIndex:1]];
+    [iso replaceOccurrencesOfString:@"\r" withString:@"" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [iso length])];
+    if ([iso isAbsolutePath])
+	    return iso;
+    return [[path stringByDeletingLastPathComponent] stringByAppendingPathComponent: iso];
 }
 
 - (NSNumber *)getLayerBreakForDvdFileAtPath:(NSString *)path
 {
-	NSString *info = [KWCommonMethods stringWithContentsOfFile:path];
-	NSArray *arrayOfLines = [info componentsSeparatedByString:@"\n"];
-	NSMutableString *lbreak = [NSMutableString stringWithString:[arrayOfLines objectAtIndex:0]];
-	[lbreak replaceOccurrencesOfString:@"\r" withString:@"" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [lbreak length])];
-	[lbreak replaceOccurrencesOfString:@"LayerBreak=" withString:@"" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [lbreak length])];
-	NSScanner* textscanner = [NSScanner scannerWithString:lbreak];
-	long long val;
-	
-	if (![textscanner scanLongLong:&val])
-		val = 0.5;
-			
-	return [NSNumber numberWithLongLong:val];
+    NSString *info = [KWCommonMethods stringWithContentsOfFile:path];
+    NSArray *arrayOfLines = [info componentsSeparatedByString:@"\n"];
+    NSMutableString *lbreak = [NSMutableString stringWithString:[arrayOfLines objectAtIndex:0]];
+    [lbreak replaceOccurrencesOfString:@"\r" withString:@"" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [lbreak length])];
+    [lbreak replaceOccurrencesOfString:@"LayerBreak=" withString:@"" options:NSCaseInsensitiveSearch range:NSMakeRange(0, [lbreak length])];
+    NSScanner* textscanner = [NSScanner scannerWithString:lbreak];
+    long long val;
+    
+    if (![textscanner scanLongLong:&val])
+	    val = 0.5;
+    	    
+    return [NSNumber numberWithLongLong:val];
 }
 
 - (NSDictionary *)isoInfo
 {
-	NSString *mountedPath = [currentInformation objectForKey:@"Mounted Path"];
-
-	if ([[NSFileManager defaultManager] fileExistsAtPath:[mountedPath stringByAppendingPathComponent:@".TOC.plist"]])
-		return [NSDictionary dictionaryWithContentsOfFile:[mountedPath stringByAppendingPathComponent:@".TOC.plist"]];
-		
-	return nil;
-}
-
-- (NSArray *)getCDTextBlocks
-{
-	return cdTextBlocks;
+    if ([[NSFileManager defaultManager] fileExistsAtPath:[mountedPath stringByAppendingPathComponent:@".TOC.plist"]])
+	    return [NSDictionary dictionaryWithContentsOfFile:[mountedPath stringByAppendingPathComponent:@".TOC.plist"]];
+	    
+    return nil;
 }
 
 @end

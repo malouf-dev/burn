@@ -5,9 +5,9 @@
 //Needed for the inspector
 - (BOOL)becomeFirstResponder 
 {
-	[[NSNotificationCenter defaultCenter] postNotificationName:@"KWDiscNameSelected" object:self];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWDiscNameSelected" object:self];
 
-	return [super becomeFirstResponder];
+    return [super becomeFirstResponder];
 }
 
 @end

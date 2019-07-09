@@ -10,62 +10,94 @@
 #import "KWCommonMethods.h"
 #import "KWToolbarKiller.h"
 #import "KWTabViewItem.h"
+#import <Carbon/Carbon.h>
+
+@interface KWWindowController() <NSToolbarDelegate>
+
+@property (nonatomic) IBOutlet NSLayoutConstraint *topSegmentConstrain;
+
+@end
 
 @implementation KWWindowController
 
+- (void)applicationDidFinishLaunching:(NSNotification *)notification
+{
+    [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:self];
+}
+
+- (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification
+{
+    return YES;
+}
+
+- (void)showNotificationWithTitle:(nonnull NSString *)title withMessage:(nonnull NSString *)message withImage:(NSImage *)image
+{
+    // TODO: use new methods on the upcoming Mac OS release
+    NSUserNotification *userNotification = [[NSUserNotification alloc] init];
+    [userNotification setTitle:title];
+    [userNotification setInformativeText:message];
+    [userNotification setIdentifier:[[NSUUID UUID] UUIDString]];
+    [userNotification setSoundName:NSUserNotificationDefaultSoundName];
+    if (image != nil)
+    {
+        [userNotification setContentImage:image];
+    }
+    
+    NSUserNotificationCenter *defaultUserNotificationCenter = [NSUserNotificationCenter defaultUserNotificationCenter];
+    [defaultUserNotificationCenter deliverNotification:userNotification];
+}
+
 - (id)init
 {
-	self = [super init];
+    self = [super init];
 
-	return self;
+    return self;
 }
 
 - (void)dealloc 
 {
-	[[NSNotificationCenter defaultCenter] removeObserver:self];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 
-	DRNotificationCenter *burnNotificationCenter = [DRNotificationCenter currentRunLoopCenter];
-	[burnNotificationCenter removeObserver:self name:DRDeviceDisappearedNotification object:nil];
-	[burnNotificationCenter removeObserver:self name:DRDeviceAppearedNotification object:nil];
-	[burnNotificationCenter removeObserver:self name:DRDeviceStatusChangedNotification object:nil];
-
-	[super dealloc];
+    DRNotificationCenter *burnNotificationCenter = [DRNotificationCenter currentRunLoopCenter];
+    [burnNotificationCenter removeObserver:self name:DRDeviceDisappearedNotification object:nil];
+    [burnNotificationCenter removeObserver:self name:DRDeviceAppearedNotification object:nil];
+    [burnNotificationCenter removeObserver:self name:DRDeviceStatusChangedNotification object:nil];
 }
 
 - (void)awakeFromNib
 {
-	DRDevice *currentDevice = [KWCommonMethods getCurrentDevice];
+    DRDevice *currentDevice = [KWCommonMethods getCurrentDevice];
 
-	if ([[DRDevice devices] count] > 0)
-	{
-		discInserted = ([[[currentDevice status] objectForKey:DRDeviceMediaStateKey] isEqualTo:DRDeviceMediaStateMediaPresent]);
-	}
+    if ([[DRDevice devices] count] > 0)
+    {
+	    discInserted = ([[[currentDevice status] objectForKey:DRDeviceMediaStateKey] isEqualTo:DRDeviceMediaStateMediaPresent]);
+    }
 
-	//Notifications
-	DRNotificationCenter *burnNotificationCenter = [DRNotificationCenter currentRunLoopCenter];
-	[burnNotificationCenter addObserver:self selector:@selector(mediaChanged:) name:DRDeviceDisappearedNotification object:nil];
-	[burnNotificationCenter addObserver:self selector:@selector(mediaChanged:) name:DRDeviceAppearedNotification object:nil];
-	[burnNotificationCenter addObserver:self selector:@selector(mediaChanged:) name:DRDeviceStatusChangedNotification object:nil];
-	
-	NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
-	[defaultCenter addObserver:self selector:@selector(mediaChanged:) name:@"KWMediaChanged" object:nil];
-	[defaultCenter addObserver:self selector:@selector(changeBurnStatus:) name:@"KWChangeBurnStatus" object:nil];
-	[defaultCenter addObserver:self selector:@selector(closeWindow:) name:NSWindowWillCloseNotification object:nil];
+    //Notifications
+    DRNotificationCenter *burnNotificationCenter = [DRNotificationCenter currentRunLoopCenter];
+    [burnNotificationCenter addObserver:self selector:@selector(mediaChanged:) name:DRDeviceDisappearedNotification object:nil];
+    [burnNotificationCenter addObserver:self selector:@selector(mediaChanged:) name:DRDeviceAppearedNotification object:nil];
+    [burnNotificationCenter addObserver:self selector:@selector(mediaChanged:) name:DRDeviceStatusChangedNotification object:nil];
+    
+    NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
+    [defaultCenter addObserver:self selector:@selector(mediaChanged:) name:@"KWMediaChanged" object:nil];
+    [defaultCenter addObserver:self selector:@selector(changeBurnStatus:) name:@"KWChangeBurnStatus" object:nil];
+    [defaultCenter addObserver:self selector:@selector(closeWindow:) name:NSWindowWillCloseNotification object:nil];
 
-	[defaultBurner setStringValue:[self getRecorderDisplayNameForDevice:currentDevice]];
-	
-	NSUserDefaults *standardUserDefaults = [NSUserDefaults standardUserDefaults];
-	
-	if ([standardUserDefaults boolForKey:@"KWRememberLastTab"])
-		[mainTabView selectTabViewItemWithIdentifier:[standardUserDefaults objectForKey:@"KWLastTab"]];
+    [defaultBurner setStringValue:[self getRecorderDisplayNameForDevice:currentDevice]];
+    
+    NSUserDefaults *standardUserDefaults = [NSUserDefaults standardUserDefaults];
+    
+    if ([standardUserDefaults boolForKey:@"KWRememberLastTab"])
+    [mainTabView selectTabViewItemWithIdentifier:[standardUserDefaults objectForKey:@"KWLastTab"]];
 
-	[self setupToolbar];
+    [self setupToolbar];
 
-	if ([standardUserDefaults boolForKey:@"KWFirstRun"])
-	{
-		[self returnToDefaultSizeWindow:self];
-		[mainWindow setFrameOrigin:NSMakePoint(36,[[NSScreen mainScreen] frame].size.height - [mainWindow frame].size.height - 56)];
-	}
+    if ([standardUserDefaults boolForKey:@"KWFirstRun"])
+    {
+	    [self returnToDefaultSizeWindow:self];
+	    [mainWindow setFrameOrigin:NSMakePoint(36,[[NSScreen mainScreen] frame].size.height - [mainWindow frame].size.height - 56)];
+    }
 }
 
 /////////////////////////
@@ -77,76 +109,72 @@
 
 - (IBAction)changeRecorder:(id)sender
 {
-	NSArray *devices = [DRDevice devices];
-	
-	if ([devices count] > 1)
-	{
-		NSInteger x = 0;
+    NSArray *devices = [DRDevice devices];
+    
+    if ([devices count] > 1)
+    {
+	    NSInteger x = 0;
 
-		NSInteger i;
-		for (i = 0; i < [devices count]; i ++)
-		{
-			if ([[[devices objectAtIndex:i] displayName] isEqualTo:[[[defaultBurner stringValue] componentsSeparatedByString:@"\n"] objectAtIndex:0]])
-				x = i + 1;
-		}
-			
-		if (x > [devices count] - 1)
-			x = 0;
+	    NSInteger i;
+	    for (i=0;i< [devices count];i++)
+	    {
+    	    if ([[[devices objectAtIndex:i] displayName] isEqualTo:[[[defaultBurner stringValue] componentsSeparatedByString:@"\n"] objectAtIndex:0]])
+	    	    x = i + 1;
+	    }
+    	    
+	    if (x > [devices count]-1)
+    	    x = 0;
 
-		NSMutableDictionary *burnDict = [NSMutableDictionary dictionary];
-		NSDictionary *deviceInfo = [[devices objectAtIndex:x] info];
-	
-		[burnDict setObject:[deviceInfo objectForKey:@"DRDeviceProductNameKey"] forKey:@"Product"];
-		[burnDict setObject:[deviceInfo objectForKey:@"DRDeviceVendorNameKey"] forKey:@"Vendor"];
-		[burnDict setObject:@"" forKey:@"SerialNumber"];
-	
-		[[NSUserDefaults standardUserDefaults] setObject:burnDict forKey:@"KWDefaultDeviceIdentifier"];
-	
-		[[NSNotificationCenter defaultCenter] postNotificationName:@"KWMediaChanged" object:nil];
-	}
+	    NSMutableDictionary *burnDict = [NSMutableDictionary dictionary];
+	    NSDictionary *deviceInfo = [[devices objectAtIndex:x] info];
+    
+	    [burnDict setObject:[deviceInfo objectForKey:@"DRDeviceProductNameKey"] forKey:@"Product"];
+	    [burnDict setObject:[deviceInfo objectForKey:@"DRDeviceVendorNameKey"] forKey:@"Vendor"];
+	    [burnDict setObject:@"" forKey:@"SerialNumber"];
+    
+	    [[NSUserDefaults standardUserDefaults] setObject:burnDict forKey:@"KWDefaultDeviceIdentifier"];
+    
+	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWMediaChanged" object:nil];
+    }
 }
 
 - (IBAction)showItemHelp:(id)sender
 {
-	NSDictionary *bundleInfo = [[NSBundle bundleForClass:[self class]] infoDictionary];
-	NSString *bundleIdent = [bundleInfo objectForKey:@"CFBundleIdentifier"];
-	CFBundleRef mainBundle = CFBundleGetBundleWithIdentifier((CFStringRef)bundleIdent);
-	
-	if (mainBundle)
-	{
-		CFURLRef bundleURL = NULL;
-		CFRetain(mainBundle);
-		bundleURL = CFBundleCopyBundleURL(mainBundle);
-		if (bundleURL)
-		{
-			FSRef bundleFSRef;
-		
-			if (CFURLGetFSRef(bundleURL, &bundleFSRef))
-				AHRegisterHelpBook(&bundleFSRef);
-		
-			CFRelease(bundleURL);
-		}
-		
-		CFRelease(mainBundle);
-	}
-	
-	CFBundleRef myApplicationBundle = CFBundleGetMainBundle();
-	CFTypeRef myBookName = CFBundleGetValueForInfoDictionaryKey(myApplicationBundle,CFSTR("CFBundleHelpBookName"));
+    NSDictionary *bundleInfo = [[NSBundle bundleForClass:[self class]] infoDictionary];
+    NSString *bundleIdent = [bundleInfo objectForKey:@"CFBundleIdentifier"];
+    CFBundleRef mainBundle = CFBundleGetBundleWithIdentifier((CFStringRef)bundleIdent);
+    
+    if (mainBundle)
+    {
+	    CFURLRef bundleURL = NULL;
+	    CFRetain(mainBundle);
+	    bundleURL = CFBundleCopyBundleURL(mainBundle);
+	    if (bundleURL)
+	    {
+            AHRegisterHelpBookWithURL(bundleURL);
+    	    CFRelease(bundleURL);
+	    }
+	    
+	    CFRelease(mainBundle);
+    }
+    
+    CFBundleRef myApplicationBundle = CFBundleGetMainBundle();
+    CFTypeRef myBookName = CFBundleGetValueForInfoDictionaryKey(myApplicationBundle,CFSTR("CFBundleHelpBookName"));
  
-	if ([[itemHelp title] isEqualTo:[NSString stringWithFormat:NSLocalizedString(@"%@ Help", nil), NSLocalizedString(@"Data", nil)]])
-		AHLookupAnchor(myBookName, CFSTR("data"));
-	else if ([[itemHelp title] isEqualTo:[NSString stringWithFormat:NSLocalizedString(@"%@ Help", nil), NSLocalizedString(@"Audio", nil)]])
-		AHLookupAnchor(myBookName, CFSTR("audio"));
-	else if ([[itemHelp title] isEqualTo:[NSString stringWithFormat:NSLocalizedString(@"%@ Help", nil), NSLocalizedString(@"Video", nil)]])
-		AHLookupAnchor(myBookName, CFSTR("video"));
-	else if ([[itemHelp title] isEqualTo:[NSString stringWithFormat:NSLocalizedString(@"%@ Help", nil), NSLocalizedString(@"Copy", nil)]])
-		AHLookupAnchor(myBookName, CFSTR("copy"));
+    if ([[itemHelp title] isEqualTo:[NSString stringWithFormat:NSLocalizedString(@"%@ Help", nil), NSLocalizedString(@"Data", nil)]])
+	    AHLookupAnchor(myBookName, CFSTR("data"));
+    else if ([[itemHelp title] isEqualTo:[NSString stringWithFormat:NSLocalizedString(@"%@ Help", nil), NSLocalizedString(@"Audio", nil)]])
+	    AHLookupAnchor(myBookName, CFSTR("audio"));
+    else if ([[itemHelp title] isEqualTo:[NSString stringWithFormat:NSLocalizedString(@"%@ Help", nil), NSLocalizedString(@"Video", nil)]])
+	    AHLookupAnchor(myBookName, CFSTR("video"));
+    else if ([[itemHelp title] isEqualTo:[NSString stringWithFormat:NSLocalizedString(@"%@ Help", nil), NSLocalizedString(@"Copy", nil)]])
+	    AHLookupAnchor(myBookName, CFSTR("copy"));
 }
 
 - (IBAction)newTabViewAction:(id)sender
 {
-	[[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type",nil]];
-	[mainTabView selectTabViewItemAtIndex:[newTabView selectedSegment]];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type",nil]];
+    [mainTabView selectTabViewItemAtIndex:[newTabView selectedSegment]];
 }
 
 //////////////////
@@ -163,23 +191,21 @@
 
 - (IBAction)openFile:(id)sender
 {
-	NSOpenPanel *openPanel = [NSOpenPanel openPanel];
-	[openPanel setAllowsMultipleSelection:NO];
+    NSOpenPanel *openPanel = [NSOpenPanel openPanel];
+    [openPanel setAllowsMultipleSelection:NO];
 
-	NSMutableArray *fileTypes = [NSMutableArray array];
+    NSMutableArray *fileTypes = [NSMutableArray array];
 
-	[fileTypes addObject:@"burn"];
-	[fileTypes addObjectsFromArray:[KWCommonMethods diskImageTypes]];
+    [fileTypes addObject:@"burn"];
+    [fileTypes addObjectsFromArray:[KWCommonMethods diskImageTypes]];
 
-	[openPanel beginSheetForDirectory:nil file:nil types:fileTypes modalForWindow:mainWindow modalDelegate:self didEndSelector:@selector(burnOpenPanelDidEnd:returnCode:contextInfo:) contextInfo:nil];
-}
-
-- (void)burnOpenPanelDidEnd:(NSOpenPanel *)openPanel returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
-{
-	[openPanel orderOut:self];
-
-	if (returnCode == NSOKButton)
-		[self open:[openPanel filename]];
+    [openPanel beginSheetModalForWindow:mainWindow completionHandler:^ (NSModalResponse response)
+    {
+        if (response == NSModalResponseOK)
+        {
+            [self open:[[openPanel URL] path]];
+        }
+    }];
 }
 
 //Recorder menu
@@ -189,76 +215,68 @@
 
 - (IBAction)eraseRecorder:(id)sender
 {
-	eraser = [[KWEraser alloc] init];
-	[eraser beginEraseSheetForWindow:mainWindow modalDelegate:self didEndSelector:@selector(eraseSetupEnded:returnCode:)];
-}
-
-- (void)eraseSetupEnded:(KWEraser *)eraseSetupSheet returnCode:(NSInteger)returnCode
-{
-	if (returnCode == NSOKButton)
-	{
-		progressPanel = [[KWProgress alloc] init];
-		[progressPanel setIcon:[NSImage imageNamed:@"Burn"]];
-		[progressPanel setTask:NSLocalizedString(@"Erasing disc", Localized)];
-		[progressPanel setStatus:NSLocalizedString(@"Preparing...", Localized)];
-		[progressPanel setMaximumValue:[NSNumber numberWithDouble:0]];
-		[progressPanel setCanCancel:NO];
-		[progressPanel beginSheetForWindow:mainWindow];
-	
-		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(eraseFinished:) name:@"KWEraseFinished" object:nil];
-		[eraser erase];
-	}
-	else
-	{
-		[eraser release];
-		eraser = nil;
-	}
+    eraser = [[KWEraser alloc] init];
+    [eraser beginEraseSheetForWindow:mainWindow completion:^(NSModalResponse returnCode)
+    {
+        if (returnCode == NSModalResponseOK)
+        {
+            KWProgressManager *progressManager = [KWProgressManager sharedManager];
+            [progressManager setIconImage:[NSImage imageNamed:@"Burn"]];
+            [progressManager setTask:NSLocalizedString(@"Erasing disc", Localized)];
+            [progressManager setStatus:NSLocalizedString(@"Preparing...", Localized)];
+            [progressManager setMaximumValue:0.0];
+            [progressManager setAllowCanceling:NO];
+            [progressManager beginSheetForWindow:mainWindow];
+        
+            [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(eraseFinished:) name:@"KWEraseFinished" object:nil];
+            [eraser erase];
+        }
+    }];
 }
 
 - (void)eraseFinished:(NSNotification *)notif
 {
-	NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
-	
-	NSString *returnCode = [[notif userInfo] objectForKey:@"ReturnCode"];
+    NSString *returnCode = [[notif userInfo] objectForKey:@"ReturnCode"];
+    eraser = nil;
 
-	[progressPanel endSheet];
-	[progressPanel release];
-	progressPanel = nil;
-	
-	[eraser release];
-	eraser = nil;
-
-	if ([returnCode isEqualTo:@"KWFailure"])
-	{
-		[defaultCenter postNotificationName:@"growlFailedErasing" object:NSLocalizedString(@"There was a problem erasing the disc",nil)];
-	
-		NSAlert *alert = [[[NSAlert alloc] init] autorelease];
-		[alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
-		[alert setMessageText:NSLocalizedString(@"Erasing failed",nil)];
-		[alert setInformativeText:NSLocalizedString(@"There was a problem erasing the disc",nil)];
-		[alert setAlertStyle:NSWarningAlertStyle];
-	
-		[alert beginSheetModalForWindow:mainWindow modalDelegate:self didEndSelector:nil contextInfo:nil];
-	}
-	else
-	{
-		[defaultCenter postNotificationName:@"growlFinishedErasing" object:NSLocalizedString(@"The disc has been succesfully erased",nil)];
-	}
+    [[KWProgressManager sharedManager] endSheetWithCompletion:^
+    {
+        if ([returnCode isEqualTo:@"KWFailure"])
+        {
+            NSImage *image = [[NSWorkspace sharedWorkspace] iconForFileType:NSFileTypeForHFSTypeCode(kGenericCDROMIcon)];
+            [self showNotificationWithTitle:NSLocalizedString(@"Erasing failed", nil) withMessage:NSLocalizedString(@"There was a problem erasing the disc", nil) withImage:image];
+            
+            NSAlert *alert = [[NSAlert alloc] init];
+            [alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
+            [alert setMessageText:NSLocalizedString(@"Erasing failed",nil)];
+            [alert setInformativeText:NSLocalizedString(@"There was a problem erasing the disc",nil)];
+            [alert setAlertStyle:NSWarningAlertStyle];
+        
+            [alert beginSheetModalForWindow:self->mainWindow modalDelegate:self didEndSelector:nil contextInfo:nil];
+        }
+        else
+        {
+            NSImage *image = [[NSWorkspace sharedWorkspace] iconForFileType:NSFileTypeForHFSTypeCode(kGenericCDROMIcon)];
+            [self showNotificationWithTitle:NSLocalizedString(@"Finished erasing", nil) withMessage:NSLocalizedString(@"The disc has been succesfully erased", nil) withImage:image];
+        }
+    }];
 }
 
 - (IBAction)ejectRecorder:(id)sender
 {
-	if ([[DRDevice devices] count] > 1)
-	{
-		if (ejecter == nil)
-			ejecter = [[KWEjecter alloc] init];
+//    if ([[DRDevice devices] count] > 1)
+//    {
+	    if (ejecter == nil)
+        {
+    	    ejecter = [[KWEjecter alloc] init];
+        }
 
-		[ejecter startEjectSheetForWindow:mainWindow forDevice:[KWCommonMethods getCurrentDevice]];
-	}
-	else
-	{
-		[[[DRDevice devices] objectAtIndex:0] ejectMedia];
-	}
+	    [ejecter startEjectSheetForWindow:mainWindow forDevice:[KWCommonMethods getCurrentDevice]];
+//    }
+//    else
+//    {
+//        [[[DRDevice devices] objectAtIndex:0] ejectMedia];
+//    }
 }
 
 //Window menu
@@ -268,7 +286,7 @@
 
 - (IBAction)returnToDefaultSizeWindow:(id)sender
 {
-	[mainWindow setFrame:NSMakeRect([mainWindow frame].origin.x , [mainWindow frame].origin.y - ([[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultWindowHeight"] integerValue] - [mainWindow frame].size.height), [[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultWindowWidth"] integerValue], [[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultWindowHeight"] integerValue]) display:YES];
+    [mainWindow setFrame:NSMakeRect([mainWindow frame].origin.x , [mainWindow frame].origin.y - ([[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultWindowHeight"] intValue] - [mainWindow frame].size.height), [[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultWindowWidth"] intValue], [[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultWindowHeight"] intValue]) display:YES];
 }
 
 //////////////////////////
@@ -280,28 +298,28 @@
 
 - (void)closeWindow:(NSNotification *)notification
 {
-	if ([notification object] == mainWindow)
-	{
-		NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-	
-		if ([defaults boolForKey:@"KWRememberLastTab"] == YES)
-			[defaults setObject:[[mainTabView selectedTabViewItem] identifier] forKey:@"KWLastTab"];
-			
-		[defaults synchronize];
-	
-		[NSApp terminate:self];
-	}
+    if ([notification object] == mainWindow)
+    {
+	    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+	    if ([defaults boolForKey:@"KWRememberLastTab"] == YES)
+    	    [defaults setObject:[[mainTabView selectedTabViewItem] identifier] forKey:@"KWLastTab"];
+    	    
+	    [defaults synchronize];
+    
+	    [NSApp terminate:self];
+    }
 }
 
 - (void)changeBurnStatus:(NSNotification *)notification
 {
-	[burnButton setEnabled:([[notification object] boolValue])];
-	[defaultBurner setStringValue:[self getRecorderDisplayNameForDevice:[KWCommonMethods getCurrentDevice]]];
+    [burnButton setEnabled:([[notification object] boolValue])];
+    [defaultBurner setStringValue:[self getRecorderDisplayNameForDevice:[KWCommonMethods getCurrentDevice]]];
 }
 
 - (void)mediaChanged:(NSNotification *)notification
 {
-	[defaultBurner setStringValue:[self getRecorderDisplayNameForDevice:[KWCommonMethods getCurrentDevice]]];
+    [defaultBurner setStringValue:[self getRecorderDisplayNameForDevice:[KWCommonMethods getCurrentDevice]]];
 }
 
 /////////////////////
@@ -311,71 +329,58 @@
 #pragma mark -
 #pragma mark •• Toolbar actions
 
+// TODO: Rename, it's not a toolbar anymore
 - (void)setupToolbar
 {
-	#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-	if ([KWCommonMethods OSVersion] >= 0x1040)
-	{
-		//First setup accessibility support since it can't be done from interface builder
-		id segmentElement = NSAccessibilityUnignoredDescendant(newTabView);
-		NSArray *segments = [segmentElement accessibilityAttributeValue:NSAccessibilityChildrenAttribute];
-    
-    
-		id segment;
-		NSArray *descriptions = [NSArray arrayWithObjects:NSLocalizedString(@"Select to create a data disc", nil),NSLocalizedString(@"Select to create a audio disc", nil),NSLocalizedString(@"Select to create a video disc", nil),NSLocalizedString(@"Select to copy a disc or disk image", nil),nil];
-		NSEnumerator *e = [segments objectEnumerator];
-			
-		NSInteger i = 0;
-		while ((segment = [e nextObject])) 
-		{
-			[segment accessibilitySetOverrideValue:[descriptions objectAtIndex:i] forAttribute:NSAccessibilityHelpAttribute];
-			[segment accessibilitySetOverrideValue:[descriptions objectAtIndex:i] forAttribute:NSAccessibilityHelpAttribute];
-			i = i + 1;
-		}
-	}
-	#endif
+    if (@available(macOS 10.10, *))
+    {
+        // No support for NSWindowStyleMaskFullSizeContentView
+        CGFloat contentHeight = [mainWindow contentRectForFrameRect:[mainWindow frame]].size.height;
+        CGFloat titleBarHeight = [mainWindow frame].size.height - contentHeight;
+        
+        [mainWindow setStyleMask:[mainWindow styleMask] | NSWindowStyleMaskFullSizeContentView];
+        [mainWindow setTitlebarAppearsTransparent:YES];
+        
+        NSLayoutConstraint *topSegmentConstrain = [self topSegmentConstrain];
+        [topSegmentConstrain setConstant:[topSegmentConstrain constant] + titleBarHeight];
+    }
 
-	mainItem = [[[NSToolbarItem alloc] initWithItemIdentifier:@"Main"] autorelease];
-    [mainItem setView:newTabView];
-	[mainItem setMinSize:NSMakeSize([newTabView frame].size.width,28)];
-	
-	//Some things don't work in Panther, so doing a trick to hide the toolbarbutton
-	#if MAC_OS_X_VERSION_MAX_ALLOWED < 1050
-	if ([KWCommonMethods OSVersion] < 0x1040)
-		[KWToolbarKiller poseAsClass:NSClassFromString(@"_NSThemeWidget")];
-	#endif
-	
-    toolbar = [[[NSToolbar alloc] initWithIdentifier:@"mainToolbar"] autorelease];
-    [toolbar setDelegate:self];
-    [toolbar setAllowsUserCustomization:NO];
-    [toolbar setAutosavesConfiguration:NO];
-	[toolbar setDisplayMode:NSToolbarDisplayModeIconOnly];
-    [mainWindow setToolbar:toolbar];
-	
-	#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-	if ([KWCommonMethods OSVersion] >= 0x1040)
-		[mainWindow setShowsToolbarButton:NO];
-	#endif
+    //First setup accessibility support since it can't be done from interface builder
+    id segmentElement = NSAccessibilityUnignoredDescendant(newTabView);
+    NSArray *segments = [segmentElement accessibilityAttributeValue:NSAccessibilityChildrenAttribute];
+
+
+    id segment;
+    NSArray *descriptions = [NSArray arrayWithObjects:NSLocalizedString(@"Select to create a data disc", nil),NSLocalizedString(@"Select to create a audio disc", nil),NSLocalizedString(@"Select to create a video disc", nil),NSLocalizedString(@"Select to copy a disc or disk image", nil),nil];
+    NSEnumerator *e = [segments objectEnumerator];
+    
+    NSInteger i = 0;
+    while ((segment = [e nextObject]))
+    {
+        [segment accessibilitySetOverrideValue:[descriptions objectAtIndex:i] forAttribute:NSAccessibilityHelpAttribute];
+        [segment accessibilitySetOverrideValue:[descriptions objectAtIndex:i] forAttribute:NSAccessibilityHelpAttribute];
+        i = i + 1;
+    }
 }
 
 - (NSToolbarItem *)toolbar:(NSToolbar *)toolbar itemForItemIdentifier:(NSString *)itemIdentifier willBeInsertedIntoToolbar:(BOOL)flag
 {
-	NSToolbarItem *item = [[[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier] autorelease];
-	
-	if ([itemIdentifier isEqualToString:@"Main"])
-		return mainItem;
-	
-	return item;
+    NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
+    
+    if ([itemIdentifier isEqualToString:@"Main"])
+	    return mainItem;
+    
+    return item;
 }
 
 - (NSArray *)toolbarAllowedItemIdentifiers:(NSToolbar*)toolbar
 {
-	return [NSArray arrayWithObjects:NSToolbarSeparatorItemIdentifier, NSToolbarSpaceItemIdentifier, NSToolbarFlexibleSpaceItemIdentifier, @"Main", nil];
+    return [NSArray arrayWithObjects:NSToolbarSeparatorItemIdentifier, NSToolbarSpaceItemIdentifier, NSToolbarFlexibleSpaceItemIdentifier, @"Main", nil];
 }
 
 - (NSArray *)toolbarDefaultItemIdentifiers:(NSToolbar*)toolbar
 {
-	return [NSArray arrayWithObjects:NSToolbarFlexibleSpaceItemIdentifier,@"Main",NSToolbarFlexibleSpaceItemIdentifier, nil];
+    return [NSArray arrayWithObjects:NSToolbarFlexibleSpaceItemIdentifier,@"Main",NSToolbarFlexibleSpaceItemIdentifier, nil];
 }
 
 ///////////////////
@@ -387,159 +392,142 @@
 
 - (NSString *)getRecorderDisplayNameForDevice:(DRDevice *)device
 {
-	if (device)
-	{
-		NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
-		NSDictionary *deviceStatus = [device status];
-		NSDictionary *mediaInfo = [deviceStatus objectForKey:DRDeviceMediaInfoKey];
-		NSDictionary *mediaState = [deviceStatus objectForKey:DRDeviceMediaStateKey];
-		CGFloat space;
-	
-		if ([mediaState isEqualTo:DRDeviceMediaStateMediaPresent])
-		{
-			if ([[mediaInfo objectForKey:DRDeviceMediaIsBlankKey] boolValue] | [standardDefaults boolForKey:@"KWShowOverwritableSpace"] == NO)
-				space = [[mediaInfo objectForKey:DRDeviceMediaFreeSpaceKey] cgfloatValue] * 2048 / 1024 / 2;
-			else if ([[mediaInfo objectForKey:DRDeviceMediaClassKey] isEqualTo:DRDeviceMediaClassDVD])
-				space = [[mediaInfo objectForKey:DRDeviceMediaOverwritableSpaceKey] cgfloatValue] * 2048 / 1024 / 2;
-			else
-				space = [KWCommonMethods defaultSizeForMedia:@"KWDefaultCDMedia"];
-		}
-		else
-		{
-			NSInteger media = [[standardDefaults objectForKey:@"KWDefaultMedia"] integerValue];
-		
-			if (media == 1)
-				space = [KWCommonMethods defaultSizeForMedia:@"KWDefaultCDMedia"];
-			else if (media == 2)
-				space = [KWCommonMethods defaultSizeForMedia:@"KWDefaultDVDMedia"];
-			else
-				space = -1;
-		}
-		
-		NSString *displayName = [device displayName];
-		if ([mediaState isEqualTo:DRDeviceMediaStateInTransition] | space == -1)
-		{
-			return [NSString stringWithFormat:@"%@\n%@", displayName, NSLocalizedString(@"No disc",nil)];
-		}
-		else
-		{
-			NSString *percent;
-			KWTabViewItem *tabViewItem = (KWTabViewItem *)[mainTabView selectedTabViewItem];
-			id controller = [tabViewItem myController];
-			CGFloat totalSize = [[controller performSelector:@selector(totalSize)] cgfloatValue];
-
-			if (space > 0)
-				percent = [NSString stringWithFormat: @"(%.0f%@)", totalSize / space * 100, @"%"];
-			else
-				percent = @"";
-				
-			return [NSString stringWithFormat:@"%@\n%@ %@", displayName, [NSString stringWithFormat:NSLocalizedString(@"%@ free", nil), [KWCommonMethods makeSizeFromFloat:space * 2048]], percent];
-		}
-	}
-	else
-	{
-		return NSLocalizedString(@"No Recorder",nil);
-	}
+    if (device)
+    {
+	    float space;
+    
+	    if ([[[device status] objectForKey:DRDeviceMediaStateKey] isEqualTo:DRDeviceMediaStateMediaPresent])
+	    {
+    	    NSDictionary *mediaInfo = [[device status] objectForKey:DRDeviceMediaInfoKey];
+	    
+    	    if ([[mediaInfo objectForKey:DRDeviceMediaIsBlankKey] boolValue] || [[NSUserDefaults standardUserDefaults] boolForKey:@"KWShowOverwritableSpace"] == NO)
+	    	    space = [[mediaInfo objectForKey:DRDeviceMediaFreeSpaceKey] floatValue] * 2048 / 1024 / 2;
+    	    else if ([[mediaInfo objectForKey:DRDeviceMediaClassKey] isEqualTo:DRDeviceMediaClassDVD])
+	    	    space = [[mediaInfo objectForKey:DRDeviceMediaOverwritableSpaceKey] floatValue] * 2048 / 1024 / 2;
+    	    else
+	    	    space = [KWCommonMethods defaultSizeForMedia:@"KWDefaultCDMedia"];
+	    }
+	    else
+	    {
+    	    NSInteger media = [[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultMedia"] intValue];
+	    
+    	    if (media == 1)
+	    	    space = [KWCommonMethods defaultSizeForMedia:@"KWDefaultCDMedia"];
+    	    else if (media == 2)
+	    	    space = [KWCommonMethods defaultSizeForMedia:@"KWDefaultDVDMedia"];
+    	    else
+	    	    space = -1;
+	    }
+	    
+	    if ([[[device status] objectForKey:DRDeviceMediaStateKey] isEqualTo:DRDeviceMediaStateInTransition] || space == -1)
+	    {
+    	    return [NSString stringWithFormat:@"%@\n%@", [device displayName], NSLocalizedString(@"No disc",nil)];
+	    }
+	    else
+	    {
+    	    NSString *percent;
+    	    KWTabViewItem *tabViewItem = (KWTabViewItem *)[mainTabView selectedTabViewItem];
+    	    id controller = [tabViewItem myController];
+    	    float totalSize = [[controller performSelector:@selector(totalSize)] floatValue];
+	    
+    	    if (space > 0)
+	    	    percent = [NSString stringWithFormat: @"(%.0f%@)", totalSize / space * 100, @"%"];
+    	    else
+	    	    percent = @"";
+	    	    
+    	    return [NSString stringWithFormat:@"%@\n%@ %@", [device displayName], [NSString stringWithFormat:NSLocalizedString(@"%@ free", nil), [KWCommonMethods makeSizeFromFloat:space * 2048]], percent];
+	    }
+    }
+    else
+    {
+	    return NSLocalizedString(@"No Recorder",nil);
+    }
 }
 
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {
-	[self open:filename];
-	
-	return YES;
+    [self open:filename];
+    
+    return YES;
 }
 
 - (void)open:(NSString *)pathname
 {
-	NSString *extension = [[pathname pathExtension] lowercaseString];
-	SEL aSelector;
-	id object = nil;
+    SEL aSelector;
+    id object = nil;
 
-	if ([[KWCommonMethods diskImageTypes] containsObject:extension] | [[[NSWorkspace sharedWorkspace] mountedLocalVolumePaths] containsObject:pathname])
-	{
-		[mainTabView selectTabViewItemWithIdentifier:@"Copy"];
-		
-		aSelector = @selector(checkImage:);
-		object = pathname;
-	}
-	else if ([extension isEqualTo:@"burn"])
-	{
-		NSDictionary *burnFile = [NSDictionary dictionaryWithContentsOfFile:pathname];
-		
-		if (burnFile)
-		{
-			[mainTabView selectTabViewItemAtIndex:[[burnFile objectForKey:@"KWType"] integerValue]];
+    if ([[KWCommonMethods diskImageTypes] containsObject:[[pathname pathExtension] lowercaseString]] || [[[NSWorkspace sharedWorkspace] mountedLocalVolumePaths] containsObject:pathname])
+    {
+	    [mainTabView selectTabViewItemWithIdentifier:@"Copy"];
+	    
+	    aSelector = @selector(checkImage:);
+	    object = pathname;
+    }
+    else if ([[[pathname pathExtension] lowercaseString] isEqualTo:@"burn"])
+    {
+	    NSDictionary *burnFile = [NSDictionary dictionaryWithContentsOfFile:pathname];
+	    
+	    if (burnFile)
+	    {
+    	    [mainTabView selectTabViewItemAtIndex:[[burnFile objectForKey:@"KWType"] intValue]];
 
-			aSelector = @selector(openBurnDocument:);
-			object = pathname;
-		}
-		else 
-		{
-			[KWCommonMethods standardAlertWithMessageText:NSLocalizedString(@"Invalid Burn file", nil) withInformationText:NSLocalizedString(@"The Burn file is corrupt or a wrong filetype", nil) withParentWindow:mainWindow];
-		}
-	}
-	else if ([extension isEqualTo:@"burntheme"])
-	{
-		[[NSNotificationCenter defaultCenter] postNotificationName:@"KWDVDThemeOpened" object:[NSArray arrayWithObjects:pathname,nil]];
-	}
-	else
-	{
-		[mainTabView selectTabViewItemWithIdentifier:@"Data"];
-		
-		aSelector = @selector(addDroppedOnIconFiles:);
-		object = [NSArray arrayWithObject:pathname];
-	}
-	
-	if (object)
-	{
-		KWTabViewItem *tabViewItem = (KWTabViewItem *)[mainTabView selectedTabViewItem];
-		id controller = [tabViewItem myController];
-		
-		[controller performSelector:aSelector withObject:object];
-	}
+    	    aSelector = @selector(openBurnDocument:);
+    	    object = pathname;
+	    }
+	    else 
+	    {
+    	    [KWCommonMethods standardAlertWithMessageText:NSLocalizedString(@"Invalid Burn file", nil) withInformationText:NSLocalizedString(@"The Burn file is corrupt or a wrong filetype", nil) withParentWindow:mainWindow];
+	    }
+    }
+    else if ([[[pathname pathExtension] lowercaseString] isEqualTo:@"burntheme"])
+    {
+	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWDVDThemeOpened" object:[NSArray arrayWithObjects:pathname,nil]];
+    }
+    else
+    {
+	    [mainTabView selectTabViewItemWithIdentifier:@"Data"];
+	    
+	    aSelector = @selector(addDroppedOnIconFiles:);
+	    object = [NSArray arrayWithObject:pathname];
+    }
+    
+    if (object)
+    {
+	    KWTabViewItem *tabViewItem = (KWTabViewItem *)[mainTabView selectedTabViewItem];
+	    id controller = [tabViewItem myController];
+	    
+        // TODO: just write things out, since it's saver for ARC and us :)
+	    [controller performSelector:aSelector withObject:[object copy]];
+    }
 }
 
 - (void)tabView:(NSTabView *)aTabView didSelectTabViewItem:(NSTabViewItem *)tabViewItem
 {
-	NSInteger segment = [aTabView indexOfTabViewItem:[aTabView selectedTabViewItem]];
-	[newTabView setSelectedSegment:segment];
-	
-	id controller = [(KWTabViewItem *)[aTabView selectedTabViewItem] myController];
-	
-	[itemHelp setTitle:[NSString stringWithFormat:NSLocalizedString(@"%@ Help", nil), [newTabView labelForSegment:segment]]];
-	
-	[[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeBurnStatus" object:[NSNumber numberWithBool:([controller numberOfRows] > 0)]];
+    NSInteger segment = [aTabView indexOfTabViewItem:[aTabView selectedTabViewItem]];
+    [newTabView setSelectedSegment:segment];
+    
+    id controller = [(KWTabViewItem *)[aTabView selectedTabViewItem] myController];
+    
+    [itemHelp setTitle:[NSString stringWithFormat:NSLocalizedString(@"%@ Help", nil), [newTabView labelForSegment:segment]]];
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeBurnStatus" object:[NSNumber numberWithBool:([controller numberOfRows] > 0)]];
 }
 
 - (BOOL)respondsToSelector:(SEL)aSelector
 {
-	if ([mainWindow attachedSheet] && aSelector != @selector(showItemHelp:))
-		return NO;
+    if ([mainWindow attachedSheet] && aSelector != @selector(showItemHelp:))
+	    return NO;
 
-	return [super respondsToSelector:aSelector];
+    return [super respondsToSelector:aSelector];
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)theApplication
 {
-	NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
-
-	if ([[standardDefaults objectForKey:@"KWCleanTemporaryFolderAction"] integerValue] == 1 && [[standardDefaults objectForKey:@"KWTemporaryLocationPopup"] integerValue] != 2)
-	{
-		NSArray *files = [standardDefaults objectForKey:@"KWTemporaryFiles"];
-	
-		NSInteger i;
-		for (i=0;i<[files count];i++)
-		{
-			NSString *path = [files objectAtIndex:i];
-			[KWCommonMethods removeItemAtPath:path];
-		}
-		
-		[standardDefaults setObject:[NSArray array] forKey:@"KWTemporaryFiles"];
-	}
-	
-	if ([standardDefaults boolForKey:@"KWFirstRun"] == YES)
-		[standardDefaults setObject:[NSNumber numberWithBool:NO] forKey:@"KWFirstRun"];
-	return YES;
+    NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
+    
+    if ([standardDefaults boolForKey:@"KWFirstRun"] == YES)
+	    [standardDefaults setObject:[NSNumber numberWithBool:NO] forKey:@"KWFirstRun"];
+    return YES;
 }
 
 @end

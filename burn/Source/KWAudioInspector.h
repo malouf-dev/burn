@@ -4,21 +4,20 @@
 
 @interface KWAudioInspector : NSObject
 {
-	//Interface outlets
-	IBOutlet id invalid;
-	IBOutlet id myView;
-	IBOutlet id iconView;
-	IBOutlet id nameField;
+    //Interface outlets
+    IBOutlet id invalid;
+    IBOutlet id myView;
+    IBOutlet id iconView;
+    IBOutlet id nameField;
     IBOutlet id timeField;
-	
-	//Variables
-	NSTableView *currentTableView;
-	NSArray *tagMappings;
+    
+    //Variables
+    NSTableView *currentTableView;
+    NSArray *tagMappings;
 }
 
 - (void)updateView:(id)object;
-- (id)getCDTextObjectForKey:(NSString *)key inCDTextObject:(id)object atIndexes:(NSArray *)indexes;
-- (id)getTrackObjectForKey:(NSString *)key inTrackObjects:(NSArray *)objects;
+- (id)getObjectForKey:(NSString *)key inObject:(id)object atIndexes:(NSArray *)indexes;
 - (IBAction)optionsChanged:(id)sender;
 - (IBAction)ISRCChanged:(id)sender;
 - (BOOL)isValidISRC:(NSString*)isrc;

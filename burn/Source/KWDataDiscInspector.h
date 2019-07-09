@@ -12,7 +12,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -56,50 +56,50 @@
 
 @interface KWDataDiscInspector : NSObject
 {
-	//Interface outlets
-	IBOutlet id	myView;
-	IBOutlet id	nameField;
-	IBOutlet id	sizeField;
-	IBOutlet id	tabView;
-	IBOutlet id	mainIconView;
-	
-	IBOutlet id	hfsName;
-	IBOutlet id	isoName;
-	IBOutlet id	jolietName;
-	IBOutlet id	udfName;
-	
-	IBOutlet id	isoOptions;
-	IBOutlet id	hfsOptions;
-	IBOutlet id	jolietOptions;
-	IBOutlet id	udfOptions;
-	IBOutlet id	allOptions;
-	
-	IBOutlet id	uid;
-	IBOutlet id	gid;
-	IBOutlet id	perms;
-	
-	IBOutlet id	hfsBoundsT;
-	IBOutlet id	hfsBoundsB;
-	IBOutlet id	hfsBoundsL;
-	IBOutlet id	hfsBoundsR;
-	IBOutlet id	hfsScrollX;
-	IBOutlet id	hfsScrollY;
-	IBOutlet id	hfsViewType;
-	
-	IBOutlet id	isoLevel;
-	IBOutlet id	udfVersion;
-	
-	IBOutlet id	iconView;
+    //Interface outlets
+    IBOutlet id    myView;
+    IBOutlet id    nameField;
+    IBOutlet id    sizeField;
+    IBOutlet id    tabView;
+    IBOutlet id    mainIconView;
+    
+    IBOutlet id    hfsName;
+    IBOutlet id    isoName;
+    IBOutlet id    jolietName;
+    IBOutlet id    udfName;
+    
+    IBOutlet id    isoOptions;
+    IBOutlet id    hfsOptions;
+    IBOutlet id    jolietOptions;
+    IBOutlet id    udfOptions;
+    IBOutlet id    allOptions;
+    
+    IBOutlet id    uid;
+    IBOutlet id    gid;
+    IBOutlet id    perms;
+    
+    IBOutlet id    hfsBoundsT;
+    IBOutlet id    hfsBoundsB;
+    IBOutlet id    hfsBoundsL;
+    IBOutlet id    hfsBoundsR;
+    IBOutlet id    hfsScrollX;
+    IBOutlet id    hfsScrollY;
+    IBOutlet id    hfsViewType;
+    
+    IBOutlet id    isoLevel;
+    IBOutlet id    udfVersion;
+    
+    IBOutlet id    iconView;
 
-	IBOutlet id	fileChooser;
-	IBOutlet id	okButton;
-	IBOutlet id	fileList;
+    IBOutlet id    fileChooser;
+    IBOutlet id    okButton;
+    IBOutlet id    fileList;
 
-	//Variables
-	DRFolder*				filesystemRoot;
-	NSMutableDictionary*	fsProperties;
-	TreeNode*				selectedItem;
-	NSArray*				rootFiles;
+    //Variables
+    DRFolder*	    	    filesystemRoot;
+    NSMutableDictionary*    fsProperties;
+    TreeNode*	    	    selectedItem;
+    NSArray*	    	    rootFiles;
 
 }
 

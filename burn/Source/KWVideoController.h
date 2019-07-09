@@ -8,23 +8,23 @@
 
 #import <Cocoa/Cocoa.h>
 #import "KWMediaListController.h"
-#import <KWDVDAuthorizer.h>
+#import "KWDVDAuthorizer.h"
 
 @interface KWVideoController : KWMediaListController {
-	
-	//Options menu
-	IBOutlet id dvdOptionsPopup;
-	IBOutlet id divxOptionsPopup;
-	
-	//Variables
-	NSMutableArray *VCDTableData;
-	NSMutableArray *SVCDTableData;
-	NSMutableArray *DVDTableData;
-	NSMutableArray *DIVXTableData;
-	KWDVDAuthorizer *DVDAuthorizer;
-	
-	NSArray *dvdOptionsMappings;
-	NSArray *divxOptionsMappings;
+    
+    //Options menu
+    IBOutlet id dvdOptionsPopup;
+    IBOutlet id divxOptionsPopup;
+    
+    //Variables
+    NSMutableArray *VCDTableData;
+    NSMutableArray *SVCDTableData;
+    NSMutableArray *DVDTableData;
+    NSMutableArray *DIVXTableData;
+    KWDVDAuthorizer *DVDAuthorizer;
+    
+    NSArray *dvdOptionsMappings;
+    NSArray *divxOptionsMappings;
 }
 
 //Main actions
@@ -44,6 +44,6 @@
 //Set an empty info
 - (void)volumeLabelSelected:(NSNotification *)notif;
 //Calculate VCD size (bit different from the rest)
-- (CGFloat)totalSVCDSize;
+- (float)totalSVCDSize;
 
 @end

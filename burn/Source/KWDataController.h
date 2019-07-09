@@ -1,53 +1,51 @@
 #import <Cocoa/Cocoa.h>
 #import <DiscRecording/DiscRecording.h>
-#import "KWProgress.h"
+#import "KWProgressManager.h"
 #import "KWBurner.h"
 #import "KWDRFolder.h"
 #import "KWTrackProducer.h"
+#import "KWWindowController.h"
 
 @class TreeNode;
 
 @interface KWDataController : NSObject 
-{	
+{    
     //Main Window
-	IBOutlet id	mainWindow;
-	IBOutlet NSOutlineView	*outlineView;
-	IBOutlet id	fileSystemPopup;
-	IBOutlet id	discName;
-	IBOutlet id	totalSizeText;
-	IBOutlet id	iconView;
-	IBOutlet id progressIndicator;
-	
-	//Options menu
-	IBOutlet id optionsPopup;
-	
-	//New folder sheet
-	IBOutlet id	newFolderSheet;
-	IBOutlet id	folderName;
-	//Add to local
-	IBOutlet id folderIcon;
-	
-	//Advanced Sheet
-	IBOutlet id	advancedSheet;
-	IBOutlet NSMatrix *advancedCheckboxes;
-	IBOutlet id	okSheet;
-	
-	//Disc creation
-	IBOutlet id myDiscCreationController;
-	
-	//Variables
-	TreeNode *treeData;
+    IBOutlet KWWindowController *windowController;
+    IBOutlet id    mainWindow;
+    IBOutlet NSOutlineView    *outlineView;
+    IBOutlet id    fileSystemPopup;
+    IBOutlet id    discName;
+    IBOutlet id    totalSizeText;
+    IBOutlet id    iconView;
+    
+    //Options menu
+    IBOutlet id optionsPopup;
+    
+    //New folder sheet
+    IBOutlet id    newFolderSheet;
+    IBOutlet id    folderName;
+    //Add to local
+    IBOutlet id folderIcon;
+    
+    //Advanced Sheet
+    IBOutlet id    advancedSheet;
+    IBOutlet NSMatrix *advancedCheckboxes;
+    IBOutlet id    okSheet;
+    
+    //Disc creation
+    IBOutlet id myDiscCreationController;
+    
+    //Variables
+    TreeNode *treeData;
     NSArray *draggedNodes;
-	NSString *lastSelectedItem;
-	NSDictionary *discProperties;
-	BOOL loadingBurnFile;
-	NSArray *optionsMappings;
-	NSMutableArray *temporaryFiles;
-	NSArray *mainFilesystems;
-	NSArray *advancedFilesystems;
-	uint64_t totalSize;
-	
-	NSArray *selectedItems;
+    NSString *lastSelectedItem;
+    NSDictionary *discProperties;
+    BOOL loadingBurnFile;
+    NSArray *optionsMappings;
+    NSMutableArray *temporaryFiles;
+    NSArray *mainFilesystems;
+    NSArray *advancedFilesystems;
 }
 
 //Main actions
@@ -89,12 +87,11 @@
 - (void)setPropertiesFor:(DRFSObject *)object fromDictionary:(NSDictionary *)dict;
 
 //Other actions
-- (void)setDiskName:(NSString *)name;
+@property (nonatomic, copy) NSString *diskName;
 - (BOOL)isCombinable;
 - (BOOL)isCompatible;
 - (BOOL)isOnlyHFSPlus;
-- (void)deleteTemporayFiles:(NSNumber *)needed;
-- (void)saveDataPopup:(id)sender;
+- (void)deleteTemporayFiles:(BOOL)needed;
 
 //Inspector actions
 - (void)volumeLabelSelected:(NSNotification *)notif;

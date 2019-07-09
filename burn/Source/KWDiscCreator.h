@@ -8,37 +8,36 @@
 
 #import <Cocoa/Cocoa.h>
 #import <DiscRecording/DiscRecording.h>
-#import <KWBurner.h>
-#import <KWProgress.h>
+#import "KWBurner.h"
+#import "KWProgressManager.h"
 #import "KWDRFolder.h"
-
+#import "KWWindowController.h"
 
 @interface KWDiscCreator : NSObject 
 {
 //Main outlets
-	IBOutlet id mainWindow;
-	IBOutlet id mainTabView;
-	
-	//Controllers
-	IBOutlet id dataControllerOutlet;
-	IBOutlet id audioControllerOutlet;
-	IBOutlet id videoControllerOutlet;
-	IBOutlet id copyControllerOutlet;
-	
-	//Sessions outlets
-	IBOutlet id saveCombineSessions;
-	IBOutlet id saveImageView;
-	
-	//Variables
-	KWBurner *burner;
-	KWProgress *progressPanel;
-	BOOL isBurning;
-	NSString *discName;
-	NSString *imagePath;
-	BOOL hiddenExtension;
-	NSMutableArray *extensionHiddenArray;
-	BOOL shouldWait;
-	NSString *errorString;
+    IBOutlet id mainWindow;
+    IBOutlet id mainTabView;
+    
+    //Controllers
+    IBOutlet id dataControllerOutlet;
+    IBOutlet id audioControllerOutlet;
+    IBOutlet id videoControllerOutlet;
+    IBOutlet id copyControllerOutlet;
+    
+    //Sessions outlets
+    IBOutlet id saveCombineSessions;
+    IBOutlet id saveImageView;
+    
+    //Variables
+    KWBurner *burner;
+    BOOL isBurning;
+    NSString *discName;
+    NSString *imagePath;
+    BOOL hiddenExtension;
+    NSMutableArray *extensionHiddenArray;
+    BOOL shouldWait;
+    NSString *errorString;
 }
 
 //Sessions actions
@@ -52,7 +51,6 @@
 
 //Burn actions
 - (void)burnDiscWithName:(NSString *)name withType:(NSInteger)type;
-- (void)burnSetupPanelEnded:(KWBurner *)myBurner returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 - (void)burnTracks;
 - (void)burnFinished:(NSNotification*)notif;
 
@@ -61,7 +59,8 @@
 - (DRFSObject *)newDRFSObject:(DRFSObject *)object;
 - (BOOL)waitForMediaIfNeeded;
 - (void)stopWaiting;
-- (void)restoreHiddenExtensions;
-- (void)deleteTemporaryFiles;
+
+// TODO: Find a better way to set the notification delegate and send a notification
+@property (nonatomic, weak) IBOutlet KWWindowController *windowController;
 
 @end

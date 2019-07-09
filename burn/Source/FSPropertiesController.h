@@ -13,7 +13,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -54,29 +54,29 @@
 
 @interface FSPropertiesController : NSObject 
 {
-	NSArray *inspectedItems;
+    NSArray *inspectedItems;
 
-	IBOutlet id	included;
-	IBOutlet id	contentView;
-	
-	IBOutlet id	baseName;
-	IBOutlet id	specificName;
-	IBOutlet id	mangledName;
+    IBOutlet id    included;
+    IBOutlet id    contentView;
+    
+    IBOutlet id    baseName;
+    IBOutlet id    specificName;
+    IBOutlet id    mangledName;
 
-	IBOutlet id	creationDate;
-	IBOutlet id	contentModDate;
-	IBOutlet id	attributeModDate;
-	IBOutlet id	lastAccessedDate;
-	IBOutlet id	backupDate;
+    IBOutlet id    creationDate;
+    IBOutlet id    contentModDate;
+    IBOutlet id    attributeModDate;
+    IBOutlet id    lastAccessedDate;
+    IBOutlet id    backupDate;
 
-	IBOutlet id	uid;
-	IBOutlet id	gid;
-	IBOutlet id	perms;
-	
-	NSArray *propertyMappings;
+    IBOutlet id    uid;
+    IBOutlet id    gid;
+    IBOutlet id    perms;
+    
+    NSArray* propertyMappings;
 }
 
-- (NSString *)filesystem;
+- (NSString*)filesystem;
 - (DRFilesystemInclusionMask)mask;
 
 - (void)inspect:(NSArray *)items;

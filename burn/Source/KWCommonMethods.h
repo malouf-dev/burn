@@ -8,29 +8,22 @@
 
 #import <Cocoa/Cocoa.h>
 #import <DiscRecording/DiscRecording.h>
-#import "NSNumber_Extensions.h"
-#import "NSControl_Extensions.h"
-#import "NSString_Extensions.h"
 
-@interface KWCommonMethods : NSObject {}
+BOOL isAppearanceIsDark(NSAppearance * appearance);
 
-//OS actions
-//Check for Snow Leopard (used to show new sizes divided by 1000 instead of 1024 and a lot more ;-)
-+ (NSInteger)OSVersion;
-//Check is QuickTime 7 is installed (QTKit)
-+ (BOOL)isQuickTimeSevenInstalled;
+@interface KWCommonMethods : NSObject 
 
 //String format actions
-//Format time (example: 90 seconds to 00:00:90 or 90 seconds to 00:00:90.00)
-+ (NSString *)formatTime:(CGFloat)time withFrames:(BOOL)frames;
+//Format time (example: 90 seconds to 00:00:90)
++ (NSString *)formatTime:(NSInteger)time;
+//Format time for chapters on DVD (exact: 90 seconds to 00:00:90.00)
++ (NSString *)formatTimeForChapter:(float)time;
 //Make 1048576 bytes look like 1 MB
-+ (NSString *)makeSizeFromFloat:(CGFloat)size;
++ (NSString *)makeSizeFromFloat:(float)size;
 
 //File actions
 //Get a non existing file name (example Folder 1, Folder 2 etc.)
 + (NSString *)uniquePathNameFromPath:(NSString *)path;
-//Get the temporary location and ask it if set in the preferences
-+ (NSString *)temporaryLocation:(NSString *)file saveDescription:(NSString *)description;
 //Create a folder to test if the given extension is a bundle extension
 + (BOOL)isBundleExtension:(NSString *)extension;
 
@@ -47,8 +40,6 @@
 + (BOOL)fsObjectContainsHFS:(DRFSObject *)object;
 //Get the right name for the data list or data inspector
 + (NSString *)fsObjectFileName:(DRFSObject *)object;
-//Get the Finder Flags at a given path
-+ (unsigned long)getFinderFlagsAtPath:(NSString *)path;
 //Check if a virtual or real folder contains .localized
 + (BOOL)isDRFolderIsLocalized:(DRFolder *)folder;
 //Get the max lable size
@@ -70,9 +61,9 @@
 
 //Other actions
 //Take all real folders and calculate the total size 
-+ (CGFloat)calculateRealFolderSize:(NSString *)path;
++ (float)calculateRealFolderSize:(NSString *)path;
 //Take all virtual folders and calculate the total size 
-+ (CGFloat)calculateVirtualFolderSize:(DRFSObject *)obj;
++ (float)calculateVirtualFolderSize:(DRFSObject *)obj;
 //Get the selected items in the audio tableview for inspection
 + (NSArray*)allSelectedItemsInTableView:(NSTableView *)tableView fromArray:(NSArray *)array;
 //Get the current device
@@ -84,7 +75,7 @@
 //Get the current device
 + (DRDevice *)savedDevice;
 //Get the default media size
-+ (CGFloat)defaultSizeForMedia:(NSString *)media;
++ (float)defaultSizeForMedia:(NSString *)media;
 //Get a image from our custom image database
 + (NSImage *)getImageForName:(NSString *)name;
 //Setup a burner popup

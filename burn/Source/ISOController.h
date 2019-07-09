@@ -12,7 +12,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -52,12 +52,12 @@
 
 @interface ISOController : FSPropertiesController 
 {
-	IBOutlet id	effectiveDate;
-	IBOutlet id	expirationDate;
-	IBOutlet id	recordingDate;
+    IBOutlet id    effectiveDate;
+    IBOutlet id    expirationDate;
+    IBOutlet id    recordingDate;
 
-	IBOutlet id	versionNumber;
-	IBOutlet id invisible;
+    IBOutlet id    versionNumber;
+    IBOutlet id invisible;
 }
 
 @end

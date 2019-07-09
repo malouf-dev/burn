@@ -13,11 +13,11 @@
     IBOutlet id tableView;
     IBOutlet id timeField;
     IBOutlet id timeSlider;
-	IBOutlet id titleField;
-	
-	NSMutableArray *tableData;
-	id currentTableView;
-	id currentObject;
+    IBOutlet id titleField;
+    
+    NSMutableArray *tableData;
+    id currentTableView;
+    id currentObject;
 }
 - (IBAction)add:(id)sender;
 - (IBAction)addSheet:(id)sender;

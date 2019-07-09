@@ -4,18 +4,18 @@
 
 @interface KWInspector : NSWindowController
 {
-	//Interface Outlets
+    //Interface Outlets
     //Controllers
-	IBOutlet id dataController;
-	IBOutlet id dataDiscController;
-	IBOutlet id audioController;
-	IBOutlet id audioDiscController;
-	IBOutlet id audioMP3Controller;
-	IBOutlet id dvdController;
-	//Empty
-	IBOutlet id emptyView;
-	
-	BOOL firstRun;
+    IBOutlet id dataController;
+    IBOutlet id dataDiscController;
+    IBOutlet id audioController;
+    IBOutlet id audioDiscController;
+    IBOutlet id audioMP3Controller;
+    IBOutlet id dvdController;
+    //Empty
+    IBOutlet id emptyView;
+    
+    BOOL firstRun;
 }
 
 //Main Actions

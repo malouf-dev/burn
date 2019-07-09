@@ -10,9 +10,8 @@
 #import "KWCommonMethods.h"
 
 
-@interface KWAlert : NSAlert
-{
-	BOOL expanded;
+@interface KWAlert : NSAlert {
+    BOOL expanded;
 }
 - (void)setDetails:(NSString *)details;
 - (void)showDetails;

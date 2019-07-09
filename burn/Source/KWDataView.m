@@ -5,23 +5,22 @@
 
 - (void)awakeFromNib
 {
-	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(setViewState:) name:@"KWSetDropState" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(setViewState:) name:@"KWSetDropState" object:nil];
 }
 
 - (id)initWithFrame:(NSRect)frameRect
 {
-	if ((self = [super initWithFrame:frameRect]) != nil) 
-		[self registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
+    if ((self = [super initWithFrame:frameRect]) != nil) 
+	    [self registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
 
-	return self;
+    return self;
 }
 
 - (void)dealloc
 {
-	[[NSNotificationCenter defaultCenter] removeObserver:self];
-	[self unregisterDraggedTypes];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [self unregisterDraggedTypes];
 
-	[super dealloc];
 }
 
 - (void)drawRect:(NSRect)rect
@@ -32,16 +31,16 @@
 {
     if ((NSDragOperationGeneric & [sender draggingSourceOperationMask]) == NSDragOperationGeneric)
     {
-		//this means that the sender is offering the type of operation we want
-		//return that we want the NSDragOperationGeneric operation that they 
-		//are offering
-		return NSDragOperationGeneric;
+	    //this means that the sender is offering the type of operation we want
+	    //return that we want the NSDragOperationGeneric operation that they 
+	    //are offering
+	    return NSDragOperationGeneric;
     }
     else
     {
-		//since they aren't offering the type of operation we want, we have 
-		//to tell them we aren't interested
-		return NSDragOperationNone;
+	    //since they aren't offering the type of operation we want, we have 
+	    //to tell them we aren't interested
+	    return NSDragOperationNone;
     }
 }
 
@@ -49,32 +48,32 @@
 {
     if ((NSDragOperationGeneric & [sender draggingSourceOperationMask]) == NSDragOperationGeneric)
     {
-		//this means that the sender is offering the type of operation we want
-		//return that we want the NSDragOperationGeneric operation that they 
-		//are offering
-		return NSDragOperationGeneric;
+	    //this means that the sender is offering the type of operation we want
+	    //return that we want the NSDragOperationGeneric operation that they 
+	    //are offering
+	    return NSDragOperationGeneric;
     }
     else
     {
-		//since they aren't offering the type of operation we want, we have 
-		//to tell them we aren't interested
-		return NSDragOperationNone;
+	    //since they aren't offering the type of operation we want, we have 
+	    //to tell them we aren't interested
+	    return NSDragOperationNone;
     }
 }
 
 - (BOOL)prepareForDragOperation:(id <NSDraggingInfo>)sender
 {
-	return YES;
+    return YES;
 }
 
 - (BOOL)performDragOperation:(id <NSDraggingInfo>)sender
 {
-	NSPasteboard *paste = [sender draggingPasteboard];
-	//gets the dragging-specific pasteboard from the sender
-	NSArray *types = [NSArray arrayWithObjects:NSFilenamesPboardType, nil];
-	//a list of types that we can accept
-	NSString *desiredType = [paste availableTypeFromArray:types];
-	NSData *carriedData = [paste dataForType:desiredType];
+    NSPasteboard *paste = [sender draggingPasteboard];
+    //gets the dragging-specific pasteboard from the sender
+    NSArray *types = [NSArray arrayWithObjects:NSFilenamesPboardType, nil];
+    //a list of types that we can accept
+    NSString *desiredType = [paste availableTypeFromArray:types];
+    NSData *carriedData = [paste dataForType:desiredType];
 
     if (nil == carriedData)
     {
@@ -85,8 +84,6 @@
     {
         if ([desiredType isEqualToString:NSFilenamesPboardType])
         {
-			NSFileManager *defaultManager = [NSFileManager defaultManager];
-		
             //we have a list of file names in an NSData object
             NSArray *fileArray = [paste propertyListForType:@"NSFilenamesPboardType"];
                 //be caseful since this method returns id.  
@@ -94,36 +91,35 @@
             NSString *path = [fileArray objectAtIndex:0];
                 //assume that we can ignore all but the first path in the list
             
-			BOOL isDir;
-			if ([defaultManager fileExistsAtPath:path isDirectory:&isDir])
-			{
-				if (isDir == YES)
-				{
-					[myController setDiskName:[path lastPathComponent]];
-				
-					NSArray *files = [defaultManager directoryContentsAtPath:path];
-					NSMutableArray *fulPaths = [NSMutableArray array];
-					NSInteger i;
-					for (i = 0; i < [files count]; i ++)
-					{
-						[fulPaths addObject:[path stringByAppendingPathComponent:[files objectAtIndex:i]]];
-					}
-					
-					[myController addFiles:fulPaths removeFiles:YES];
-				}
-			}
+    	    BOOL isDir;
+    	    if ([[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir])
+    	    {
+	    	    if (isDir == YES)
+	    	    {
+    	    	    [myController setDiskName:[path lastPathComponent]];
+	    	    
+    	    	    NSArray *files = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:path error:nil];
+    	    	    NSMutableArray *fulPaths = [[NSMutableArray alloc] init];
+    	    	    for (NSInteger i = 0; i < [files count]; i ++)
+    	    	    {
+	    	    	    [fulPaths addObject:[path stringByAppendingPathComponent:[files objectAtIndex:i]]];
+    	    	    }
+    	    	    
+    	    	    [myController addFiles:fulPaths removeFiles:YES];
+	    	    }
+    	    }
         }
     }
 
-	return YES;
+    return YES;
 }
 
 - (void)setViewState:(NSNotification *)notif
 {
-	if ([[notif object] boolValue])
-		[self registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
-	else
-		[self unregisterDraggedTypes];
+    if ([[notif object] boolValue])
+	    [self registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
+    else
+	    [self unregisterDraggedTypes];
 }
 
 @end

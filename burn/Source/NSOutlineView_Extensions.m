@@ -2,7 +2,7 @@
      File:       NSOutlineView_Extensions.m
  
      Contains:   NSOutlineView category (MyExtensions), and subclass (MyOutlineView).
- 				 
+ 	    	     
      Version:    Technology: Mac OS X
                  Release:    Mac OS X
  
@@ -11,7 +11,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -53,40 +53,40 @@
 
 - (id)selectedItem 
 {
-	return [self itemAtRow: [self selectedRow]];
+    return [self itemAtRow: [self selectedRow]];
 }
 
 - (NSArray*)allSelectedItems 
 {
     NSMutableArray *items = [NSMutableArray array];
-	NSIndexSet *indexSet = [self selectedRowIndexes];
-	
-	NSUInteger current_index = [indexSet firstIndex];
+    NSIndexSet *indexSet = [self selectedRowIndexes];
+    
+    NSUInteger current_index = [indexSet firstIndex];
     while (current_index != NSNotFound)
     {
-		id itemAtRow = [self itemAtRow:current_index];
-	
-		if (itemAtRow) 
+	    id itemAtRow = [self itemAtRow:current_index];
+    
+	    if (itemAtRow) 
             [items addObject:itemAtRow];
-			
+    	    
         current_index = [indexSet indexGreaterThanIndex: current_index];
     }
-	
+    
     return items;
 }
 
 - (void)selectItems:(NSArray*)items byExtendingSelection:(BOOL)extend 
 {
-    if (extend == NO) 
-		[self deselectAll:nil];
-	
-	NSInteger i;
-	for (i = 0; i < [items count]; i ++) 
-	{
+    NSInteger i;
+    if (extend==NO) 
+	    [self deselectAll:nil];
+   
+    for (i=0;i<[items count];i++) 
+    {
         NSInteger row = [self rowForItem:[items objectAtIndex:i]];
-		
-        if(row >= 0) 
-			[self selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:YES];
+	    
+        if(row>=0) 
+    	    [self selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:YES];
     }
 }
 
@@ -98,9 +98,9 @@
 - (NSDragOperation)draggingSourceOperationMaskForLocal:(BOOL)isLocal 
 {
     if (isLocal)
-		return NSDragOperationEvery;
+	    return NSDragOperationEvery;
     else
-		return NSDragOperationCopy;
+	    return NSDragOperationCopy;
 }
 
 @end

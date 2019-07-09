@@ -12,7 +12,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -55,45 +55,37 @@
 
 - (id) init
 {
-	if (self = [super init])
-	{
-		// Like in other places, we're doing an object tag -> property mapping to easily
-		// convert between the two worlds.
-		propertyMappings = [[NSArray alloc] initWithObjects:	DRCreationDate,					//0
-																DRContentModificationDate,		//1
-																DRAttributeModificationDate,	//2
-																DRAccessDate,					//3
-																DRBackupDate,					//4
-																DREffectiveDate,				//5
-																DRExpirationDate,				//6
-																DRRecordingDate,				//7
-																DRPosixFileMode,				//8
-																DRPosixUID,						//9
-																DRPosixGID,						//10
-																DRISO9660VersionNumber,			//11
-																DRInvisible,					//12
-																nil];
-	}
-	
-	return self;
-}
-
-- (void)dealloc
-{
-	[propertyMappings release];
-	propertyMappings = nil;
-	
-	[super dealloc];
+    if (self = [super init])
+    {
+	    // Like in other places, we're doing an object tag -> property mapping to easily
+	    // convert between the two worlds.
+	    propertyMappings = [[NSArray alloc] initWithObjects:    DRCreationDate,    	    	    //0
+	    	    	    	    	    	    	    	    DRContentModificationDate,	    //1
+	    	    	    	    	    	    	    	    DRAttributeModificationDate,    //2
+	    	    	    	    	    	    	    	    DRAccessDate,    	    	    //3
+	    	    	    	    	    	    	    	    DRBackupDate,    	    	    //4
+	    	    	    	    	    	    	    	    DREffectiveDate,	    	    //5
+	    	    	    	    	    	    	    	    DRExpirationDate,	    	    //6
+	    	    	    	    	    	    	    	    DRRecordingDate,	    	    //7
+	    	    	    	    	    	    	    	    DRPosixFileMode,	    	    //8
+	    	    	    	    	    	    	    	    DRPosixUID,	    	    	    //9
+	    	    	    	    	    	    	    	    DRPosixGID,	    	    	    //10
+	    	    	    	    	    	    	    	    DRISO9660VersionNumber,    	    //11
+	    	    	    	    	    	    	    	    DRInvisible,    	    	    //12
+	    	    	    	    	    	    	    	    nil];
+    }
+    
+    return self;
 }
 
 - (void)updateSpecific
 {
-	[versionNumber setObjectValue:[self getPropertyForKey:DRISO9660VersionNumber]];
-	[invisible setObjectValue:[self getPropertyForKey:DRInvisible]];
+    [versionNumber setObjectValue:[self getPropertyForKey:DRISO9660VersionNumber]];
+    [invisible setObjectValue:[self getPropertyForKey:DRInvisible]];
 
-	[effectiveDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[effectiveDate tag]]]];
-	[expirationDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[expirationDate tag]]]];
-	[recordingDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[recordingDate tag]]]];
+    [effectiveDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[effectiveDate tag]]]];
+    [expirationDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[expirationDate tag]]]];
+    [recordingDate setObjectValue:[self getPropertyForKey:[propertyMappings objectAtIndex:[recordingDate tag]]]];
 }
 
 @end

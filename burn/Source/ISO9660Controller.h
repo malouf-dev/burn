@@ -11,7 +11,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -51,10 +51,10 @@
 
 @interface ISO9660Controller : ISOController 
 {
-	IBOutlet id	level1MangledName;
-	IBOutlet id	level1SpecificName;
-	IBOutlet id	level2MangledName;
-	IBOutlet id	level2SpecificName;
+    IBOutlet id    level1MangledName;
+    IBOutlet id    level1SpecificName;
+    IBOutlet id    level2MangledName;
+    IBOutlet id    level2SpecificName;
 }
 
 @end

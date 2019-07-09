@@ -2,45 +2,51 @@
 
 #import <Cocoa/Cocoa.h>
 #import <DiscRecording/DiscRecording.h>
-#import <KWProgress.h>
-#import <KWDiscScanner.h>
-#import <KWBurner.h>
+#import "KWProgressManager.h"
+#import "KWDiscScanner.h"
+#import "KWBurner.h"
+#import "KWWindowController.h"
 
 @interface KWCopyController : NSObject
 {
     //Main Window
-	IBOutlet id mainWindow;
-	IBOutlet id nameField;
-	IBOutlet id iconView;
-	IBOutlet id sizeField;
-	IBOutlet id fileSystemField;
-	IBOutlet id mountButton;
-	IBOutlet id dropView;
-	IBOutlet id dropText;
-	IBOutlet id clearDisk;
-	IBOutlet id dropIcon;
-	IBOutlet id browseButton;
-	IBOutlet id mountMenu;
-	
-	//Disc creation
-	IBOutlet id myDiscCreationController;
-	
-	//Variables
-	NSTask *hdiutil;
-	NSTask *cp;
-	BOOL userCanceled;
-	BOOL shouldBurn;
-	NSTimer *timer;
-	//Current Information
-	NSMutableDictionary *currentInformation;
-	//Out little helpers
-	KWProgress *progressPanel;
-	KWDiscScanner *scanner;
-	BOOL awake;
-	NSMutableArray *temporaryFiles;
-	#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-	NSArray *cdTextBlocks;
-	#endif
+    IBOutlet KWWindowController *windowController;
+    IBOutlet id mainWindow;
+    IBOutlet id nameField;
+    IBOutlet id iconView;
+    IBOutlet id sizeField;
+    IBOutlet id fileSystemField;
+    IBOutlet id mountButton;
+    IBOutlet id dropView;
+    IBOutlet id dropText;
+    IBOutlet id clearDisk;
+    IBOutlet id dropIcon;
+    IBOutlet id browseButton;
+    IBOutlet id mountMenu;
+    
+    //Disc creation
+    IBOutlet id myDiscCreationController;
+    
+    //Variables
+    unsigned long blocks;
+    NSTask *hdiutil;
+    NSTask *cp;
+    BOOL userCanceled;
+    BOOL shouldBurn;
+    BOOL awakeFromNib;
+    NSTimer *timer;
+    //Strings
+    NSString *currentPath;
+    NSString *mountedPath;
+    NSString *imageMountedPath;
+    NSString *savedPath;
+    NSString *audioDiscPath;
+    //Out little helpers
+    KWProgressManager *progressPanel;
+    KWDiscScanner* scanner;
+    KWBurner *burner;
+    
+    NSMutableArray *temporaryFiles;
 }
 
 //Main actions
@@ -55,7 +61,7 @@
 //Disc creation actions
 - (void)burn:(id)sender;
 - (void)saveImage:(id)sender;
-- (id)myTrackWithBurner:(KWBurner *)burner errorString:(NSString **)error andLayerBreak:(NSNumber **)layerBreak;
+- (id)myTrackWithErrorString:(NSString **)error andLayerBreak:(NSNumber**)layerBreak;
 - (void)remount:(id)object;
 
 //Other actions
@@ -69,16 +75,12 @@
 - (void)changeMountState:(BOOL)state forDevicePath:(NSString *)path;
 - (void)deviceUnmounted:(NSNotification *)notif;
 - (void)deviceMounted:(NSNotification *)notif;
-- (void)deleteTemporayFiles:(NSNumber *)needed;
+- (void)deleteTemporayFiles:(BOOL)needed;
 - (BOOL)isCueFile;
 - (BOOL)isAudioCD;
 - (NSInteger)cueImageSizeAtPath:(NSString *)path;
 - (NSString *)getIsoForDvdFileAtPath:(NSString *)path;
 - (NSNumber *)getLayerBreakForDvdFileAtPath:(NSString *)path;
 - (NSDictionary *)isoInfo;
-
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-- (NSArray *)getCDTextBlocks;
-#endif
 
 @end

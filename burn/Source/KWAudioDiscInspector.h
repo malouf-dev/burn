@@ -5,12 +5,12 @@
 @interface KWAudioDiscInspector : NSObject
 {
     IBOutlet id genreCode;
-	IBOutlet id	myView;
-	IBOutlet id	timeField;
-	
-	//Variables
-	NSTableView *currentTableView;
-	NSArray *tagMappings;
+    IBOutlet id    myView;
+    IBOutlet id    timeField;
+    
+    //Variables
+    NSTableView *currentTableView;
+    NSArray *tagMappings;
 }
 - (void)updateView:(id)object;
 - (IBAction)optionsChanged:(id)sender;

@@ -2,7 +2,7 @@
      File:       NSArray_Extensions.m
  
      Contains:   NSArray and NSMutableArray categories (MyExtensions).
- 				 
+ 	    	     
      Version:    Technology: Mac OS X
                  Release:    Mac OS X
  
@@ -11,7 +11,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -52,9 +52,9 @@
 
 @implementation NSArray (MyExtensions)
 
-- (BOOL)containsObjectIdenticalTo:(id)obj 
+- (BOOL) containsObjectIdenticalTo: (id)obj 
 { 
-    return [self indexOfObjectIdenticalTo:obj] != NSNotFound; 
+    return [self indexOfObjectIdenticalTo: obj]!=NSNotFound; 
 }
 
 @end
@@ -66,15 +66,15 @@
     NSObject *entry = nil;
     NSEnumerator *enumerator = [array objectEnumerator];
     while ((entry=[enumerator nextObject])) 
-	{
+    {
         [self insertObject:entry atIndex:index++];
     }
 }
 
 - (void)insertObject:(NSObject *)obj sortedBySelector:(SEL)selector
 {
-	[self insertObject:obj atIndex:0];
-	[self sortUsingSelector:selector];
+    [self insertObject:obj atIndex:0];
+    [self sortUsingSelector:selector];
 }
 
 @end

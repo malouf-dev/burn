@@ -11,7 +11,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -52,16 +52,16 @@
 
 @implementation JolietController
 
-- (NSString *)filesystem
+- (NSString*) filesystem
 {
-	// We're the controller for the Joliet filesystem, so return the correct value.
-	return DRJoliet;
+    // We're the controller for the Joliet filesystem, so return the correct value.
+    return DRJoliet;
 }
 
-- (DRFilesystemInclusionMask)mask
+- (DRFilesystemInclusionMask) mask
 {
-	// We're the controller for the Joliet filesystem, so return the correct value.
-	return DRFilesystemInclusionMaskJoliet;
+    // We're the controller for the Joliet filesystem, so return the correct value.
+    return DRFilesystemInclusionMaskJoliet;
 }
 
 @end

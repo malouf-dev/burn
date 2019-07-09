@@ -11,7 +11,7 @@
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
  
-                     http://developer.apple.com/bugreporter/
+                     https://developer.apple.com/bugreporter/
 */
 
 /*
@@ -52,57 +52,57 @@
 
 @implementation ISO9660Controller
 
-- (NSString *) filesystem
+- (NSString*) filesystem
 {
-	// We're the controller for the ISO 9660 filesystem, so return the correct value.
-	return DRISO9660;
+    // We're the controller for the ISO 9660 filesystem, so return the correct value.
+    return DRISO9660;
 }
 
-- (DRFilesystemInclusionMask)mask
+- (DRFilesystemInclusionMask) mask
 {
-	// We're the controller for the ISO 9660 filesystem, so return the correct value.
-	return DRFilesystemInclusionMaskISO9660;
+    // We're the controller for the ISO 9660 filesystem, so return the correct value.
+    return DRFilesystemInclusionMaskISO9660;
 }
 
-- (void)updateNames
+- (void) updateNames
 {
-	DRFSObject *firstItem = [inspectedItems objectAtIndex:0];
+    DRFSObject *firstItem = [inspectedItems objectAtIndex:0];
 
-	[baseName setObjectValue:[firstItem baseName]];
+    [baseName setObjectValue:[firstItem baseName]];
 
-	// Ah ha! It's this troublesome ISO filesystem issue with the filenames. Instead of being able
-	// to just get the simple specific/mangled filename for the object, we need to specialze
-	// for the ISO Level 1 or Level 2 name as appropriate
-	[level1SpecificName setObjectValue:[firstItem specificNameForFilesystem:DRISO9660LevelOne]];
-	[level1MangledName setObjectValue:[firstItem mangledNameForFilesystem:DRISO9660LevelOne]];
+    // Ah ha! It's this troublesome ISO filesystem issue with the filenames. Instead of being able
+    // to just get the simple specific/mangled filename for the object, we need to specialze
+    // for the ISO Level 1 or Level 2 name as appropriate
+    [level1SpecificName setObjectValue:[firstItem specificNameForFilesystem:DRISO9660LevelOne]];
+    [level1MangledName setObjectValue:[firstItem mangledNameForFilesystem:DRISO9660LevelOne]];
 
-	[level2SpecificName setObjectValue:[firstItem specificNameForFilesystem:DRISO9660LevelTwo]];
-	[level2MangledName setObjectValue:[firstItem mangledNameForFilesystem:DRISO9660LevelTwo]];
+    [level2SpecificName setObjectValue:[firstItem specificNameForFilesystem:DRISO9660LevelTwo]];
+    [level2MangledName setObjectValue:[firstItem mangledNameForFilesystem:DRISO9660LevelTwo]];
 }
 
-- (IBAction)setFileName:(id)sender
+- (IBAction) setFileName:(id)sender
 {
-	DRFSObject *firstItem = [inspectedItems objectAtIndex:0];
+    DRFSObject *firstItem = [inspectedItems objectAtIndex:0];
 
-	// Same this as in updateNames, we need to specialize the filename for the correct 
-	// ISO Level.
-	if (sender == level2SpecificName)
-	{
-		[firstItem setSpecificName:[sender objectValue] forFilesystem:DRISO9660LevelTwo];
-	}
-	else if (sender == level1SpecificName)
-	{
-		[firstItem setSpecificName:[sender objectValue] forFilesystem:DRISO9660LevelOne];
-	}
-	
-	[self updateNames];
+    // Same this as in updateNames, we need to specialize the filename for the correct 
+    // ISO Level.
+    if (sender == level2SpecificName)
+    {
+	    [firstItem setSpecificName:[sender objectValue] forFilesystem:DRISO9660LevelTwo];
+    }
+    else if (sender == level1SpecificName)
+    {
+	    [firstItem setSpecificName:[sender objectValue] forFilesystem:DRISO9660LevelOne];
+    }
+    
+    [self updateNames];
 }
 
 - (void)clearForMultipleSelection
 {
-	[[NSArray arrayWithObjects:level1SpecificName, level2SpecificName, level1MangledName, level2MangledName, nil] makeObjectsPerformSelector:@selector(setStringValue:) withObject:@""];
-	[level1SpecificName setEnabled:NO];
-	[level2SpecificName setEnabled:NO];
+    [[NSArray arrayWithObjects:level1SpecificName, level2SpecificName, level1MangledName, level2MangledName, nil] makeObjectsPerformSelector:@selector(setStringValue:) withObject:@""];
+    [level1SpecificName setEnabled:NO];
+    [level2SpecificName setEnabled:NO];
 }
 
 @end
