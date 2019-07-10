@@ -20,8 +20,7 @@
                 <outlet property="itemHelp" destination="277" id="725"/>
                 <outlet property="mainTabView" destination="390" id="718"/>
                 <outlet property="mainWindow" destination="388" id="717"/>
-                <outlet property="newTabView" destination="570" id="613"/>
-                <outlet property="topSegmentConstrain" destination="C0c-yS-SfD" id="XVV-hE-e33"/>
+                <outlet property="newTabView" destination="7XP-s5-3Ph" id="yvo-Hv-xaB"/>
             </connections>
         </customObject>
         <menu title="MainMenu" systemMenu="main" id="29" userLabel="MainMenu">
@@ -391,39 +390,24 @@ CA
                 <rect key="frame" x="0.0" y="0.0" width="430" height="479"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="570">
-                        <rect key="frame" x="95" y="450" width="240" height="24"/>
-                        <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="964">
-                            <font key="font" metaFont="system"/>
-                            <segments>
-                                <segment label="Data" imageScaling="none" selected="YES"/>
-                                <segment label="Audio" imageScaling="none" tag="1"/>
-                                <segment label="Video" imageScaling="none" tag="2"/>
-                                <segment label="Copy" imageScaling="none" tag="3"/>
-                            </segments>
-                        </segmentedCell>
-                        <connections>
-                            <action selector="newTabViewAction:" target="579" id="612"/>
-                        </connections>
-                    </segmentedControl>
                     <tabView type="noTabsBezelBorder" translatesAutoresizingMaskIntoConstraints="NO" id="390">
-                        <rect key="frame" x="-12" y="51" width="458" height="397"/>
+                        <rect key="frame" x="-12" y="51" width="458" height="430"/>
                         <font key="font" metaFont="system"/>
                         <tabViewItems>
                             <tabViewItem label="Data" identifier="Data" id="475" customClass="KWTabViewItem">
                                 <view key="view" autoresizesSubviews="NO" id="476">
-                                    <rect key="frame" x="10" y="7" width="438" height="377"/>
+                                    <rect key="frame" x="10" y="7" width="438" height="410"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <customView autoresizesSubviews="NO" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="477" customClass="KWDataView">
-                                            <rect key="frame" x="0.0" y="-19" width="438" height="401"/>
+                                            <rect key="frame" x="0.0" y="-19" width="438" height="434"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <connections>
                                                 <outlet property="myController" destination="540" id="709"/>
                                             </connections>
                                         </customView>
                                         <imageView translatesAutoresizingMaskIntoConstraints="NO" id="484">
-                                            <rect key="frame" x="20" y="339" width="32" height="32"/>
+                                            <rect key="frame" x="20" y="372" width="32" height="32"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="32" id="oG2-WP-faP"/>
                                                 <constraint firstAttribute="width" constant="32" id="qgl-ED-Ai3"/>
@@ -440,7 +424,7 @@ CA
                                             <accessibility help="Size of the data disc"/>
                                         </textField>
                                         <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="492" customClass="KWTextField">
-                                            <rect key="frame" x="60" y="344" width="257" height="22"/>
+                                            <rect key="frame" x="60" y="377" width="257" height="22"/>
                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" alignment="left" title="Untitled" bezelStyle="round" id="949">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -454,13 +438,13 @@ CA
                                             </connections>
                                         </textField>
                                         <scrollView autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="480">
-                                            <rect key="frame" x="0.0" y="32" width="433" height="299"/>
+                                            <rect key="frame" x="0.0" y="32" width="433" height="332"/>
                                             <clipView key="contentView" id="tYI-3E-xn0">
-                                                <rect key="frame" x="1" y="0.0" width="431" height="298"/>
+                                                <rect key="frame" x="1" y="0.0" width="431" height="331"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Data" headerView="982" id="481" customClass="KWOutlineView">
-                                                        <rect key="frame" x="0.0" y="0.0" width="431" height="273"/>
+                                                        <rect key="frame" x="0.0" y="0.0" width="431" height="306"/>
                                                         <autoresizingMask key="autoresizingMask"/>
                                                         <size key="intercellSpacing" width="3" height="2"/>
                                                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -530,7 +514,7 @@ CA
                                             </connections>
                                         </button>
                                         <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="485">
-                                            <rect key="frame" x="322" y="343" width="99" height="22"/>
+                                            <rect key="frame" x="322" y="376" width="99" height="22"/>
                                             <popUpButtonCell key="cell" type="push" title="Mac (HFS+)" bezelStyle="rounded" alignment="left" controlSize="small" lineBreakMode="clipping" state="on" borderStyle="borderAndBezel" inset="2" arrowPosition="arrowAtCenter" preferredEdge="maxY" selectedItem="487" id="948">
                                                 <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="smallSystem"/>
@@ -814,7 +798,7 @@ CA
                                             <rect key="frame" x="0.0" y="32" width="433" height="275"/>
                                             <clipView key="contentView" id="axL-lh-3qG">
                                                 <rect key="frame" x="1" y="0.0" width="431" height="274"/>
-                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
                                                     <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Audio TableView" headerView="979" id="450" customClass="KWTableView">
                                                         <rect key="frame" x="0.0" y="0.0" width="432" height="249"/>
@@ -1142,7 +1126,7 @@ CA
                                             <rect key="frame" x="0.0" y="32" width="433" height="299"/>
                                             <clipView key="contentView" id="Jcw-XI-HEq">
                                                 <rect key="frame" x="1" y="0.0" width="431" height="298"/>
-                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
                                                     <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Video TableView" headerView="976" id="428" customClass="KWTableView">
                                                         <rect key="frame" x="0.0" y="0.0" width="431" height="273"/>
@@ -1260,18 +1244,18 @@ CA
                             </tabViewItem>
                             <tabViewItem label="Copy" identifier="Copy" id="391" customClass="KWTabViewItem">
                                 <view key="view" autoresizesSubviews="NO" id="392">
-                                    <rect key="frame" x="10" y="7" width="438" height="377"/>
+                                    <rect key="frame" x="10" y="7" width="438" height="410"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <customView autoresizesSubviews="NO" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="407" customClass="KWCopyView">
-                                            <rect key="frame" x="0.0" y="-6" width="438" height="388"/>
+                                            <rect key="frame" x="0.0" y="-6" width="438" height="421"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <connections>
                                                 <outlet property="imageControl" destination="541" id="710"/>
                                             </connections>
                                         </customView>
                                         <box autoresizesSubviews="NO" boxType="oldStyle" borderType="none" title="Title" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="401">
-                                            <rect key="frame" x="25" y="118" width="389" height="141"/>
+                                            <rect key="frame" x="25" y="135" width="389" height="141"/>
                                             <view key="contentView" id="24c-ie-GqE">
                                                 <rect key="frame" x="0.0" y="0.0" width="389" height="141"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -1310,7 +1294,7 @@ CA
                                             <accessibility description="Drop zone" help="Drop discs and images here"/>
                                         </box>
                                         <imageView translatesAutoresizingMaskIntoConstraints="NO" id="400">
-                                            <rect key="frame" x="22" y="339" width="32" height="32"/>
+                                            <rect key="frame" x="22" y="372" width="32" height="32"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="32" id="uYH-z1-5vB"/>
                                                 <constraint firstAttribute="width" constant="32" id="xaP-Mk-ep0"/>
@@ -1318,7 +1302,7 @@ CA
                                             <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="919"/>
                                         </imageView>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="397" customClass="KWAutoLayoutTextField">
-                                            <rect key="frame" x="59" y="347" width="36" height="17"/>
+                                            <rect key="frame" x="59" y="380" width="36" height="17"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Copy" id="916">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1327,7 +1311,7 @@ CA
                                             <accessibility help="Current disc image"/>
                                         </textField>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="394" customClass="KWAutoLayoutTextField">
-                                            <rect key="frame" x="22" y="312" width="35" height="17"/>
+                                            <rect key="frame" x="22" y="345" width="35" height="17"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Kind:" id="913">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1335,7 +1319,7 @@ CA
                                             </textFieldCell>
                                         </textField>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="395" customClass="KWAutoLayoutTextField">
-                                            <rect key="frame" x="22" y="287" width="34" height="17"/>
+                                            <rect key="frame" x="22" y="320" width="34" height="17"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Size:" id="914">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1343,7 +1327,7 @@ CA
                                             </textFieldCell>
                                         </textField>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="396" customClass="KWAutoLayoutTextField">
-                                            <rect key="frame" x="61" y="312" width="4" height="17"/>
+                                            <rect key="frame" x="61" y="345" width="4" height="17"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" id="915">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1352,7 +1336,7 @@ CA
                                             <accessibility help="Kind of disc openend"/>
                                         </textField>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="393" customClass="KWAutoLayoutTextField">
-                                            <rect key="frame" x="59" y="287" width="4" height="17"/>
+                                            <rect key="frame" x="59" y="320" width="4" height="17"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" id="912">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1405,7 +1389,7 @@ CA
                                             </connections>
                                         </button>
                                         <button hidden="YES" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="399">
-                                            <rect key="frame" x="400" y="353" width="18" height="18"/>
+                                            <rect key="frame" x="400" y="386" width="18" height="18"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="18" id="Iil-3T-cMp"/>
                                                 <constraint firstAttribute="width" constant="18" id="ZJJ-Ol-dAb"/>
@@ -1520,7 +1504,6 @@ CA
                     <constraint firstAttribute="trailing" secondItem="504" secondAttribute="trailing" constant="20" id="1Jn-Fk-bk2"/>
                     <constraint firstAttribute="bottom" secondItem="505" secondAttribute="bottom" constant="20" id="6gQ-gu-cYk"/>
                     <constraint firstAttribute="trailing" secondItem="505" secondAttribute="trailing" constant="19" id="AeZ-N0-Rpl"/>
-                    <constraint firstItem="570" firstAttribute="top" secondItem="389" secondAttribute="top" constant="6" id="C0c-yS-SfD"/>
                     <constraint firstItem="390" firstAttribute="leading" secondItem="389" secondAttribute="leading" constant="-8" id="C1J-Kb-IgR"/>
                     <constraint firstItem="506" firstAttribute="centerY" secondItem="504" secondAttribute="centerY" id="IaO-zZ-Vmu"/>
                     <constraint firstAttribute="bottom" secondItem="390" secondAttribute="bottom" constant="55" id="JXs-oC-zzN"/>
@@ -1528,16 +1511,44 @@ CA
                     <constraint firstItem="503" firstAttribute="leading" secondItem="389" secondAttribute="leading" constant="22" id="NDa-xk-0KY"/>
                     <constraint firstItem="505" firstAttribute="leading" secondItem="389" secondAttribute="leading" constant="19" id="NVc-ms-dcI"/>
                     <constraint firstAttribute="trailing" secondItem="390" secondAttribute="trailing" constant="-12" id="Ovc-HT-Grq"/>
+                    <constraint firstItem="390" firstAttribute="top" secondItem="389" secondAttribute="top" id="PVN-rT-pxO"/>
                     <constraint firstAttribute="bottom" secondItem="504" secondAttribute="bottom" constant="23" id="Wen-5X-MKU"/>
-                    <constraint firstItem="390" firstAttribute="top" secondItem="570" secondAttribute="bottom" constant="6" id="b7N-Lf-RW1"/>
                     <constraint firstItem="506" firstAttribute="leading" secondItem="503" secondAttribute="trailing" constant="14" id="bAS-PJ-uGt"/>
-                    <constraint firstItem="570" firstAttribute="centerX" secondItem="389" secondAttribute="centerX" id="eKM-4C-XnB"/>
                 </constraints>
             </view>
+            <toolbar key="toolbar" implicitIdentifier="6DB2F772-BA93-4CE4-93D9-3476480E10FF" autosavesConfiguration="NO" allowsUserCustomization="NO" displayMode="iconOnly" sizeMode="regular" id="tbq-vz-juD">
+                <allowedToolbarItems>
+                    <toolbarItem implicitItemIdentifier="3D11756A-9DF0-4CE6-ADF3-ECFEF547B871" label="" paletteLabel="" sizingBehavior="auto" id="sD6-xZ-bcD">
+                        <nil key="toolTip"/>
+                        <segmentedControl key="view" verticalHuggingPriority="750" id="7XP-s5-3Ph">
+                            <rect key="frame" x="0.0" y="14" width="240" height="24"/>
+                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="KUh-UR-mPb">
+                                <font key="font" metaFont="system"/>
+                                <segments>
+                                    <segment label="Data" imageScaling="none" selected="YES"/>
+                                    <segment label="Audio" imageScaling="none" tag="1"/>
+                                    <segment label="Video" imageScaling="none" tag="2"/>
+                                    <segment label="Copy" imageScaling="none" tag="3"/>
+                                </segments>
+                            </segmentedCell>
+                            <connections>
+                                <action selector="newTabViewAction:" target="579" id="6Ew-dw-ZmO"/>
+                            </connections>
+                        </segmentedControl>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="NSToolbarFlexibleSpaceItem" id="ITU-pA-gva"/>
+                </allowedToolbarItems>
+                <defaultToolbarItems>
+                    <toolbarItem reference="ITU-pA-gva"/>
+                    <toolbarItem reference="sD6-xZ-bcD"/>
+                    <toolbarItem reference="ITU-pA-gva"/>
+                </defaultToolbarItems>
+            </toolbar>
             <connections>
                 <outlet property="mainTabView" destination="390" id="735"/>
             </connections>
-            <point key="canvasLocation" x="-449" y="-200.5"/>
+            <point key="canvasLocation" x="-536" y="-361.5"/>
         </window>
         <customObject id="540" userLabel="KWDataController" customClass="KWDataController">
             <connections>

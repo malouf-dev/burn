@@ -614,17 +614,17 @@
 /* Class = "NSTextFieldCell"; title = "Region:"; ObjectID = "963"; */
 "963.title" = "Region:";
 
-/* Class = "NSSegmentedCell"; 964.ibShadowedLabels[0] = "Data"; ObjectID = "964"; */
-"964.ibShadowedLabels[0]" = "Daten";
+/* Class = "NSSegmentedCell"; KUh-UR-mPb.ibShadowedLabels[0] = "Data"; ObjectID = "964"; */
+"KUh-UR-mPb.ibShadowedLabels[0]" = "Daten";
 
-/* Class = "NSSegmentedCell"; 964.ibShadowedLabels[1] = "Audio"; ObjectID = "964"; */
-"964.ibShadowedLabels[1]" = "Audio";
+/* Class = "NSSegmentedCell"; KUh-UR-mPb.ibShadowedLabels[1] = "Audio"; ObjectID = "964"; */
+"KUh-UR-mPb.ibShadowedLabels[1]" = "Audio";
 
-/* Class = "NSSegmentedCell"; 964.ibShadowedLabels[2] = "Video"; ObjectID = "964"; */
-"964.ibShadowedLabels[2]" = "Video";
+/* Class = "NSSegmentedCell"; KUh-UR-mPb.ibShadowedLabels[2] = "Video"; ObjectID = "964"; */
+"KUh-UR-mPb.ibShadowedLabels[2]" = "Video";
 
-/* Class = "NSSegmentedCell"; 964.ibShadowedLabels[3] = "Copy"; ObjectID = "964"; */
-"964.ibShadowedLabels[3]" = "Kopie";
+/* Class = "NSSegmentedCell"; KUh-UR-mPb.ibShadowedLabels[3] = "Copy"; ObjectID = "964"; */
+"KUh-UR-mPb.ibShadowedLabels[3]" = "Kopie";
 
 /* Class = "NSButtonCell"; title = "Combine other sessions"; ObjectID = "965"; */
 "965.title" = "Kombiniere mit anderen Sitzungen";

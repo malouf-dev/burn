@@ -14,8 +14,6 @@
 
 @interface KWWindowController() <NSToolbarDelegate>
 
-@property (nonatomic) IBOutlet NSLayoutConstraint *topSegmentConstrain;
-
 @end
 
 @implementation KWWindowController
@@ -332,19 +330,6 @@
 // TODO: Rename, it's not a toolbar anymore
 - (void)setupToolbar
 {
-    if (@available(macOS 10.10, *))
-    {
-        // No support for NSWindowStyleMaskFullSizeContentView
-        CGFloat contentHeight = [mainWindow contentRectForFrameRect:[mainWindow frame]].size.height;
-        CGFloat titleBarHeight = [mainWindow frame].size.height - contentHeight;
-        
-        [mainWindow setStyleMask:[mainWindow styleMask] | NSWindowStyleMaskFullSizeContentView];
-        [mainWindow setTitlebarAppearsTransparent:YES];
-        
-        NSLayoutConstraint *topSegmentConstrain = [self topSegmentConstrain];
-        [topSegmentConstrain setConstant:[topSegmentConstrain constant] + titleBarHeight];
-    }
-
     //First setup accessibility support since it can't be done from interface builder
     id segmentElement = NSAccessibilityUnignoredDescendant(newTabView);
     NSArray *segments = [segmentElement accessibilityAttributeValue:NSAccessibilityChildrenAttribute];

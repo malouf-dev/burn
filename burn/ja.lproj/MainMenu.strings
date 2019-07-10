@@ -614,17 +614,17 @@
 /* Class = "NSTextFieldCell"; title = "Region:"; ObjectID = "963"; */
 "963.title" = "地域:";
 
-/* Class = "NSSegmentedCell"; 964.ibShadowedLabels[0] = "Data"; ObjectID = "964"; */
-"964.ibShadowedLabels[0]" = "データ";
+/* Class = "NSSegmentedCell"; KUh-UR-mPb.ibShadowedLabels[0] = "Data"; ObjectID = "964"; */
+"KUh-UR-mPb.ibShadowedLabels[0]" = "データ";
 
-/* Class = "NSSegmentedCell"; 964.ibShadowedLabels[1] = "Audio"; ObjectID = "964"; */
-"964.ibShadowedLabels[1]" = "オーディオ";
+/* Class = "NSSegmentedCell"; KUh-UR-mPb.ibShadowedLabels[1] = "Audio"; ObjectID = "964"; */
+"KUh-UR-mPb.ibShadowedLabels[1]" = "オーディオ";
 
-/* Class = "NSSegmentedCell"; 964.ibShadowedLabels[2] = "Video"; ObjectID = "964"; */
-"964.ibShadowedLabels[2]" = "ビデオ";
+/* Class = "NSSegmentedCell"; KUh-UR-mPb.ibShadowedLabels[2] = "Video"; ObjectID = "964"; */
+"KUh-UR-mPb.ibShadowedLabels[2]" = "ビデオ";
 
-/* Class = "NSSegmentedCell"; 964.ibShadowedLabels[3] = "Copy"; ObjectID = "964"; */
-"964.ibShadowedLabels[3]" = "コピー";
+/* Class = "NSSegmentedCell"; KUh-UR-mPb.ibShadowedLabels[3] = "Copy"; ObjectID = "964"; */
+"KUh-UR-mPb.ibShadowedLabels[3]" = "コピー";
 
 /* Class = "NSButtonCell"; title = "Combine other sessions"; ObjectID = "965"; */
 "965.title" = "他のセッションを結合";
