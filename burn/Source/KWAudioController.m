@@ -794,6 +794,10 @@
             }
 
             [totalText setStringValue:displayText];
+            
+            // TODO: somehow auto layout doesn't work for this NSTextField, so do what we normally would do on macOS 10.11 < in KWAutoLayoutTextField
+            [totalText sizeToFit];
+            [totalText setPreferredMaxLayoutWidth:[totalText frame].size.width];
         }
         else if (display == 2)
         {
