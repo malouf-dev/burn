@@ -570,7 +570,7 @@
 "934.title" = "-";
 
 /* Class = "NSButtonCell"; title = "Change Display Time"; ObjectID = "940"; */
-"940.title" = "Cambia visualizzazione tempo";
+"940.title" = "Modifica tempo di riproduzione";
 
 /* Class = "NSTextFieldCell"; title = "Total time: 00:00:00"; ObjectID = "942"; */
 "942.title" = "Tempo totale: 00:00:00";
