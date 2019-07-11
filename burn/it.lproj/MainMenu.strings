@@ -396,7 +396,7 @@
 "466.ibExternalAccessibilityHelp" = "Ferma il suono";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Switch between time display modes (if possible)"; ObjectID = "467"; */
-"467.ibExternalAccessibilityHelp" = "Cambia tra i modi di visualizzazione del tempo (se possibile)";
+"467.ibExternalAccessibilityHelp" = "modifica il tempo di riproduzione di una traccia se è possibile";
 
 /* Class = "NSMenu"; title = "OtherViews"; ObjectID = "471"; */
 "471.title" = "OtherViews";
