@@ -35,12 +35,14 @@
 		FE4A013722CD2ACD0033759B /* Forward (dark).png in Resources */ = {isa = PBXBuildFile; fileRef = FE4A012822CD2ACD0033759B /* Forward (dark).png */; };
 		FE4A013A22CD2B020033759B /* KWMediaBackButton.m in Sources */ = {isa = PBXBuildFile; fileRef = FE4A013922CD2B020033759B /* KWMediaBackButton.m */; };
 		FE4A013D22CD2B3F0033759B /* KWMediaPlayButton.m in Sources */ = {isa = PBXBuildFile; fileRef = FE4A013C22CD2B3F0033759B /* KWMediaPlayButton.m */; };
+		FE6AE64422E4A1A0005DDE39 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE6AE64322E4A1A0005DDE39 /* AVKit.framework */; };
 		FE71451122D22B0D00D58FA1 /* KWAutoLayoutTextField.m in Sources */ = {isa = PBXBuildFile; fileRef = FE71451022D22B0D00D58FA1 /* KWAutoLayoutTextField.m */; };
 		FE89096522C391CB007E793B /* mkisofs in Resources */ = {isa = PBXBuildFile; fileRef = FE89095F22C391CA007E793B /* mkisofs */; };
 		FE89096622C391CB007E793B /* spumux in Resources */ = {isa = PBXBuildFile; fileRef = FE89096022C391CB007E793B /* spumux */; };
 		FE89096722C391CB007E793B /* vcdimager in Resources */ = {isa = PBXBuildFile; fileRef = FE89096122C391CB007E793B /* vcdimager */; };
 		FE89096922C391CB007E793B /* ffmpeg in Resources */ = {isa = PBXBuildFile; fileRef = FE89096322C391CB007E793B /* ffmpeg */; };
 		FE89096A22C391CB007E793B /* dvdauthor in Resources */ = {isa = PBXBuildFile; fileRef = FE89096422C391CB007E793B /* dvdauthor */; };
+		FE9119A922E458F100CF5171 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE9119A822E458F100CF5171 /* CoreMedia.framework */; };
 		FE9EFE6122CB2C36000D97E5 /* MultiTag.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE9EFE5F22CB2C36000D97E5 /* MultiTag.framework */; };
 		FE9EFE6222CB2C36000D97E5 /* Sparkle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE9EFE6022CB2C36000D97E5 /* Sparkle.framework */; };
 		FE9EFE6322CB2C40000D97E5 /* MultiTag.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = FE9EFE5F22CB2C36000D97E5 /* MultiTag.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -165,7 +167,6 @@
 		FEF8A87412D9D2BF00FE302C /* KWMediaListController.m in Sources */ = {isa = PBXBuildFile; fileRef = FE6134F51102016400C086EA /* KWMediaListController.m */; };
 		FEF8A87612D9D2BF00FE302C /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE3CA4F50BAC7D53001FB922 /* Cocoa.framework */; };
 		FEF8A87712D9D2BF00FE302C /* DiscRecording.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FEEF6FFB0B92EC8800ED64A9 /* DiscRecording.framework */; };
-		FEF8A87812D9D2BF00FE302C /* QTKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FEEF72090B92F47700ED64A9 /* QTKit.framework */; };
 		FEF8A87A12D9D2BF00FE302C /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE3CA4E00BAC7D0E001FB922 /* Carbon.framework */; };
 /* End PBXBuildFile section */
 
@@ -341,6 +342,7 @@
 		FE6134F31102016400C086EA /* KWAlert.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWAlert.m; path = Source/KWAlert.m; sourceTree = "<group>"; };
 		FE6134F41102016400C086EA /* KWMediaListController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWMediaListController.h; path = Source/KWMediaListController.h; sourceTree = "<group>"; };
 		FE6134F51102016400C086EA /* KWMediaListController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWMediaListController.m; path = Source/KWMediaListController.m; sourceTree = "<group>"; };
+		FE6AE64322E4A1A0005DDE39 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
 		FE71450F22D22B0D00D58FA1 /* KWAutoLayoutTextField.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = KWAutoLayoutTextField.h; path = Source/KWAutoLayoutTextField.h; sourceTree = "<group>"; };
 		FE71451022D22B0D00D58FA1 /* KWAutoLayoutTextField.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = KWAutoLayoutTextField.m; path = Source/KWAutoLayoutTextField.m; sourceTree = "<group>"; };
 		FE71451422D23BAF00D58FA1 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/KWInspector.strings; sourceTree = "<group>"; };
@@ -427,6 +429,7 @@
 		FE89096122C391CB007E793B /* vcdimager */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = vcdimager; path = Binaries/vcdimager; sourceTree = "<group>"; };
 		FE89096322C391CB007E793B /* ffmpeg */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = ffmpeg; path = Binaries/ffmpeg; sourceTree = "<group>"; };
 		FE89096422C391CB007E793B /* dvdauthor */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = dvdauthor; path = Binaries/dvdauthor; sourceTree = "<group>"; };
+		FE9119A822E458F100CF5171 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		FE9DB850110338EB0086F62C /* iso8859-1 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "iso8859-1"; path = "Binaries/Support Files/iso8859-1"; sourceTree = "<group>"; };
 		FE9EFE5F22CB2C36000D97E5 /* MultiTag.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MultiTag.framework; path = Frameworks/MultiTag.framework; sourceTree = "<group>"; };
 		FE9EFE6022CB2C36000D97E5 /* Sparkle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Sparkle.framework; path = Frameworks/Sparkle.framework; sourceTree = "<group>"; };
@@ -608,12 +611,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FE6AE64422E4A1A0005DDE39 /* AVKit.framework in Frameworks */,
+				FE9119A922E458F100CF5171 /* CoreMedia.framework in Frameworks */,
 				FEC9BB8322C7B83800A17077 /* AVFoundation.framework in Frameworks */,
 				FE9EFE6122CB2C36000D97E5 /* MultiTag.framework in Frameworks */,
 				FEF8A87612D9D2BF00FE302C /* Cocoa.framework in Frameworks */,
 				FE9EFE6222CB2C36000D97E5 /* Sparkle.framework in Frameworks */,
 				FEF8A87712D9D2BF00FE302C /* DiscRecording.framework in Frameworks */,
-				FEF8A87812D9D2BF00FE302C /* QTKit.framework in Frameworks */,
 				FEF8A87A12D9D2BF00FE302C /* Carbon.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -686,6 +690,8 @@
 		2A37F4C3FDCFA73011CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				FE6AE64322E4A1A0005DDE39 /* AVKit.framework */,
+				FE9119A822E458F100CF5171 /* CoreMedia.framework */,
 				FEC9BB8222C7B83800A17077 /* AVFoundation.framework */,
 				1058C7A6FEA54F5311CA2CBB /* Linked Frameworks */,
 				1058C7A8FEA54F5311CA2CBB /* Other Frameworks */,
@@ -737,6 +743,7 @@
 			children = (
 				FEEDE0200BDF53A300D50314 /* KWInspector.h */,
 				FEEDE01F0BDF53A300D50314 /* KWInspector.m */,
+				FEC9BAE922C78BC000A17077 /* KWInspector.xib */,
 				FE195ECB0BE2A5EF001558D4 /* KWDataInspector */,
 				FEF089AB0BE3D7D200FF1A06 /* KWDataDiscInspector */,
 				FEE651490BE4FE6F00106E3B /* KWAudioInspector */,
@@ -1130,7 +1137,6 @@
 			children = (
 				FEC9BAFB22C78BC000A17077 /* MainMenu.xib */,
 				FEC9BAF722C78BC000A17077 /* KWPreferences.xib */,
-				FEC9BAE922C78BC000A17077 /* KWInspector.xib */,
 				FEC9BAEF22C78BC000A17077 /* KWProgress.xib */,
 				FEC9BAEB22C78BC000A17077 /* KWBurner.xib */,
 				FEC9BAED22C78BC000A17077 /* KWEraser.xib */,

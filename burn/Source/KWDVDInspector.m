@@ -2,10 +2,19 @@
 #import "KWVideoController.h"
 #import "KWConverter.h"
 #import "KWCommonMethods.h"
+#import <AVKit/AVKit.h>
+
+@interface KWDVDInspector()
+
+@property (nonatomic, strong) AVPlayer *player;
+@property (nonatomic, weak) IBOutlet AVPlayerView *playerView;
+
+
+@end
 
 @implementation KWDVDInspector
 
-- (id) init
+- (id)init
 {
     self = [super init];
 
@@ -13,7 +22,6 @@
 
     return self;
 }
-
 
 - (void)updateView:(id)object
 {
@@ -24,23 +32,45 @@
     [timeField setStringValue:[currentObject objectForKey:@"Size"]];
     [iconView setImage:[currentObject objectForKey:@"Icon"]];
 
-    KWConverter *converter = [[KWConverter alloc] init];
-    [timeSlider setMaxValue:(double)[converter totalTimeInSeconds:[currentObject objectForKey:@"Path"]]];
-    [timeSlider setDoubleValue:0];
-
     [tableData removeAllObjects];
     
     if ([currentObject objectForKey:@"Chapters"])
 	    [tableData addObjectsFromArray:[currentObject objectForKey:@"Chapters"]];
 
     [tableView reloadData];
-
-    [previewView setImage:nil];
+    
+    NSString *path = [currentObject objectForKey:@"Path"];
+    
+    AVAsset *asset = [AVAsset assetWithURL:[NSURL fileURLWithPath:path]];
+    CMTime duration = [asset duration];
+    
+    [timeSlider setMaxValue:CMTimeGetSeconds(duration)];
+    [timeSlider setDoubleValue:0];
+    
+    CMTime interval = CMTimeMake(1, 1);
+    CMTime currentTime = kCMTimeZero;
+    NSMutableArray *times = [NSMutableArray array];
+    
+    while (CMTIME_COMPARE_INLINE(currentTime, <, duration))
+    {
+        currentTime = CMTimeAdd(currentTime, interval);
+        [times addObject:[NSValue valueWithCMTime:currentTime]];
+    }
+    
+    AVPlayerItem *item = [AVPlayerItem playerItemWithAsset:asset];
+    AVPlayer *player = [AVPlayer playerWithPlayerItem:item];
+    [player addBoundaryTimeObserverForTimes:times queue:dispatch_get_main_queue() usingBlock:^
+    {
+        CMTime time = [[[self playerView] player] currentTime];
+        int seconds = CMTimeGetSeconds(time);
+        NSString *formatedTime = [KWCommonMethods formatTime:seconds];
+        [currentTimeField setStringValue:formatedTime];
+    }];
+    [[self playerView] setPlayer:player];
 }
 
 - (IBAction)add:(id)sender
 {
-    [previewView setImage:[[KWConverter alloc] getImageAtPath:[currentObject objectForKey:@"Path"] atTime:0 isWideScreen:[[currentObject objectForKey:@"WideScreen"] boolValue]]];    
     [titleField setStringValue:@""];
     [NSApp beginSheet:chapterSheet modalForWindow:[myView window] modalDelegate:self didEndSelector:@selector(endChapterSheet) contextInfo:nil];
 }
@@ -53,11 +83,21 @@
 - (IBAction)addSheet:(id)sender
 {
     NSMutableDictionary *rowData = [NSMutableDictionary dictionary];
+    
+    AVPlayer *player = [[self playerView] player];
+    
+    CMTime currentTime = [player currentTime];
+    CGFloat currentSeconds = CMTimeGetSeconds(currentTime);
 
-    [rowData setObject:[KWCommonMethods formatTime:(NSInteger)[timeSlider doubleValue]] forKey:@"Time"];
+    [rowData setObject:[KWCommonMethods formatTime:(NSInteger)currentSeconds] forKey:@"Time"];
     [rowData setObject:[titleField stringValue] forKey:@"Title"];
-    [rowData setObject:[NSNumber numberWithDouble:[timeSlider doubleValue]] forKey:@"RealTime"];
-    [rowData setObject:[[previewView image] TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:0] forKey:@"Image"];
+    [rowData setObject:[NSNumber numberWithDouble:currentSeconds] forKey:@"RealTime"];
+    
+    NSImage *previewImage = [self previewImage];
+    if (previewImage != nil)
+    {
+        [rowData setObject:[previewImage TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:0] forKey:@"Image"];
+    }
 
     [tableData addObject:rowData];
 
@@ -79,7 +119,6 @@
 - (IBAction)cancelSheet:(id)sender
 {
     [[chapterSheet sheetParent] endSheet:chapterSheet];
-    
 }
 
 - (IBAction)remove:(id)sender
@@ -100,9 +139,10 @@
 
 - (IBAction)timeSlider:(id)sender
 {
-    [previewView setImage:[[KWConverter alloc] getImageAtPath:[currentObject objectForKey:@"Path"] atTime:(NSInteger)[timeSlider doubleValue] isWideScreen:[[currentObject objectForKey:@"WideScreen"] boolValue]]];
-
-    [currentTimeField setStringValue:[KWCommonMethods formatTime:(NSInteger)[timeSlider doubleValue]]];
+    AVPlayer *player = [[self playerView] player];
+    CGFloat seekTime = [timeSlider doubleValue];
+    [currentTimeField setStringValue:[KWCommonMethods formatTime:(NSInteger)seekTime]];
+    [player seekToTime:CMTimeMake(seekTime, 1)];
 }
 
 ///////////////////////
@@ -140,6 +180,37 @@
 - (id)myView
 {
     return myView;
+}
+
+#pragma mark - Convenient Methods
+
+- (NSImage *)previewImage
+{
+    CMTime actualTime;
+    NSError *error;
+
+    AVPlayer *player = [[self playerView] player];
+    CMTime time = [player currentTime];
+    
+    AVPlayerItem *item = [player currentItem];
+    AVAsset *asset = [item asset];
+    
+    AVAssetImageGenerator *generator = [AVAssetImageGenerator assetImageGeneratorWithAsset:asset];
+    [generator setAppliesPreferredTrackTransform:YES];
+    [generator setRequestedTimeToleranceBefore:kCMTimeZero];
+    [generator setRequestedTimeToleranceAfter:kCMTimeZero];
+    CGImageRef cgImage = [generator copyCGImageAtTime:time actualTime:&actualTime error:&error];
+    
+    if (error == nil)
+    {
+        int width = CGImageGetWidth(cgImage);
+        int height = CGImageGetHeight(cgImage);
+        NSImage *image = [[NSImage alloc] initWithCGImage:cgImage size:NSMakeSize(width, height)];
+        CGImageRelease(cgImage);
+        return image;
+    }
+    
+    return nil;
 }
 
 @end

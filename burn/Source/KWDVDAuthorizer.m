@@ -84,8 +84,10 @@
     //Create TOC (Table Of Contents)
     if (success == 0)
     {
+        BOOL pal = ([[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultRegion"] intValue] == 0);
+    
 	    NSArray *arguments = [NSArray arrayWithObjects:@"-T",@"-o",path,nil];
-	    BOOL status = [KWCommonMethods launchNSTaskAtPath:[[NSBundle mainBundle] pathForResource:@"dvdauthor" ofType:@""] withArguments:arguments outputError:YES outputString:YES output:&*error];
+	    BOOL status = [KWCommonMethods launchNSTaskAtPath:[[NSBundle mainBundle] pathForResource:@"dvdauthor" ofType:@""] withArguments:arguments outputError:YES outputString:YES output:&*error environment:@{@"VIDEO_FORMAT": pal ? @"PAL" : @"NTSC"}];
 
 	    if (!status)
     	    success = 1;

@@ -9,7 +9,6 @@
     IBOutlet id iconView;
     IBOutlet id myView;
     IBOutlet id nameField;
-    IBOutlet id previewView;
     IBOutlet id tableView;
     IBOutlet id timeField;
     IBOutlet id timeSlider;

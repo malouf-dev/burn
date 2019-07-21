@@ -513,7 +513,7 @@
 "567.title" = "NTSC";
 
 /* Class = "NSTextField"; ibExternalAccessibilityHelp = "Set the audio disc label (if possible)"; ObjectID = "824"; */
-"824.ibExternalAccessibilityHelp" = "Set the audio disc label (if possible)";
+"824.ibExternalAccessibilityHelp" = "Imposta il nome del cd audio se è possibile";
 
 /* Class = "NSButtonCell"; title = "HFS+"; ObjectID = "848"; */
 "848.title" = "HFS+";

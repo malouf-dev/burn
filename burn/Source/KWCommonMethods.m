@@ -1077,6 +1077,7 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
 {
     //Set environment to UTF-8
     NSMutableDictionary *environment = [NSMutableDictionary dictionaryWithDictionary:[[NSProcessInfo processInfo] environment]];
+    [environment addEntriesFromDictionary:[command environment]];
     [environment setObject:@"en_US.UTF-8" forKey:@"LC_ALL"];
     [command setEnvironment:environment];
 
@@ -1095,7 +1096,13 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
     }
 }
 
+// TODO: Make these two methods easier
 + (BOOL)launchNSTaskAtPath:(NSString *)path withArguments:(NSArray *)arguments outputError:(BOOL)error outputString:(BOOL)string output:(id *)data
+{
+    return [self launchNSTaskAtPath:path withArguments:arguments outputError:error outputString:string output:data environment:nil];
+}
+
++ (BOOL)launchNSTaskAtPath:(NSString *)path withArguments:(NSArray *)arguments outputError:(BOOL)error outputString:(BOOL)string output:(id *)data environment:(NSDictionary *)environment
 {
     id output;
     NSTask *task = [[NSTask alloc] init];
@@ -1107,6 +1114,10 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
     [task setLaunchPath:path];
     [task setArguments:arguments];
     [task setStandardError:pipe];
+    if (environment != nil)
+    {
+        [task setEnvironment:environment];
+    }
     handle = [pipe fileHandleForReading];
     
     if (!error)

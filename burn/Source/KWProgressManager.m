@@ -62,12 +62,8 @@
 {
     [self setParentWindow:window];
 
-    NSLog(@"beginSheetForWindow");
-
     [window beginSheet:[self window] completionHandler:^(NSModalResponse returnCode)
     {
-        NSLog(@"[window attachedSheet]: %@", [window attachedSheet]);
-    
         if (handler != nil)
         {
             handler(returnCode);
@@ -92,7 +88,6 @@
 
 - (void)endSheetWithCompletion:(void (^)(void))completion
 {
-    NSLog(@"endSheetWithCompletion");
     [[NSOperationQueue mainQueue] addOperationWithBlock:^
     {
         [NSApp setApplicationIconImage:[[NSImage imageNamed:@"Burn"] copy]];
@@ -384,9 +379,9 @@
         NSString *currentText = [statusTextField stringValue];
         NSString *newStatusText;
 
-        if ([currentText length] > 60)
+        if ([currentText length] > 50)
         {
-            newStatusText = [[currentText substringToIndex:58] stringByAppendingString:@"..."];
+            newStatusText = [[currentText substringToIndex:48] stringByAppendingString:@"..."];
         }
         else
         {

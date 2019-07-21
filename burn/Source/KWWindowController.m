@@ -14,6 +14,8 @@
 
 @interface KWWindowController() <NSToolbarDelegate>
 
+@property (nonatomic, weak) IBOutlet NSButton *changeRecorderButton;
+
 @end
 
 @implementation KWWindowController
@@ -64,6 +66,8 @@
 
 - (void)awakeFromNib
 {
+    [super awakeFromNib];
+
     DRDevice *currentDevice = [KWCommonMethods getCurrentDevice];
 
     if ([[DRDevice devices] count] > 0)
@@ -262,19 +266,19 @@
 
 - (IBAction)ejectRecorder:(id)sender
 {
-//    if ([[DRDevice devices] count] > 1)
-//    {
+    if ([[DRDevice devices] count] > 1)
+    {
 	    if (ejecter == nil)
         {
     	    ejecter = [[KWEjecter alloc] init];
         }
 
 	    [ejecter startEjectSheetForWindow:mainWindow forDevice:[KWCommonMethods getCurrentDevice]];
-//    }
-//    else
-//    {
-//        [[[DRDevice devices] objectAtIndex:0] ejectMedia];
-//    }
+    }
+    else
+    {
+        [[[DRDevice devices] objectAtIndex:0] ejectMedia];
+    }
 }
 
 //Window menu
@@ -318,6 +322,7 @@
 - (void)mediaChanged:(NSNotification *)notification
 {
     [defaultBurner setStringValue:[self getRecorderDisplayNameForDevice:[KWCommonMethods getCurrentDevice]]];
+    [[self changeRecorderButton] setEnabled:[[DRDevice devices] count] > 1];
 }
 
 /////////////////////

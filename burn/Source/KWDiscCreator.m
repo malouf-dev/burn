@@ -536,7 +536,7 @@
     	    {
                 KWProgressManager *progressManager = [KWProgressManager sharedManager];
                 [progressManager setCancelHandler:nil];
-	    	    [progressManager setTask:[NSString stringWithFormat:NSLocalizedString(@"Burning '%@'", nil), discName]];
+	    	    [progressManager setTask:[NSString stringWithFormat:NSLocalizedString(@"Burning '%@'", nil), [self name]]];
 	    	    [progressManager setStatus:NSLocalizedString(@"Preparing...",nil)];
 	    	    [burner performSelectorOnMainThread:@selector(setLayerBreak:) withObject:layerBreak waitUntilDone:YES];
 	    	    [burner performSelectorOnMainThread:@selector(burnTrack:) withObject:tracks waitUntilDone:YES];

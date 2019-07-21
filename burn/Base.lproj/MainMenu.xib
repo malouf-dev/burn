@@ -16,6 +16,7 @@
         <customObject id="579" userLabel="KWWindowController" customClass="KWWindowController">
             <connections>
                 <outlet property="burnButton" destination="504" id="704"/>
+                <outlet property="changeRecorderButton" destination="506" id="VvD-bq-oyy"/>
                 <outlet property="defaultBurner" destination="505" id="705"/>
                 <outlet property="itemHelp" destination="277" id="725"/>
                 <outlet property="mainTabView" destination="390" id="718"/>
@@ -972,7 +973,7 @@ CA
                             </tabViewItem>
                             <tabViewItem label="Video" identifier="Video" id="408" customClass="KWTabViewItem">
                                 <view key="view" autoresizesSubviews="NO" id="409">
-                                    <rect key="frame" x="10" y="7" width="438" height="377"/>
+                                    <rect key="frame" x="10" y="7" width="438" height="410"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <popUpButton hidden="YES" verticalHuggingPriority="750" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="437">
@@ -1070,7 +1071,7 @@ CA
                                             </connections>
                                         </button>
                                         <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="421">
-                                            <rect key="frame" x="326" y="343" width="95" height="22"/>
+                                            <rect key="frame" x="326" y="376" width="95" height="22"/>
                                             <popUpButtonCell key="cell" type="push" title="VCD" bezelStyle="rounded" alignment="left" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" arrowPosition="arrowAtCenter" preferredEdge="maxY" selectedItem="426" id="924">
                                                 <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="smallSystem"/>
@@ -1090,7 +1091,7 @@ CA
                                             </connections>
                                         </popUpButton>
                                         <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="441" customClass="KWTextField">
-                                            <rect key="frame" x="60" y="344" width="261" height="22"/>
+                                            <rect key="frame" x="60" y="377" width="261" height="22"/>
                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="Untitled" bezelStyle="round" id="930">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1106,7 +1107,7 @@ CA
                                             </connections>
                                         </textField>
                                         <imageView translatesAutoresizingMaskIntoConstraints="NO" id="433">
-                                            <rect key="frame" x="20" y="339" width="32" height="32"/>
+                                            <rect key="frame" x="20" y="372" width="32" height="32"/>
                                             <constraints>
                                                 <constraint firstAttribute="width" constant="32" id="UBh-HT-a0T"/>
                                                 <constraint firstAttribute="height" constant="32" id="acv-7z-WIO"/>
@@ -1123,13 +1124,13 @@ CA
                                             <accessibility help="Total size used on the video disc"/>
                                         </textField>
                                         <scrollView autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="427">
-                                            <rect key="frame" x="0.0" y="32" width="433" height="299"/>
+                                            <rect key="frame" x="0.0" y="32" width="433" height="332"/>
                                             <clipView key="contentView" id="Jcw-XI-HEq">
-                                                <rect key="frame" x="1" y="0.0" width="431" height="298"/>
+                                                <rect key="frame" x="1" y="0.0" width="431" height="331"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
                                                     <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Video TableView" headerView="976" id="428" customClass="KWTableView">
-                                                        <rect key="frame" x="0.0" y="0.0" width="431" height="273"/>
+                                                        <rect key="frame" x="0.0" y="0.0" width="431" height="306"/>
                                                         <autoresizingMask key="autoresizingMask"/>
                                                         <size key="intercellSpacing" width="3" height="2"/>
                                                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -1302,7 +1303,7 @@ CA
                                             <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="919"/>
                                         </imageView>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="397" customClass="KWAutoLayoutTextField">
-                                            <rect key="frame" x="59" y="380" width="36" height="17"/>
+                                            <rect key="frame" x="59" y="380" width="361" height="17"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Copy" id="916">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1411,7 +1412,7 @@ CA
                                         <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="396" secondAttribute="trailing" constant="19" id="5p5-9T-Ntb"/>
                                         <constraint firstItem="405" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="398" secondAttribute="trailing" constant="20" id="6iD-Ri-c1o"/>
                                         <constraint firstItem="405" firstAttribute="centerY" secondItem="406" secondAttribute="centerY" id="6ld-w4-z4T"/>
-                                        <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="397" secondAttribute="trailing" constant="20" id="87E-QW-S35"/>
+                                        <constraint firstAttribute="trailing" secondItem="397" secondAttribute="trailing" constant="20" id="87E-QW-S35"/>
                                         <constraint firstItem="400" firstAttribute="leading" secondItem="392" secondAttribute="leading" constant="22" id="BiY-T3-adk"/>
                                         <constraint firstItem="406" firstAttribute="leading" secondItem="405" secondAttribute="trailing" constant="8" id="CFl-P0-SGD"/>
                                         <constraint firstItem="399" firstAttribute="top" secondItem="392" secondAttribute="top" constant="6" id="EFN-9z-b36"/>

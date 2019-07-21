@@ -1,21 +1,18 @@
 Instructions (and comments):
 
-I will describe how I compiled them, you are free to change it according to your needs. I compiled them with maximum compatibility for Mac OS X 10.3.9 and higher system with no extra libraries installed.
+I will describe how I compiled them, you are free to change it according to your needs.
 
 * cdrtools-2.01.01:
-I aplied a patch to the source, making mkisofs able to create DVD-Audio iso files. (patch in root folder: 'mkisofs-2.01.01-dvd-audio.diff'). PowerPC and Intel version build on Mac OS X 10.5.6.
+I aplied a patch to the source, making mkisofs able to create DVD-Audio iso files. (patch in root folder: 'mkisofs-2.01.01-dvd-audio.diff').
 
 Commands:
 bash#: make
 
 * dvdauthor-0.6.11 (libdvdread):
-Build on Mac OS X 10.3.9 for the PowerPC version and on Mac OS X 10.4.11 for the Intel version.
 
 Commands:
 bash#: ./configure
 bash#: make
-
-Note: libiconv.a is staticly linked in, since it's missing in Mac OS X 10.3.9 by default.
 
 * ffmpeg-mt (yasm):
 
@@ -28,7 +25,7 @@ bash#: make
 bash#: sudo make install
 
 * lame-3.98.4:
-Lame is compiled staticly and linked into ffmpeg(-mt). Build on Mac OS X 10.5.6 on PowerPC and on Mac OS X 10.4.11 on Intel. 
+Lame is compiled staticly and linked into ffmpeg(-mt). 
 
 Commands:
 Intel:
@@ -39,7 +36,7 @@ bash#: HOST_CC=gcc CC="gcc-4.0 -arch ppc -isysroot /Developer/SDKs/MacOSX10.3.9.
 bash#: HOST_CC=gcc CC="gcc-4.0 -arch ppc -isysroot /Developer/SDKs/MacOSX10.3.9.sdk -mmacosx-version-min=10.3.9" CXX="g++-4.0 -arch ppc -isysroot /Developer/SDKs/MacOSX10.3.9.sdk -mmacosx-version-min=10.3.9" make
 
 * vcdimager-0.7.23:
-Build on Mac OS X 10.3.9 for the PowerPC version and on Mac OS X 10.4.11 for the Intel version. Since Burn 2.0u we're using the command line frontend (was the xml frontend).
+Since Burn 2.0u we're using the command line frontend (was the xml frontend).
 
 Commands:
 bash#: ./configure --disable-shared --without-xml-frontend

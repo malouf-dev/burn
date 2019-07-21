@@ -863,7 +863,7 @@
                                             <action selector="setPreferenceOption:" target="-2" id="1784"/>
                                         </connections>
                                     </popUpButton>
-                                    <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="884">
+                                    <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="884" customClass="KWAutoLayoutTextField">
                                         <rect key="frame" x="18" y="331" width="84" height="17"/>
                                         <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Audio codec:" id="1944">
                                             <font key="font" metaFont="system"/>
@@ -1278,16 +1278,24 @@
                         <view key="contentView" id="nV7-qZ-K88">
                             <rect key="frame" x="3" y="3" width="320" height="240"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                            <subviews>
+                                <imageView translatesAutoresizingMaskIntoConstraints="NO" id="1649">
+                                    <rect key="frame" x="0.0" y="0.0" width="320" height="240"/>
+                                    <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="1981"/>
+                                </imageView>
+                            </subviews>
+                            <constraints>
+                                <constraint firstItem="1649" firstAttribute="top" secondItem="nV7-qZ-K88" secondAttribute="top" id="GbW-eb-SBM"/>
+                                <constraint firstAttribute="trailing" secondItem="1649" secondAttribute="trailing" id="RqL-ym-vhe"/>
+                                <constraint firstItem="1649" firstAttribute="leading" secondItem="nV7-qZ-K88" secondAttribute="leading" id="rZi-2E-NLL"/>
+                                <constraint firstAttribute="bottom" secondItem="1649" secondAttribute="bottom" id="zsm-7o-omB"/>
+                            </constraints>
                         </view>
                         <constraints>
                             <constraint firstAttribute="height" constant="240" id="JSB-4d-U9T"/>
                             <constraint firstAttribute="width" constant="320" id="LuG-2V-L6A"/>
                         </constraints>
                     </box>
-                    <imageView translatesAutoresizingMaskIntoConstraints="NO" id="1649">
-                        <rect key="frame" x="20" y="267" width="320" height="0.0"/>
-                        <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="1981"/>
-                    </imageView>
                     <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1659">
                         <rect key="frame" x="17" y="277" width="326" height="25"/>
                         <popUpButtonCell key="cell" type="push" title="Title Menu" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" arrowPosition="arrowAtCenter" preferredEdge="maxY" selectedItem="1851" id="1982">
@@ -1308,15 +1316,12 @@
                     </popUpButton>
                 </subviews>
                 <constraints>
-                    <constraint firstItem="1649" firstAttribute="leading" secondItem="1648" secondAttribute="leading" constant="20" id="2Xb-NZ-KHM"/>
                     <constraint firstAttribute="trailing" secondItem="1655" secondAttribute="trailing" constant="20" id="A6u-Ik-zaM"/>
                     <constraint firstItem="1655" firstAttribute="leading" secondItem="1648" secondAttribute="leading" constant="20" id="DA1-zU-GW8"/>
                     <constraint firstAttribute="bottom" secondItem="1655" secondAttribute="bottom" constant="26" id="IDB-Om-41E"/>
                     <constraint firstAttribute="trailing" secondItem="1659" secondAttribute="trailing" constant="20" id="cFH-xW-49l"/>
                     <constraint firstItem="1659" firstAttribute="leading" secondItem="1648" secondAttribute="leading" constant="19" id="fO2-f5-M8S"/>
-                    <constraint firstAttribute="trailing" secondItem="1649" secondAttribute="trailing" constant="20" id="hEs-kP-US7"/>
                     <constraint firstItem="1659" firstAttribute="top" secondItem="1648" secondAttribute="top" constant="19" id="t67-uS-aXS"/>
-                    <constraint firstItem="1649" firstAttribute="top" secondItem="1659" secondAttribute="bottom" constant="13" id="waa-Qk-7nL"/>
                     <constraint firstItem="1655" firstAttribute="top" secondItem="1659" secondAttribute="bottom" constant="14" id="xbc-A1-PJl"/>
                 </constraints>
             </view>
