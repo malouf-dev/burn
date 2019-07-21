@@ -3500,11 +3500,11 @@ Gw
                                                     <tabViewItems>
                                                         <tabViewItem label="Icon" identifier="2" id="1880">
                                                             <view key="view" autoresizesSubviews="NO" id="1881">
-                                                                <rect key="frame" x="10" y="25" width="351" height="275"/>
+                                                                <rect key="frame" x="10" y="29" width="351" height="271"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                 <subviews>
                                                                     <customView translatesAutoresizingMaskIntoConstraints="NO" id="qoc-jm-RJD">
-                                                                        <rect key="frame" x="112" y="102" width="127" height="153"/>
+                                                                        <rect key="frame" x="112" y="98" width="127" height="153"/>
                                                                         <subviews>
                                                                             <button verticalHuggingPriority="750" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1884">
                                                                                 <rect key="frame" x="-5" y="129" width="66" height="27"/>
@@ -3554,7 +3554,7 @@ Gw
                                                                         </constraints>
                                                                     </customView>
                                                                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1886" customClass="KWAutoLayoutTextField">
-                                                                        <rect key="frame" x="78" y="240" width="30" height="14"/>
+                                                                        <rect key="frame" x="78" y="236" width="30" height="14"/>
                                                                         <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Icon:" id="2406">
                                                                             <font key="font" metaFont="smallSystem"/>
                                                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -6585,7 +6585,7 @@ Gw
             <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1417"/>
             <view key="contentView" autoresizesSubviews="NO" id="1839">
                 <rect key="frame" x="0.0" y="0.0" width="354" height="387"/>
-                <autoresizingMask key="autoresizingMask"/>
+                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1845" customClass="KWAutoLayoutTextField">
                         <rect key="frame" x="20" y="353" width="49" height="14"/>
@@ -6694,6 +6694,7 @@ Gw
         </window>
         <customObject id="1851" userLabel="KWDVDInspector" customClass="KWDVDInspector">
             <connections>
+                <outlet property="addButton" destination="1846" id="f8L-oJ-g7q"/>
                 <outlet property="chapterSheet" destination="1838" id="1857"/>
                 <outlet property="currentTimeField" destination="1850" id="1859"/>
                 <outlet property="iconView" destination="1828" id="1852"/>

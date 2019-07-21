@@ -498,7 +498,7 @@
 "505.ibExternalAccessibilityHelp" = "Informazioni sul masterizzatore corrente ed il disco in esso contenuto";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Information about the current writer and disc in it"; ObjectID = "506"; */
-"506.ibExternalAccessibilityHelp" = "Informazioni sul masterizzatore corrente ed il disco in esso contenuto";
+"506.ibExternalAccessibilityHelp" = "Visualizza le informazioni sul masterizzatore corrente e il disco in esso contenuto";
 
 /* Class = "NSWindow"; title = "Panel"; ObjectID = "544"; */
 "544.title" = "Panel";

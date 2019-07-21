@@ -667,7 +667,7 @@
     	    	    addNumber = 1;
 	    	    else
     	    	    addNumber = 2;
-    	    
+    	        
 	    	    if (numberOfChapters > y * number + o)
     	    	    xmlContent = [NSString stringWithFormat:@"%@<button>jump title %i chapter %li;</button>\n", xmlContent, [[titlesWithChapters objectAtIndex:i] intValue] + 1, y * number + o + addNumber];
     	    }
@@ -698,28 +698,24 @@
     
 	    if ([chapters count] > 0)
 	    {
-    	    xmlContent = [NSString stringWithFormat:@"%@ chapters=\"00:00:00,", xmlContent];
+    	    xmlContent = [NSString stringWithFormat:@"%@ chapters=\"", xmlContent];
     	    
     	    NSInteger x;
     	    for (x=0;x<[chapters count];x++)
     	    {
 	    	    NSDictionary *currentChapter = [chapters objectAtIndex:x];
 	    	    float time = [[currentChapter objectForKey:@"RealTime"] floatValue];
-	    	    
-	    	    if (time > 0)
-	    	    {
-    	    	    NSString *endString;
-    	    	    if (x + 1 < [chapters count])
-	    	    	    endString = @",";
-    	    	    else
-	    	    	    endString = @"\"";
-    	    	    
-    	    	    xmlContent = [NSString stringWithFormat:@"%@%@%@", xmlContent, [KWCommonMethods formatTimeForChapter:time], endString];
-	    	    }
+                
+                xmlContent = [NSString stringWithFormat:@"%@%@", xmlContent, [KWCommonMethods formatTimeForChapter:time]];
+          
+                if (x + 1 < [chapters count])
+                {
+                    xmlContent = [NSString stringWithFormat:@"%@,", xmlContent];
+                }
     	    }
 	    }
     
-	    xmlContent = [NSString stringWithFormat:@"%@></vob>\n", xmlContent];
+	    xmlContent = [NSString stringWithFormat:@"%@\"></vob>\n", xmlContent];
 
 	    if (i + 1 < [fileArray count] || [[NSUserDefaults standardUserDefaults] boolForKey:@"KWLoopDVD"] == YES)
 	    {
@@ -888,12 +884,12 @@
     if (titles)
     {
 	    if (![[theme objectForKey:@"KWDVDNameDisableText"] boolValue])
-    	    [self drawString:name inRect:NSMakeRect([[theme objectForKey:@"KWDVDNameX"] intValue],[[theme objectForKey:@"KWDVDNameY"] intValue],[[theme objectForKey:@"KWDVDNameW"] intValue],[[theme objectForKey:@"KWDVDNameH"] intValue]) onImage:newImage withFontName:[theme objectForKey:@"KWDVDNameFont"] withSize:[[theme objectForKey:@"KWDVDNameFontSize"] intValue] withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWDVDNameFontColor"]] useAlignment:NSCenterTextAlignment];
+    	    [self drawString:name inRect:NSMakeRect([[theme objectForKey:@"KWDVDNameX"] intValue],[[theme objectForKey:@"KWDVDNameY"] intValue],[[theme objectForKey:@"KWDVDNameW"] intValue],[[theme objectForKey:@"KWDVDNameH"] intValue]) onImage:newImage withFontName:[theme objectForKey:@"KWDVDNameFont"] withSize:[[theme objectForKey:@"KWDVDNameFontSize"] intValue] withColor:[self colourForName:@"KWDVDNameFontColor" inTheme:theme] useAlignment:NSCenterTextAlignment];
     }
     else
     {
 	    if (![[theme objectForKey:@"KWVideoNameDisableText"] boolValue])
-    	    [self drawString:name inRect:NSMakeRect([[theme objectForKey:@"KWVideoNameX"] intValue],[[theme objectForKey:@"KWVideoNameY"] intValue],[[theme objectForKey:@"KWVideoNameW"]  intValue],[[theme objectForKey:@"KWVideoNameH"]  intValue]) onImage:newImage withFontName:[theme objectForKey:@"KWVideoNameFont"] withSize:[[theme objectForKey:@"KWVideoNameFontSize"] intValue] withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWVideoNameFontColor"]] useAlignment:NSCenterTextAlignment];
+    	    [self drawString:name inRect:NSMakeRect([[theme objectForKey:@"KWVideoNameX"] intValue],[[theme objectForKey:@"KWVideoNameY"] intValue],[[theme objectForKey:@"KWVideoNameW"]  intValue],[[theme objectForKey:@"KWVideoNameH"]  intValue]) onImage:newImage withFontName:[theme objectForKey:@"KWVideoNameFont"] withSize:[[theme objectForKey:@"KWVideoNameFontSize"] intValue] withColor:[self colourForName:@"KWVideoNameFontColor" inTheme:theme] useAlignment:NSCenterTextAlignment];
     }
     
     if (![[theme objectForKey:@"KWStartButtonDisable"] boolValue])
@@ -902,7 +898,7 @@
 	    NSRect rect = NSMakeRect([[theme objectForKey:@"KWStartButtonX"] intValue],y,[[theme objectForKey:@"KWStartButtonW"]  intValue],[[theme objectForKey:@"KWStartButtonH"] intValue]);
 
 	    if (!startButtonImage)
-    	    [self drawString:[theme objectForKey:@"KWStartButtonString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWStartButtonFont"] withSize:[[theme objectForKey:@"KWStartButtonFontSize"] intValue] withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWStartButtonFontColor"]] useAlignment:NSCenterTextAlignment];
+    	    [self drawString:[theme objectForKey:@"KWStartButtonString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWStartButtonFont"] withSize:[[theme objectForKey:@"KWStartButtonFontSize"] intValue] withColor:[self colourForName:@"KWStartButtonFontColor" inTheme:theme] useAlignment:NSCenterTextAlignment];
 	    else
     	    [self drawImage:startButtonImage inRect:rect onImage:newImage];
     }
@@ -916,7 +912,7 @@
     	    NSRect rect = NSMakeRect([[theme objectForKey:@"KWTitleButtonX"] intValue],[[theme objectForKey:@"KWTitleButtonY"] intValue],[[theme objectForKey:@"KWTitleButtonW"] intValue],[[theme objectForKey:@"KWTitleButtonH"] intValue]);
 
     	    if (!titleButonImage)
-	    	    [self drawString:[theme objectForKey:@"KWTitleButtonString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWTitleButtonFont"] withSize:[[theme objectForKey:@"KWTitleButtonFontSize"] intValue] withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWTitleButtonFontColor"]] useAlignment:NSCenterTextAlignment];
+	    	    [self drawString:[theme objectForKey:@"KWTitleButtonString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWTitleButtonFont"] withSize:[[theme objectForKey:@"KWTitleButtonFontSize"] intValue] withColor:[self colourForName:@"KWTitleButtonFontColor" inTheme:theme] useAlignment:NSCenterTextAlignment];
     	    else
 	    	    [self drawImage:titleButonImage inRect:rect onImage:newImage];
 	    }
@@ -930,7 +926,7 @@
     	    NSRect rect = NSMakeRect([[theme objectForKey:@"KWChapterButtonX"] intValue],[[theme objectForKey:@"KWChapterButtonY"] intValue],[[theme objectForKey:@"KWChapterButtonW"] intValue],[[theme objectForKey:@"KWChapterButtonH"] intValue]);
 
     	    if (!chapterButtonImage)
-	    	    [self drawString:[theme objectForKey:@"KWChapterButtonString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWChapterButtonFont"] withSize:[[theme objectForKey:@"KWChapterButtonFontSize"] intValue] withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWChapterButtonFontColor"]] useAlignment:NSCenterTextAlignment];
+	    	    [self drawString:[theme objectForKey:@"KWChapterButtonString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWChapterButtonFont"] withSize:[[theme objectForKey:@"KWChapterButtonFontSize"] intValue] withColor:[self colourForName:@"KWChapterButtonFontColor" inTheme:theme] useAlignment:NSCenterTextAlignment];
     	    else
 	    	    [self drawImage:chapterButtonImage inRect:rect onImage:newImage];
 	    }
@@ -1104,7 +1100,7 @@
     	    else
 	    	    name = [[objects objectAtIndex:i] objectForKey:@"Title"];
 
-    	    [self drawString:name inRect:NSMakeRect(x,y-[[theme objectForKey:@"KWSelectionImagesH"] intValue],[[theme objectForKey:@"KWSelectionImagesW"] intValue],[[theme objectForKey:@"KWSelectionImagesH"] intValue]) onImage:newImage withFontName:[theme objectForKey:@"KWSelectionImagesFont"] withSize:[[theme objectForKey:@"KWSelectionImagesFontSize"] intValue] withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWSelectionImagesFontColor"]] useAlignment:NSCenterTextAlignment];
+    	    [self drawString:name inRect:NSMakeRect(x,y-[[theme objectForKey:@"KWSelectionImagesH"] intValue],[[theme objectForKey:@"KWSelectionImagesW"] intValue],[[theme objectForKey:@"KWSelectionImagesH"] intValue]) onImage:newImage withFontName:[theme objectForKey:@"KWSelectionImagesFont"] withSize:[[theme objectForKey:@"KWSelectionImagesFontSize"] intValue] withColor:[self colourForName:@"KWSelectionImagesFontColor" inTheme:theme] useAlignment:NSCenterTextAlignment];
 	    }
 	    else if ([[theme objectForKey:@"KWSelectionMode"] intValue] == 2)
 	    {
@@ -1121,7 +1117,7 @@
     	    else
 	    	    name = [[objects objectAtIndex:i] objectForKey:@"Title"];
 
-    	    [self drawString:name inRect:NSMakeRect(x,y,[[theme objectForKey:@"KWSelectionStringsW"] intValue],[[theme objectForKey:@"KWSelectionStringsH"] intValue]) onImage:newImage withFontName:[theme objectForKey:@"KWSelectionStringsFont"] withSize:[[theme objectForKey:@"KWSelectionStringsFontSize"] intValue] withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWSelectionStringsFontColor"]] useAlignment:alignment];
+    	    [self drawString:name inRect:NSMakeRect(x,y,[[theme objectForKey:@"KWSelectionStringsW"] intValue],[[theme objectForKey:@"KWSelectionStringsH"] intValue]) onImage:newImage withFontName:[theme objectForKey:@"KWSelectionStringsFont"] withSize:[[theme objectForKey:@"KWSelectionStringsFontSize"] intValue] withColor:[self colourForName:@"KWSelectionStringsFontColor" inTheme:theme] useAlignment:alignment];
 	    }
     
 	    if ([[theme objectForKey:@"KWSelectionMode"] intValue] != 2)
@@ -1152,7 +1148,7 @@
 	    NSRect rect = NSMakeRect([[theme objectForKey:@"KWPreviousButtonX"] intValue],[[theme objectForKey:@"KWPreviousButtonY"] intValue],[[theme objectForKey:@"KWPreviousButtonW"] intValue],[[theme objectForKey:@"KWPreviousButtonH"] intValue]);
 
 	    if (!previousButtonImage)
-    	    [self drawString:[theme objectForKey:@"KWPreviousButtonString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWPreviousButtonFont"] withSize:[[theme objectForKey:@"KWPreviousButtonFontSize"] intValue] withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWPreviousButtonFontColor"]] useAlignment:NSCenterTextAlignment];
+    	    [self drawString:[theme objectForKey:@"KWPreviousButtonString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWPreviousButtonFont"] withSize:[[theme objectForKey:@"KWPreviousButtonFontSize"] intValue] withColor:[self colourForName:@"KWPreviousButtonFontColor" inTheme:theme] useAlignment:NSCenterTextAlignment];
 	    else
     	    [self drawImage:previousButtonImage inRect:rect onImage:newImage];
     }
@@ -1163,7 +1159,7 @@
 	    NSRect rect = NSMakeRect([[theme objectForKey:@"KWNextButtonX"] intValue],[[theme objectForKey:@"KWNextButtonY"] intValue],[[theme objectForKey:@"KWNextButtonW"] intValue],[[theme objectForKey:@"KWNextButtonH"] intValue]);
 
 	    if (!nextButtonImage)
-    	    [self drawString:[theme objectForKey:@"KWNextButtonString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWNextButtonFont"] withSize:[[theme objectForKey:@"KWNextButtonFontSize"] intValue] withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWNextButtonFontColor"]] useAlignment:NSCenterTextAlignment];
+    	    [self drawString:[theme objectForKey:@"KWNextButtonString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWNextButtonFont"] withSize:[[theme objectForKey:@"KWNextButtonFontSize"] intValue] withColor:[self colourForName:@"KWNextButtonFontColor" inTheme:theme] useAlignment:NSCenterTextAlignment];
 	    else
     	    [self drawImage:nextButtonImage inRect:rect onImage:newImage];
     }
@@ -1176,7 +1172,7 @@
     	    NSRect rect = NSMakeRect([[theme objectForKey:@"KWChapterSelectionX"] intValue],[[theme objectForKey:@"KWChapterSelectionY"] intValue],[[theme objectForKey:@"KWChapterSelectionW"] intValue],[[theme objectForKey:@"KWChapterSelectionH"] intValue]);
 
     	    if (!chapterSelectionButtonImage)
-	    	    [self drawString:[theme objectForKey:@"KWChapterSelectionString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWChapterSelectionFont"] withSize:[[theme objectForKey:@"KWChapterSelectionFontSize"] intValue] withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWChapterSelectionFontColor"]] useAlignment:NSCenterTextAlignment];
+	    	    [self drawString:[theme objectForKey:@"KWChapterSelectionString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWChapterSelectionFont"] withSize:[[theme objectForKey:@"KWChapterSelectionFontSize"] intValue] withColor:[self colourForName:@"KWChapterSelectionFontColor" inTheme:theme] useAlignment:NSCenterTextAlignment];
     	    else
 	    	    [self drawImage:chapterSelectionButtonImage inRect:rect onImage:newImage];
 	    }
@@ -1189,7 +1185,7 @@
     	    NSRect rect = NSMakeRect([[theme objectForKey:@"KWTitleSelectionX"] intValue],[[theme objectForKey:@"KWTitleSelectionY"] intValue],[[theme objectForKey:@"KWTitleSelectionW"] intValue],[[theme objectForKey:@"KWTitleSelectionH"] intValue]);
 
     	    if (!titleSelectionButtonImage)
-	    	    [self drawString:[theme objectForKey:@"KWTitleSelectionString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWTitleSelectionFont"] withSize:[[theme objectForKey:@"KWTitleSelectionFontSize"] intValue] withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWTitleSelectionFontColor"]] useAlignment:NSCenterTextAlignment];
+	    	    [self drawString:[theme objectForKey:@"KWTitleSelectionString"] inRect:rect onImage:newImage withFontName:[theme objectForKey:@"KWTitleSelectionFont"] withSize:[[theme objectForKey:@"KWTitleSelectionFontSize"] intValue] withColor:[self colourForName:@"KWTitleSelectionFontColor" inTheme:theme] useAlignment:NSCenterTextAlignment];
     	    else
 	    	    [self drawImage:titleSelectionButtonImage inRect:rect onImage:newImage];
 	    }
@@ -1498,16 +1494,27 @@
     
     if ([[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDVDThemeFormat"] intValue] == 0)
     {
-	    [self drawString:@"♫" inRect:NSMakeRect(20, ((NSInteger)[newImage size].height - 600) / 2 , (NSInteger)[newImage size].width - 40, 600) onImage:newImage withFontName:[theme objectForKey:@"KWDVDNameFont"] withSize:400 withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWDVDNameFontColor"]] useAlignment:NSCenterTextAlignment];
-	    [self drawString:name inRect:NSMakeRect(62, 56, 720, 30) onImage:newImage withFontName:[theme objectForKey:@"KWDVDNameFont"] withSize:24 withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWDVDNameFontColor"]] useAlignment:NSLeftTextAlignment];
+	    [self drawString:@"♫" inRect:NSMakeRect(20, ((NSInteger)[newImage size].height - 600) / 2 , (NSInteger)[newImage size].width - 40, 600) onImage:newImage withFontName:[theme objectForKey:@"KWDVDNameFont"] withSize:400 withColor:[self colourForName:@"KWDVDNameFontColor" inTheme:theme] useAlignment:NSCenterTextAlignment];
+	    [self drawString:name inRect:NSMakeRect(62, 56, 720, 30) onImage:newImage withFontName:[theme objectForKey:@"KWDVDNameFont"] withSize:24 withColor:[self colourForName:@"KWDVDNameFontColor" inTheme:theme] useAlignment:NSLeftTextAlignment];
     }
     else
     {
-	    [self drawString:@"♫" inRect:NSMakeRect(20, ((NSInteger)[newImage size].height - 420) / 2 , (NSInteger)[newImage size].width - 40, 420) onImage:newImage withFontName:[theme objectForKey:@"KWDVDNameFont"] withSize:300 withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWDVDNameFontColor"]] useAlignment:NSCenterTextAlignment];
-	    [self drawString:name inRect:NSMakeRect(42, 38, 720, 24) onImage:newImage withFontName:[theme objectForKey:@"KWDVDNameFont"] withSize:16 withColor:(NSColor *)[NSUnarchiver unarchiveObjectWithData:[theme objectForKey:@"KWDVDNameFontColor"]] useAlignment:NSLeftTextAlignment];
+	    [self drawString:@"♫" inRect:NSMakeRect(20, ((NSInteger)[newImage size].height - 420) / 2 , (NSInteger)[newImage size].width - 40, 420) onImage:newImage withFontName:[theme objectForKey:@"KWDVDNameFont"] withSize:300 withColor:[self colourForName:@"KWDVDNameFontColor" inTheme:theme] useAlignment:NSCenterTextAlignment];
+	    [self drawString:name inRect:NSMakeRect(42, 38, 720, 24) onImage:newImage withFontName:[theme objectForKey:@"KWDVDNameFont"] withSize:16 withColor:[self colourForName:@"KWDVDNameFontColor" inTheme:theme] useAlignment:NSLeftTextAlignment];
     }
     
     return newImage;//[self resizeImage:newImage];
+}
+
+- (NSColor *)colourForName:(NSString *)name inTheme:(NSDictionary *)theme
+{
+    NSData *colourData = theme[name];
+    if (colourData != nil)
+    {
+        return (NSColor *)[NSUnarchiver unarchiveObjectWithData:colourData];
+    }
+    
+    return [NSColor whiteColor];
 }
 
 @end

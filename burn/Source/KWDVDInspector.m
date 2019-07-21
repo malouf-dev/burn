@@ -8,6 +8,7 @@
 
 @property (nonatomic, strong) AVPlayer *player;
 @property (nonatomic, weak) IBOutlet AVPlayerView *playerView;
+@property (nonatomic, weak) IBOutlet NSButton *addButton;
 
 
 @end
@@ -46,6 +47,7 @@
     
     [timeSlider setMaxValue:CMTimeGetSeconds(duration)];
     [timeSlider setDoubleValue:0];
+    [[self addButton] setEnabled:[self dictionaryForSeconds:0] == nil];
     
     CMTime interval = CMTimeMake(1, 1);
     CMTime currentTime = kCMTimeZero;
@@ -65,6 +67,7 @@
         int seconds = CMTimeGetSeconds(time);
         NSString *formatedTime = [KWCommonMethods formatTime:seconds];
         [currentTimeField setStringValue:formatedTime];
+        [[self addButton] setEnabled:[self dictionaryForSeconds:(NSInteger)seconds] == nil];
     }];
     [[self playerView] setPlayer:player];
 }
@@ -98,8 +101,16 @@
     {
         [rowData setObject:[previewImage TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:0] forKey:@"Image"];
     }
-
-    [tableData addObject:rowData];
+    
+    NSDictionary *foundDictionary = [self dictionaryForSeconds:(NSInteger)currentSeconds];
+    if (foundDictionary)
+    {
+        [tableData replaceObjectAtIndex:[tableData indexOfObject:foundDictionary] withObject:rowData];
+    }
+    else
+    {
+        [tableData addObject:rowData];
+    }
 
     NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"Time" ascending:YES];
     [tableData sortUsingDescriptors:[NSArray arrayWithObject:sortDescriptor]];
@@ -114,6 +125,8 @@
     currentObject = [controller objectAtIndex:[currentTableView selectedRow]];
 
     [tableView reloadData];
+    
+    [[self addButton] setEnabled:NO];
 }
 
 - (IBAction)cancelSheet:(id)sender
@@ -143,6 +156,8 @@
     CGFloat seekTime = [timeSlider doubleValue];
     [currentTimeField setStringValue:[KWCommonMethods formatTime:(NSInteger)seekTime]];
     [player seekToTime:CMTimeMake(seekTime, 1)];
+    
+    [[self addButton] setEnabled:[self dictionaryForSeconds:(NSInteger)seekTime] == nil];
 }
 
 ///////////////////////
@@ -183,6 +198,20 @@
 }
 
 #pragma mark - Convenient Methods
+
+- (NSDictionary *)dictionaryForSeconds:(CGFloat)seconds
+{
+    for (NSDictionary *dictionary in tableData)
+    {
+        NSInteger timeSeconds = [dictionary[@"RealTime"] integerValue];
+        if ((NSInteger)seconds == timeSeconds)
+        {
+            return dictionary;
+        }
+    }
+    
+    return nil;
+}
 
 - (NSImage *)previewImage
 {
