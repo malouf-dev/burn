@@ -25,15 +25,15 @@
 
 - (void)startEjectSheetForWindow:(NSWindow *)atachWindow forDevice:(DRDevice *)device
 {
-    NSPopUpButton *popupButton = [self recorderPopUpButton];
-    [popupButton removeAllItems];
+    NSPopUpButton *recorderPopUpButton = [self recorderPopUpButton];
+    [recorderPopUpButton removeAllItems];
     
     for (DRDevice *listDevice in [DRDevice devices])
     {
-	    [popupButton addItemWithTitle:[listDevice displayName]];
+	    [recorderPopUpButton addItemWithTitle:[listDevice displayName]];
     }
     
-    [popupButton selectItemWithTitle:[device displayName]];
+    [recorderPopUpButton selectItemWithTitle:[device displayName]];
 
     [NSApp beginSheet:[self window] modalForWindow:atachWindow modalDelegate:self didEndSelector: @selector(sheetDidEnd:returnCode:contextInfo:) contextInfo:nil];
 }
