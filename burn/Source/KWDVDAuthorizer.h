@@ -18,8 +18,6 @@
     NSTask *ffmpeg;
     NSTask *spumux;
     
-    NSDictionary *theme;
-    
     NSNumber *progressSize;
     NSInteger fileSize;
 }

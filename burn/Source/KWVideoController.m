@@ -341,7 +341,29 @@
 	    {
     	    NSBundle *themeBundle = [NSBundle bundleWithPath:[standardDefaults objectForKey:@"KWDVDThemePath"]];
     	    NSDictionary *theme = [[NSArray arrayWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]] objectAtIndex:[[standardDefaults objectForKey:@"KWDVDThemeFormat"] intValue]];
-    	    
+//            theme = @{};
+            // TODO: somehow this happens, not sure how though
+            if ([[theme allKeys] count] == 0)
+            {
+//                NSString *themePath = [[[NSBundle mainBundle] pathForResource:@"Themes" ofType:@""] stringByAppendingPathComponent:@"Default.burnTheme"];
+//                [standardDefaults setObject:themePath forKey:@"KWDVDThemePath"];
+//                themeBundle = [NSBundle bundleWithPath:themePath];
+//                theme = [[NSArray arrayWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]] objectAtIndex:[[standardDefaults objectForKey:@"KWDVDThemeFormat"] intValue]];
+//
+//                // If it still happens bail
+//                if ([[theme allKeys] count] == 0)
+//                {
+                    NSString *content = [NSString stringWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"] encoding:NSUTF8StringEncoding error:nil];
+                    if ([content length] > 100)
+                    {
+                        content = [content substringToIndex:100];
+                    }
+
+                    *error = [NSString stringWithFormat:@"Failed to load DVD theme, debug information: Path: %@, format: %i, contents: %@", [standardDefaults objectForKey:@"KWDVDThemePath"], [[standardDefaults objectForKey:@"KWDVDThemeFormat"] intValue], content];
+                    return 1;
+//                }
+            }
+            
     	    success = [DVDAuthorizer createDVDMenuFiles:path withTheme:theme withFileArray:tableData withSize:[NSNumber numberWithInt:totalSize / 2] withName:[self discName] errorString:&*error];
 	    }
 	    else

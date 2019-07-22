@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="14490.70" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
-        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14490.70"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -46,7 +45,7 @@
                             </menuItem>
                             <menuItem title="Preferences…" keyEquivalent="," id="129">
                                 <connections>
-                                    <action selector="preferencesBurn:" target="719" id="720"/>
+                                    <action selector="showPreferences:" target="719" id="720"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="143">
@@ -325,7 +324,7 @@ CA
                             </menuItem>
                             <menuItem title="Inspector" keyEquivalent="i" id="375">
                                 <connections>
-                                    <action selector="inspectorWindow:" target="719" id="721"/>
+                                    <action selector="showInspector:" target="719" id="721"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="379">
@@ -333,12 +332,12 @@ CA
                             </menuItem>
                             <menuItem title="Recorder Info" keyEquivalent="R" id="263">
                                 <connections>
-                                    <action selector="recorderInfoWindow:" target="719" id="722"/>
+                                    <action selector="showRecorderInfo:" target="719" id="722"/>
                                 </connections>
                             </menuItem>
                             <menuItem title="Disc Info" keyEquivalent="I" id="268">
                                 <connections>
-                                    <action selector="diskInfoWindow:" target="719" id="723"/>
+                                    <action selector="showDiscInfo:" target="719" id="723"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="269">
@@ -442,7 +441,7 @@ CA
                                             <rect key="frame" x="0.0" y="32" width="433" height="332"/>
                                             <clipView key="contentView" id="tYI-3E-xn0">
                                                 <rect key="frame" x="1" y="0.0" width="431" height="331"/>
-                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
                                                     <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Data" headerView="982" id="481" customClass="KWOutlineView">
                                                         <rect key="frame" x="0.0" y="0.0" width="431" height="306"/>
@@ -799,7 +798,7 @@ CA
                                             <rect key="frame" x="0.0" y="32" width="433" height="332"/>
                                             <clipView key="contentView" id="axL-lh-3qG">
                                                 <rect key="frame" x="1" y="0.0" width="431" height="331"/>
-                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
                                                     <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Audio TableView" headerView="979" id="450" customClass="KWTableView">
                                                         <rect key="frame" x="0.0" y="0.0" width="432" height="306"/>

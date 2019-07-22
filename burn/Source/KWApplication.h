@@ -7,18 +7,9 @@
 #import "KWEjecter.h"
 #import "KWInspector.h"
 
+/**
+ *  Main application, registers defaults and handles main menu items
+ */
 @interface KWApplication : NSObject
-{
-    //Variables
-    KWPreferences *preferences;
-    KWRecorderInfo *recorderInfo;
-    KWDiscInfo *diskInfo;
-    KWEjecter *ejecter;
-    KWInspector *inspector;
-    
-    //Inspector variables
-    id currentObject;
-    NSString *currentType;
-}
 
 @end

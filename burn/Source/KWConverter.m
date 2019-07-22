@@ -513,7 +513,7 @@
 - (NSInteger)testFile:(NSString *)path
 {
     NSString *displayName = [[NSFileManager defaultManager] displayNameAtPath:path];
-    NSString *tempFile = [[[NSUserDefaults standardUserDefaults] objectForKey:@"KWTemporaryLocation"] stringByAppendingPathComponent:@"tempkf.mpg"];
+    NSString *tempFile = [NSTemporaryDirectory() stringByAppendingPathComponent:@"tempkf.mpg"];
     
     BOOL audioWorks = YES;
     BOOL videoWorks = YES;

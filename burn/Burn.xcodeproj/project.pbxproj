@@ -199,6 +199,7 @@
 		FE04130C0E62D3D3007FD22B /* cs */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = cs; path = "cs.lproj/Theme document.icns"; sourceTree = "<group>"; };
 		FE0413130E62D415007FD22B /* ru */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ru; path = "ru.lproj/Copy document.icns"; sourceTree = "<group>"; };
 		FE0413140E62D415007FD22B /* ru */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ru; path = "ru.lproj/Theme document.icns"; sourceTree = "<group>"; };
+		FE0F3C5E22E59E5F007856A8 /* KWConstants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = KWConstants.h; path = Source/KWConstants.h; sourceTree = "<group>"; };
 		FE1396C80F88D82E0056809A /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = ko; path = ko.lproj/Credits.html; sourceTree = "<group>"; };
 		FE1396C90F88D82F0056809A /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		FE1396CA0F88D82F0056809A /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -657,8 +658,6 @@
 		2A37F4AAFDCFA73011CA2CEA /* Burn */ = {
 			isa = PBXGroup;
 			children = (
-				FEEF6F130B92E8AF00ED64A9 /* Images */,
-				FEEF72460B92FCAF00ED64A9 /* Binaries */,
 				FE0F52D00BA1CAF000D9D56B /* Source */,
 				2A37F4AFFDCFA73011CA2CEA /* Other Sources */,
 				2A37F4B8FDCFA73011CA2CEA /* Resources */,
@@ -680,6 +679,8 @@
 		2A37F4B8FDCFA73011CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				FEEF72460B92FCAF00ED64A9 /* Binaries */,
+				FEEF6F130B92E8AF00ED64A9 /* Images */,
 				FEF989EF0D97B39900BF78E3 /* Text Files */,
 				FEF989820D97B37800BF78E3 /* Help Folders */,
 				FEF9897C0D97B34300BF78E3 /* Interface Files */,
@@ -1173,6 +1174,7 @@
 			children = (
 				FEEA698A0BDBADBE00471BE3 /* KWCommonMethods.h */,
 				FEEA698B0BDBADBE00471BE3 /* KWCommonMethods.m */,
+				FE0F3C5E22E59E5F007856A8 /* KWConstants.h */,
 			);
 			name = Other;
 			sourceTree = "<group>";
