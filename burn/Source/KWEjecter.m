@@ -1,11 +1,19 @@
 #import "KWEjecter.h"
 #import "KWCommonMethods.h"
 
+@interface KWEjecter()
+
+@property (nonatomic, weak) IBOutlet NSPopUpButton *popupButton;
+
+@end
+
 @implementation KWEjecter
 
-- (id)init
+- (instancetype)init
 {
-    if( self = [super init] )
+    self = [super init];
+
+    if (self)
     {
         [[NSBundle mainBundle] loadNibNamed:@"KWEjecter" owner:self topLevelObjects:nil];
     }
@@ -13,23 +21,16 @@
     return self;
 }
 
-
-//////////////////
-// Main actions //
-//////////////////
-
-#pragma mark -
-#pragma mark •• Main actions
+#pragma mark - Main Methods
 
 - (void)startEjectSheetForWindow:(NSWindow *)atachWindow forDevice:(DRDevice *)device
 {
+    NSPopUpButton *popupButton = [self popupButton];
     [popupButton removeAllItems];
     
-    NSArray *devices = [DRDevice devices];
-    NSInteger i;
-    for (i=0;i< [devices count];i++)
+    for (DRDevice *listDevice in [DRDevice devices])
     {
-	    [popupButton addItemWithTitle:[[devices objectAtIndex:i] displayName]];
+	    [popupButton addItemWithTitle:[listDevice displayName]];
     }
     
     [popupButton selectItemWithTitle:[device displayName]];
@@ -42,22 +43,17 @@
     [sheet orderOut:self];
 }
 
-///////////////////////
-// Interface actions //
-///////////////////////
+#pragma mark - Interface Methods
 
-#pragma mark -
-#pragma mark •• Interface actions
-
-- (IBAction)cancelEject:(id)sender
+- (IBAction)close:(id)sender
 {
     NSWindow *window = [self window];
     [[window sheetParent] endSheet:window];
 }
 
-- (IBAction)ejectDisk:(id)sender
+- (IBAction)ejectDisc:(id)sender
 {
-    if (![[[DRDevice devices] objectAtIndex:[popupButton indexOfSelectedItem]] ejectMedia])
+    if (![[[DRDevice devices] objectAtIndex:[[self popupButton] indexOfSelectedItem]] ejectMedia])
     {
 	    [KWCommonMethods standardAlertWithMessageText:NSLocalizedString(@"Failed to eject", Localized) withInformationText:NSLocalizedString(@"Could not eject media from the drive", Localized) withParentWindow:nil];
     }

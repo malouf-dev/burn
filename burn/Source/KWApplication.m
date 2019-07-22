@@ -1,6 +1,11 @@
 #import "KWApplication.h"
 #import "KWCommonMethods.h"
 #import "KWConstants.h"
+#import "KWPreferences.h"
+#import "KWRecorderInfo.h"
+#import "KWDiscInfo.h"
+#import "KWEjecter.h"
+#import "KWInspector.h"
 
 @interface KWApplication()
 
@@ -16,8 +21,6 @@
 @end
 
 @implementation KWApplication
-
-#pragma mark - Default Methods
 
 // Register our defaults
 + (void)initialize
@@ -99,11 +102,6 @@
     return self;
 }
 
-- (void)dealloc 
-{
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
-
 - (void)awakeFromNib
 {
     [super awakeFromNib];
@@ -111,6 +109,11 @@
     NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
     [defaultCenter addObserver:self selector:@selector(openPreferencesAndAddTheme:) name:@"KWDVDThemeOpened" object:nil];
     [defaultCenter addObserver:self selector:@selector(changeInspector:) name:@"KWChangeInspector" object:nil];
+}
+
+- (void)dealloc 
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 #pragma mark - Menu Methods
@@ -168,7 +171,7 @@
     [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"https://burn-osx.sourceforge.io"]];
 }
 
-#pragma mark - Notification Method
+#pragma mark - Notification Methods
 
 - (void)openPreferencesAndAddTheme:(NSNotification *)notif
 {
