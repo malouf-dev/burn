@@ -3,7 +3,7 @@
 
 @interface KWEjecter()
 
-@property (nonatomic, weak) IBOutlet NSPopUpButton *popupButton;
+@property (nonatomic, weak) IBOutlet NSPopUpButton *recorderPopUpButton;
 
 @end
 
@@ -25,7 +25,7 @@
 
 - (void)startEjectSheetForWindow:(NSWindow *)atachWindow forDevice:(DRDevice *)device
 {
-    NSPopUpButton *popupButton = [self popupButton];
+    NSPopUpButton *popupButton = [self recorderPopUpButton];
     [popupButton removeAllItems];
     
     for (DRDevice *listDevice in [DRDevice devices])
@@ -53,7 +53,7 @@
 
 - (IBAction)ejectDisc:(id)sender
 {
-    if (![[[DRDevice devices] objectAtIndex:[[self popupButton] indexOfSelectedItem]] ejectMedia])
+    if (![[[DRDevice devices] objectAtIndex:[[self recorderPopUpButton] indexOfSelectedItem]] ejectMedia])
     {
 	    [KWCommonMethods standardAlertWithMessageText:NSLocalizedString(@"Failed to eject", Localized) withInformationText:NSLocalizedString(@"Could not eject media from the drive", Localized) withParentWindow:nil];
     }
