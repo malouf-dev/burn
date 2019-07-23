@@ -1209,4 +1209,16 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
     return chapters;
 }
 
++ (BOOL)isVoiceOverEnabled
+{
+    if (@available(macOS 10.13, *))
+    {
+        return [[NSWorkspace sharedWorkspace] isVoiceOverEnabled];
+    }
+    else
+    {
+        return CFPreferencesCopyAppValue(CFSTR("voiceOverOnOffKey"), CFSTR("com.apple.universalaccess"));
+    }
+}
+
 @end

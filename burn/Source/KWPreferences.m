@@ -215,13 +215,16 @@ return self;
 
 - (void)showPreferences
 {
-    for (NSToolbarItem *item in [[self toolbar] items])
+    if ([KWCommonMethods isVoiceOverEnabled])
     {
-        if ([[item itemIdentifier] isEqualToString:@"General"])
+        for (NSToolbarItem *item in [[self toolbar] items])
         {
-            // It's kind of sad that this the only way, since the variable is private, but it's needed for VoiceOver users
-            // This will set the focus on the General toolbar item when opening preferences
-            [[self window] makeFirstResponder:[item valueForKey:@"_view"]];
+            if ([[item itemIdentifier] isEqualToString:@"General"])
+            {
+                // It's kind of sad that this the only way, since the variable is private, but it's needed for VoiceOver users
+                // This will set the focus on the General toolbar item when opening preferences
+                [[self window] makeFirstResponder:[item valueForKey:@"_view"]];
+            }
         }
     }
 

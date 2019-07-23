@@ -102,4 +102,7 @@ BOOL isAppearanceIsDark(NSAppearance * appearance);
 //Get chapters using QTKit
 + (NSMutableArray *)quicktimeChaptersFromFile:(NSString *)path;
 
+// Is voice over enabled
++ (BOOL)isVoiceOverEnabled;
+
 @end
