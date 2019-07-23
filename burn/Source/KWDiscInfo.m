@@ -18,7 +18,7 @@
 	    	    	    	    	    	    	    @"DVD+RW",
 	    nil];
 	    
-	    NSArray *keys = [NSArray arrayWithObjects:    @"DRDeviceMediaTypeCDROM",
+	    NSArray *keys = [NSArray arrayWithObjects:    DRDeviceMediaTypeCDROM,
     	    	    	    	    	    	    @"DRDeviceMediaTypeDVDROM",
     	    	    	    	    	    	    @"DRDeviceMediaTypeCDR",
     	    	    	    	    	    	    @"DRDeviceMediaTypeCDRW",

@@ -26,6 +26,7 @@
                 <outlet property="previewImageView" destination="1649" id="1816"/>
                 <outlet property="previewWindow" destination="1647" id="1813"/>
                 <outlet property="themePopup" destination="1621" id="1806"/>
+                <outlet property="toolbar" destination="dnq-SL-vpR" id="5OC-x9-cZ3"/>
                 <outlet property="videoTab" destination="849" id="1855"/>
                 <outlet property="videoView" destination="768" id="1820"/>
                 <outlet property="window" destination="735" id="1748"/>
@@ -40,9 +41,63 @@
             <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1417"/>
             <view key="contentView" autoresizesSubviews="NO" id="736">
                 <rect key="frame" x="0.0" y="0.0" width="360" height="59"/>
-                <autoresizingMask key="autoresizingMask"/>
+                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             </view>
-            <point key="canvasLocation" x="98" y="-80"/>
+            <toolbar key="toolbar" implicitIdentifier="E3ABDEA6-2ABC-4410-9E08-DD227472E5F5" autosavesConfiguration="NO" allowsUserCustomization="NO" displayMode="iconAndLabel" sizeMode="regular" id="dnq-SL-vpR">
+                <allowedToolbarItems>
+                    <toolbarItem implicitItemIdentifier="0EA5213A-4CA2-400D-BCF9-96BD7A4E1C76" explicitItemIdentifier="General" label="General" paletteLabel="General" tag="-1" image="General" autovalidates="NO" selectable="YES" id="fG8-d4-Y30">
+                        <size key="minSize" width="128" height="128"/>
+                        <size key="maxSize" width="128" height="128"/>
+                        <connections>
+                            <action selector="toolbarAction:" target="-2" id="UjG-Tk-ISS"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="F3969A72-079E-4F5C-91D6-1E5F6A8A9566" explicitItemIdentifier="Burner" label="Burner" paletteLabel="Burner" tag="-1" image="Burn" autovalidates="NO" selectable="YES" id="zOj-vf-U6C">
+                        <size key="minSize" width="512" height="512"/>
+                        <size key="maxSize" width="512" height="512"/>
+                        <connections>
+                            <action selector="toolbarAction:" target="-2" id="9Y7-Gf-EIj"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="E7CAA1C2-3EB5-487C-8261-9074F0E51572" explicitItemIdentifier="Data" label="Data" paletteLabel="Data" tag="-1" image="NSComputer" autovalidates="NO" selectable="YES" id="CFz-Mc-buw">
+                        <size key="minSize" width="32" height="32"/>
+                        <size key="maxSize" width="32" height="32"/>
+                        <connections>
+                            <action selector="toolbarAction:" target="-2" id="m4G-5o-YZv"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="978166D6-3D30-406A-A908-96B82B044E75" explicitItemIdentifier="Audio" label="Audio" paletteLabel="Audio" tag="-1" image="Sound" autovalidates="NO" selectable="YES" id="vam-Cb-HUd">
+                        <size key="minSize" width="40" height="40"/>
+                        <size key="maxSize" width="40" height="40"/>
+                        <connections>
+                            <action selector="toolbarAction:" target="-2" id="naW-eZ-EmN"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="2EE00648-325C-4F3A-9CC4-1F2B07B29726" explicitItemIdentifier="Video" label="Video" paletteLabel="Video" tag="-1" image="NSBonjour" autovalidates="NO" selectable="YES" id="x3T-s2-LeS">
+                        <size key="minSize" width="32" height="32"/>
+                        <size key="maxSize" width="32" height="32"/>
+                        <connections>
+                            <action selector="toolbarAction:" target="-2" id="g8n-xx-W4b"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="61A4A2AC-B78D-4F31-9745-B18D18F02E89" explicitItemIdentifier="Advanced" label="Advanced" paletteLabel="Advanced" tag="-1" image="NSAdvanced" autovalidates="NO" selectable="YES" id="tHy-oT-33N">
+                        <size key="minSize" width="32" height="32"/>
+                        <size key="maxSize" width="32" height="32"/>
+                        <connections>
+                            <action selector="toolbarAction:" target="-2" id="hpj-Wc-Paq"/>
+                        </connections>
+                    </toolbarItem>
+                </allowedToolbarItems>
+                <defaultToolbarItems>
+                    <toolbarItem reference="fG8-d4-Y30"/>
+                    <toolbarItem reference="zOj-vf-U6C"/>
+                    <toolbarItem reference="CFz-Mc-buw"/>
+                    <toolbarItem reference="vam-Cb-HUd"/>
+                    <toolbarItem reference="x3T-s2-LeS"/>
+                    <toolbarItem reference="tHy-oT-33N"/>
+                </defaultToolbarItems>
+            </toolbar>
+            <point key="canvasLocation" x="213" y="-503.5"/>
         </window>
         <customView autoresizesSubviews="NO" id="739" userLabel="generalView">
             <rect key="frame" x="0.0" y="0.0" width="420" height="94"/>
@@ -1129,6 +1184,7 @@
                 <constraint firstAttribute="trailing" secondItem="849" secondAttribute="trailing" constant="20" id="crs-zD-pcs"/>
                 <constraint firstItem="849" firstAttribute="top" secondItem="768" secondAttribute="top" constant="12" id="fW9-iI-TgO"/>
             </constraints>
+            <point key="canvasLocation" x="532" y="-228"/>
         </customView>
         <customView autoresizesSubviews="NO" id="1154" userLabel="advancedView">
             <rect key="frame" x="0.0" y="0.0" width="420" height="162"/>
@@ -1325,7 +1381,7 @@
                     <constraint firstItem="1655" firstAttribute="top" secondItem="1659" secondAttribute="bottom" constant="14" id="xbc-A1-PJl"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="129" y="-145"/>
+            <point key="canvasLocation" x="91" y="-129"/>
         </window>
         <customView autoresizesSubviews="NO" id="1406" userLabel="burnerView">
             <rect key="frame" x="0.0" y="0.0" width="420" height="202"/>
@@ -1578,4 +1634,12 @@
             <point key="canvasLocation" x="178" y="-264"/>
         </customView>
     </objects>
+    <resources>
+        <image name="Burn" width="512" height="512"/>
+        <image name="General" width="128" height="128"/>
+        <image name="NSAdvanced" width="32" height="32"/>
+        <image name="NSBonjour" width="32" height="32"/>
+        <image name="NSComputer" width="32" height="32"/>
+        <image name="Sound" width="40" height="40"/>
+    </resources>
 </document>

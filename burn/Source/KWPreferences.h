@@ -35,10 +35,6 @@
     IBOutlet id previewImageView;
     IBOutlet id previewWindow;
     
-    //Toolbar outlets
-    NSToolbar *toolbar;
-    NSMutableDictionary *itemsList;
-    
     NSArray *preferenceMappings;
     NSInteger dataViewHeight;
     NSMutableArray *themePaths;
@@ -60,8 +56,6 @@
 - (IBAction)chooseFFMPEG:(id)sender;
 
 //Toolbar actions
-- (NSToolbarItem *)createToolbarItemWithName:(NSString *)name;
-- (void)setupToolbar;
 - (void)toolbarAction:(id)object;
 - (id)myViewWithIdentifier:(NSString *)identifier;
 

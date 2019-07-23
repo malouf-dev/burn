@@ -58,7 +58,6 @@
 		FEC9BB0522C78BC000A17077 /* KWRecorderInfo.xib in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BAF922C78BC000A17077 /* KWRecorderInfo.xib */; };
 		FEC9BB0622C78BC000A17077 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BAFB22C78BC000A17077 /* MainMenu.xib */; };
 		FEC9BB8322C7B83800A17077 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FEC9BB8222C7B83800A17077 /* AVFoundation.framework */; };
-		FEC9BB9F22C7E08200A17077 /* Advanced.icns in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BB9E22C7E08200A17077 /* Advanced.icns */; };
 		FEC9BBA122C7E08B00A17077 /* Sound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BBA022C7E08B00A17077 /* Sound.tiff */; };
 		FEC9BBA322C7E0A100A17077 /* General.icns in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BBA222C7E0A100A17077 /* General.icns */; };
 		FEC9BBA622C7EAFD00A17077 /* Empty@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BBA422C7EAFD00A17077 /* Empty@2x.png */; };
@@ -456,7 +455,6 @@
 		FEC9BB9922C7D1DD00A17077 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/KWProgress.strings; sourceTree = "<group>"; };
 		FEC9BB9B22C7D1E000A17077 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/KWProgress.strings; sourceTree = "<group>"; };
 		FEC9BB9D22C7D1E300A17077 /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = nl.lproj/KWProgress.strings; sourceTree = "<group>"; };
-		FEC9BB9E22C7E08200A17077 /* Advanced.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = Advanced.icns; path = Images/Advanced.icns; sourceTree = "<group>"; };
 		FEC9BBA022C7E08B00A17077 /* Sound.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = Sound.tiff; path = Images/Sound.tiff; sourceTree = "<group>"; };
 		FEC9BBA222C7E0A100A17077 /* General.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = General.icns; path = Images/General.icns; sourceTree = "<group>"; };
 		FEC9BBA422C7EAFD00A17077 /* Empty@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Empty@2x.png"; path = "Images/Empty@2x.png"; sourceTree = "<group>"; };
@@ -954,7 +952,6 @@
 				FE31516722CCB6E200692452 /* Empty (dark).png */,
 				FE31516822CCB6E200692452 /* Empty (dark)@2x.png */,
 				FE31516922CCB6E200692452 /* Empty (dark)@3x.png */,
-				FEC9BB9E22C7E08200A17077 /* Advanced.icns */,
 				FEEF6F210B92E8BB00ED64A9 /* Forward.png */,
 				FEC9BBD122C7F0F900A17077 /* Forward@2x.png */,
 				FEC9BBD222C7F0F900A17077 /* Forward@3x.png */,
@@ -1327,7 +1324,6 @@
 				FE4A012C22CD2ACD0033759B /* Play (dark)@3x.png in Resources */,
 				FEC9BBE022C7F10E00A17077 /* Stop@2x.png in Resources */,
 				FEC9BBA622C7EAFD00A17077 /* Empty@2x.png in Resources */,
-				FEC9BB9F22C7E08200A17077 /* Advanced.icns in Resources */,
 				FE31516122CCB3B400692452 /* Gear with arrow (dark).png in Resources */,
 				FEC9BBCC22C7EE4E00A17077 /* Multiple@2x.png in Resources */,
 				FE89096622C391CB007E793B /* spumux in Resources */,

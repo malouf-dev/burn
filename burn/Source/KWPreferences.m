@@ -5,15 +5,15 @@
 
 @interface KWPreferences() <NSToolbarDelegate>
 
+@property (nonatomic, weak) IBOutlet NSToolbar *toolbar;
 @property (nonatomic, weak) IBOutlet NSButton *generalAutomaticUpdatesButton;
-
 @property (nonatomic) IBOutlet NSLayoutConstraint *dataTopConstraint;
 
 @end
 
 @implementation KWPreferences
 
-- (id)init
+- (instancetype)init
 {
     if (self = [super init])
     {
@@ -71,9 +71,8 @@
 	    	    	    	    	    	    	    	    @"KWUseCustomFFMPEG",    	    //52
 	    	    	    	    	    	    	    	    @"KWCustomFFMPEG",	    	    //53
 	    	    	    	    	    	    	    	    @"KWAllowOverBurning",    	    //54
-    nil];
-	    	    	    	    	    	    	    	    
-	    itemsList = [[NSMutableDictionary alloc] init];
+        nil];
+        
 	    [[NSBundle mainBundle] loadNibNamed:@"KWPreferences" owner:self topLevelObjects:nil];
     }
 
@@ -92,6 +91,9 @@ return self;
     
     NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
     NSFileManager *defaultManager = [NSFileManager defaultManager];
+    
+    // Toolbar
+    [self setupToolbar];
     
     // General
     [[self generalAutomaticUpdatesButton] setState:[[SUUpdater sharedUpdater] automaticallyChecksForUpdates]];
@@ -182,10 +184,6 @@ return self;
     
     //Load the options for our views
     [self setViewOptions:[NSArray arrayWithObjects:generalView, burnerView, dataView, audioView, videoView, advancedView, nil]];
-
-    [self setupToolbar];
-    [toolbar setSelectedItemIdentifier:[standardDefaults objectForKey:@"KWSavedPrefView"]];
-    [self toolbarAction:[toolbar selectedItemIdentifier]];
     
     DRNotificationCenter *currentRunLoopCenter = [DRNotificationCenter currentRunLoopCenter];
     [currentRunLoopCenter addObserver:self selector:@selector(mediaChanged:) name:DRDeviceDisappearedNotification object:nil];
@@ -217,6 +215,16 @@ return self;
 
 - (void)showPreferences
 {
+    for (NSToolbarItem *item in [[self toolbar] items])
+    {
+        if ([[item itemIdentifier] isEqualToString:@"General"])
+        {
+            // It's kind of sad that this the only way, since the variable is private, but it's needed for VoiceOver users
+            // This will set the focus on the General toolbar item when opening preferences
+            [[self window] makeFirstResponder:[item valueForKey:@"_view"]];
+        }
+    }
+
     [[self window] makeKeyAndOrderFront:self];
 }
 
@@ -411,36 +419,43 @@ return self;
 #pragma mark -
 #pragma mark •• Toolbar actions
 
-- (NSToolbarItem *)createToolbarItemWithName:(NSString *)name
-{
-    NSToolbarItem *toolbarItem = [[NSToolbarItem alloc] initWithItemIdentifier:name];
-    [toolbarItem setLabel:NSLocalizedString(name, Localized)];
-    [toolbarItem setPaletteLabel:[toolbarItem label]];
-    [toolbarItem setImage:[KWCommonMethods getImageForName:name]];
-    [toolbarItem setTarget:self];
-    [toolbarItem setAction:@selector(toolbarAction:)];
-    [itemsList setObject:name forKey:name];
-
-    return toolbarItem;
-}
-
 - (void)setupToolbar
 {
-    toolbar = [[NSToolbar alloc] initWithIdentifier:@"mainToolbar"];
-    [toolbar setDelegate:self];
-    [toolbar setAllowsUserCustomization:NO];
-    [toolbar setAutosavesConfiguration:NO];
-    [[self window] setToolbar:toolbar];
+    NSToolbar *toolbar = [self toolbar];
+
+    NSString *saveIdentifier = [[NSUserDefaults standardUserDefaults] objectForKey:@"KWSavedPrefView"];
+    NSToolbarItem *toolbarItem;
+    for (NSToolbarItem *item in [toolbar items])
+    {
+        NSToolbarItemIdentifier itemIdentifier = [item itemIdentifier];
+        // TODO: move the localisations the interface builder
+        [item setLabel:NSLocalizedString(itemIdentifier, nil)];
+        
+        if ([itemIdentifier isEqualToString:@"Data"])
+        {
+            [item setImage:[[NSWorkspace sharedWorkspace] iconForFileType:NSFileTypeForHFSTypeCode(kGenericCDROMIcon)]];
+        }
+        else if ([itemIdentifier isEqualToString:@"Video"])
+        {
+            [item setImage:[[NSWorkspace sharedWorkspace] iconForFileType:@".mpg"]];
+        }
+    
+        if ([itemIdentifier isEqualToString:saveIdentifier])
+        {
+            toolbarItem = item;
+        }
+    }
+    
+    if (toolbarItem != nil)
+    {
+        [self toolbarAction:toolbarItem];
+    }
 }
 
-- (void)toolbarAction:(id)object
+- (IBAction)toolbarAction:(id)object
 {
-    id itemIdentifier;
-
-    if ([object isKindOfClass:[NSToolbarItem class]])
-	    itemIdentifier = [object itemIdentifier];
-    else
-	    itemIdentifier = object;
+    NSToolbarItemIdentifier itemIdentifier = [object itemIdentifier];
+    [[self toolbar] setSelectedItemIdentifier:itemIdentifier];
     
     id view = [self myViewWithIdentifier:itemIdentifier];
     NSRect frame = [view frame];
@@ -470,21 +485,6 @@ return self;
     return nil;
 }
 
-- (NSToolbarItem *)toolbar:(NSToolbar *)toolbar itemForItemIdentifier:(NSString *)itemIdentifier willBeInsertedIntoToolbar:(BOOL)flag
-{
-    return [self createToolbarItemWithName:itemIdentifier];
-}
-
-- (NSArray *)toolbarAllowedItemIdentifiers:(NSToolbar*)toolbar
-{
-    return [NSArray arrayWithObjects:NSToolbarSeparatorItemIdentifier, NSToolbarSpaceItemIdentifier, NSToolbarFlexibleSpaceItemIdentifier, @"General",@"Burner",@"Data",@"Audio",@"Video",@"Advanced", nil];
-}
-
-- (NSArray *)toolbarDefaultItemIdentifiers:(NSToolbar*)toolbar
-{
-    return [NSArray arrayWithObjects:@"General",@"Burner",@"Data",@"Audio",@"Video",@"Advanced", nil];
-}
-
 ///////////////////
 // Other actions //
 ///////////////////
@@ -504,19 +504,6 @@ return self;
         (aRect.size.height+78 - [[self window] frame].size.height), aRect.size.width, aRect.size.height+78);
     [[self window] setFrame:r display:YES animate:YES];
 }
-
-/* -----------------------------------------------------------------------------
-    toolbarSelectableItemIdentifiers:
-	    Make sure all our custom items can be selected. NSToolbar will
-	    automagically select the appropriate item when it is clicked.
-   -------------------------------------------------------------------------- */
-
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_3
--(NSArray*) toolbarSelectableItemIdentifiers: (NSToolbar*)toolbar
-{
-    return [itemsList allKeys];
-}
-#endif
 
 - (void)settingsChangedByOptionsMenuInMainWindow
 {
