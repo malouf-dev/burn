@@ -182,7 +182,7 @@
 - (void)changeInspector:(NSNotification *)notif
 {
     NSString *currentObject = [notif object];
-    NSString *currentType = [[notif userInfo] objectForKey:@"Type"];
+    NSString *currentType = [notif userInfo][@"Type"];
 
     [self setCurrentObject:currentObject];
     [self setCurrentType:currentType];

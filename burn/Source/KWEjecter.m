@@ -53,9 +53,15 @@
 
 - (IBAction)ejectDisc:(id)sender
 {
-    if (![[[DRDevice devices] objectAtIndex:[[self recorderPopUpButton] indexOfSelectedItem]] ejectMedia])
+    NSArray *devices = [DRDevice devices];
+    NSInteger indexOfSelectedItem = [[self recorderPopUpButton] indexOfSelectedItem];
+    
+    if (indexOfSelectedItem >= [devices count] || (![devices[indexOfSelectedItem] ejectMedia]))
     {
-	    [KWCommonMethods standardAlertWithMessageText:NSLocalizedString(@"Failed to eject", Localized) withInformationText:NSLocalizedString(@"Could not eject media from the drive", Localized) withParentWindow:nil];
+        NSString *message = NSLocalizedString(@"Failed to eject", Localized);
+        NSString *information = NSLocalizedString(@"Could not eject media from the drive", Localized);
+    
+        [KWCommonMethods standardAlertWithMessageText:message withInformationText:information withParentWindow:nil];
     }
     
     NSWindow *window = [self window];
