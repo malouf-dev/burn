@@ -63,6 +63,7 @@
 
     [currentCenter addObserver:self selector:@selector(updateDiskInfo) name:DRDeviceDisappearedNotification object:nil];
     [currentCenter addObserver:self selector:@selector(updateDiskInfo) name:DRDeviceAppearedNotification object:nil];
+    [currentCenter addObserver:self selector:@selector(updateDiskInfo) name:DRDeviceStatusChangedNotification object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveFrame) name:NSWindowWillCloseNotification object:nil];
 
