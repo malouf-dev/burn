@@ -3,26 +3,16 @@
 #import <Cocoa/Cocoa.h>
 #import <DiscRecording/DiscRecording.h>
 
+/**
+ *  A panel showing info about the current disc
+ */
 @interface KWDiscInfo : NSWindowController
-{
-    IBOutlet id freeSpaceDisk;
-    IBOutlet id kindDisk;
-    IBOutlet id recorderPopup;
-    IBOutlet id usedSpaceDisk;
-    IBOutlet id writableDisk;
-    
-    NSDictionary *discTypes;
-}
 
-//Main actions
+/**
+ *  Show a panel
+ *
+ *  @param device The device (and its disc) used to setup the panel with
+ */
 - (void)startDiskPanelwithDevice:(DRDevice *)device;
-
-//Interface actions
-- (IBAction)recorderPopup:(id)sender;
-
-//Internal actions
-- (void)setDiskInfo:(DRDevice *)device;
-- (void)updateDiskInfo;
-- (void)saveFrame;
 
 @end

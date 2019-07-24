@@ -1,36 +1,47 @@
 #import "KWDiscInfo.h"
 #import "KWCommonMethods.h"
 
+@interface KWDiscInfo()
+
+@property (nonatomic, weak) IBOutlet NSPopUpButton *recorderPopUp;
+@property (nonatomic, weak) IBOutlet NSTextField *kindTextField;
+@property (nonatomic, weak) IBOutlet NSTextField *freeSpaceTextField;
+@property (nonatomic, weak) IBOutlet NSTextField *usedSpaceTextField;
+@property (nonatomic, weak) IBOutlet NSTextField *writableTextField;
+
+@property (nonatomic, strong) NSDictionary *discTypeMappings;
+
+@end
+
 @implementation KWDiscInfo
 
-- (id)init
+- (instancetype)init
 {
-    if( self = [super init] )
+    self = [super init];
+
+    if (self)
     {
-	    NSArray *objects = [NSArray arrayWithObjects:    @"CD-ROM",
-	    	    	    	    	    	    	    @"DVD-ROM",
-	    	    	    	    	    	    	    @"CD-R",
-	    	    	    	    	    	    	    @"CD-RW",
-	    	    	    	    	    	    	    @"DVD-R",
-	    	    	    	    	    	    	    @"DVD-RW",
-	    	    	    	    	    	    	    @"DVD-RAM",
-	    	    	    	    	    	    	    @"DVD+R",
-	    	    	    	    	    	    	    @"DVD+RW",
-	    nil];
-	    
-	    NSArray *keys = [NSArray arrayWithObjects:    DRDeviceMediaTypeCDROM,
-    	    	    	    	    	    	    @"DRDeviceMediaTypeDVDROM",
-    	    	    	    	    	    	    @"DRDeviceMediaTypeCDR",
-    	    	    	    	    	    	    @"DRDeviceMediaTypeCDRW",
-    	    	    	    	    	    	    @"DRDeviceMediaTypeDVDR",
-    	    	    	    	    	    	    @"DRDeviceMediaTypeDVDRW",
-    	    	    	    	    	    	    @"DRDeviceMediaTypeDVDRAM",
-    	    	    	    	    	    	    @"DRDeviceMediaTypeDVDPlusR",
-    	    	    	    	    	    	    @"DRDeviceMediaTypeDVDPlusRW",
-	    nil];
-    
-	    discTypes = [[NSDictionary alloc] initWithObjects:objects forKeys:keys];
-	    
+        _discTypeMappings = @{  DRDeviceMediaTypeCDROM: @"CD-ROM",
+                                DRDeviceMediaTypeDVDROM: @"CD-ROM",
+                                DRDeviceMediaTypeCDR: @"CD-ROM",
+                                DRDeviceMediaTypeCDRW: @"CD-ROM",
+                                DRDeviceMediaTypeDVDR: @"CD-ROM",
+                                DRDeviceMediaTypeDVDRW: @"CD-ROM",
+                                DRDeviceMediaTypeDVDRAM: @"CD-ROM",
+                                DRDeviceMediaTypeDVDPlusR: @"CD-ROM",
+                                DRDeviceMediaTypeDVDPlusRW: @"CD-ROM",
+                                DRDeviceMediaTypeBDR: @"BD-R",
+                                DRDeviceMediaTypeBDRE: @"BD-RE",
+                                DRDeviceMediaTypeBDROM: @"BD-ROM",
+                                DRDeviceMediaTypeHDDVDROM: @"HD DVD-ROM",
+                                DRDeviceMediaTypeHDDVDR: @"HD DVD-R",
+                                DRDeviceMediaTypeHDDVDRDualLayer: @"HD DVD-R DL",
+                                DRDeviceMediaTypeHDDVDRAM: @"HD DVD-RAM",
+                                DRDeviceMediaTypeHDDVDRW: @"HD DVD-RW",
+                                DRDeviceMediaTypeHDDVDRWDualLayer: @"HD DVD-RW DL",
+                                DRDeviceMediaTypeUnknown: @"????"
+                            };
+        
         [[NSBundle mainBundle] loadNibNamed:@"KWDiscInfo" owner:self topLevelObjects:nil];
     }
     
@@ -45,6 +56,8 @@
 
 - (void)awakeFromNib
 {
+    [super awakeFromNib];
+
     NSWindow *myWindow = [self window];
     DRNotificationCenter *currentCenter = [DRNotificationCenter currentRunLoopCenter];
 
@@ -53,18 +66,16 @@
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveFrame) name:NSWindowWillCloseNotification object:nil];
 
+    // TODO: is this necessary?
     [myWindow setFrameUsingName:@"Disc Info"];
 
     if ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWFirstRun"] == YES)
-	    [myWindow setFrameOrigin:NSMakePoint(500,[[NSScreen mainScreen] frame].size.height - 500)];
+    {
+	    [myWindow setFrameOrigin:NSMakePoint(500.0, [[NSScreen mainScreen] frame].size.height - 500.0)];
+    }
 }
 
-//////////////////
-// Main actions //
-//////////////////
-
-#pragma mark -
-#pragma mark •• Main actions
+#pragma mark - Main Methods
 
 - (void)startDiskPanelwithDevice:(DRDevice *)device
 {    
@@ -76,88 +87,82 @@
     }
     else 
     {
-	    [recorderPopup removeAllItems];
-    
-	    NSArray *devices = [DRDevice devices];
-	    NSInteger i;
-	    for (i=0;i< [devices count];i++)
+        NSPopUpButton *recorderPopUp = [self recorderPopUp];
+	    [recorderPopUp removeAllItems];
+        
+	    for (DRDevice *device in [DRDevice devices])
 	    {
-    	    [recorderPopup addItemWithTitle:[[devices objectAtIndex:i] displayName]];
+    	    [recorderPopUp addItemWithTitle:[device displayName]];
 	    }
     	    
-	    [recorderPopup selectItemWithTitle:[device displayName]];
+	    [recorderPopUp selectItemWithTitle:[device displayName]];
 	    
 	    [self setDiskInfo:device];
 	    [myWindow makeKeyAndOrderFront:self];
     }
 }
 
-///////////////////////
-// Interface actions //
-///////////////////////
-
-#pragma mark -
-#pragma mark •• Interface actions
+#pragma mark - Interface Methods
 
 - (IBAction)recorderPopup:(id)sender
 {
-    NSArray *devices = [DRDevice devices];
-    [self setDiskInfo:[devices objectAtIndex:[recorderPopup indexOfSelectedItem]]];
+    NSInteger indexOfSelectedItem = [[self recorderPopUp] indexOfSelectedItem];
+    DRDevice *device = [DRDevice devices][indexOfSelectedItem];
+    [self setDiskInfo:device];
 }
 
-//////////////////////
-// Internal actions //
-//////////////////////
-
-#pragma mark -
-#pragma mark •• Internal actions
+#pragma mark -  Convenient Methods
 
 - (void)setDiskInfo:(DRDevice *)device
 {
-    NSDictionary *mediaInfo = [[device status] objectForKey:DRDeviceMediaInfoKey];
+    NSDictionary *mediaInfo = [device status][DRDeviceMediaInfoKey];
     NSString *type = [mediaInfo objectForKey:DRDeviceMediaTypeKey];
-    NSString *kind = [discTypes objectForKey:type];
+    NSString *kind = [self discTypeMappings][type];
 
-    if (kind)
+    if (kind != nil)
     {
-	    [kindDisk setStringValue:kind];
-	    [freeSpaceDisk setStringValue:[KWCommonMethods makeSizeFromFloat:[[mediaInfo objectForKey:DRDeviceMediaFreeSpaceKey] floatValue] * 2048]];
-	    [usedSpaceDisk setStringValue:[KWCommonMethods makeSizeFromFloat:[[mediaInfo objectForKey:DRDeviceMediaUsedSpaceKey] floatValue] * 2048]];
+        NSString *freeSpace = [KWCommonMethods makeSizeFromFloat:[[mediaInfo objectForKey:DRDeviceMediaFreeSpaceKey] floatValue] * 2048];
+        NSString *usedSpace = [KWCommonMethods makeSizeFromFloat:[[mediaInfo objectForKey:DRDeviceMediaUsedSpaceKey] floatValue] * 2048];
+    
+	    [[self kindTextField] setStringValue:kind];
+	    [[self freeSpaceTextField] setStringValue:freeSpace];
+	    [[self usedSpaceTextField] setStringValue:usedSpace];
 
 	    if ([[[mediaInfo objectForKey:DRDeviceMediaBlocksOverwritableKey] stringValue] isEqualTo:@"0"])
-    	    [writableDisk setStringValue:NSLocalizedString(@"No",nil)];
+    	    [[self writableTextField] setStringValue:NSLocalizedString(@"No",nil)];
 	    else
-    	    [writableDisk setStringValue:NSLocalizedString(@"Yes",nil)];
+    	    [[self writableTextField] setStringValue:NSLocalizedString(@"Yes",nil)];
     }
     else
     {
-	    [kindDisk setStringValue:NSLocalizedString(@"No disc",nil)];
-	    [freeSpaceDisk setStringValue:@""];
-	    [usedSpaceDisk setStringValue:@""];
-	    [writableDisk setStringValue:@""];
+	    [[self kindTextField] setStringValue:NSLocalizedString(@"No disc",nil)];
+	    [[self freeSpaceTextField] setStringValue:@""];
+	    [[self usedSpaceTextField] setStringValue:@""];
+	    [[self writableTextField] setStringValue:@""];
     }
 }
 
 - (void)updateDiskInfo
 {
-    NSArray *devices = [DRDevice devices];
+    NSPopUpButton *recorderPopUp = [self recorderPopUp];
+    NSString *title = [[recorderPopUp title] copy];
     
-    NSString *title = [[recorderPopup title] copy];
-
-    [recorderPopup removeAllItems];
-	    
-    NSInteger i;
-    for (i=0;i< [devices count];i++)
+    [recorderPopUp removeAllItems];
+    
+    for (DRDevice *device in [DRDevice devices])
     {
-	    [recorderPopup addItemWithTitle:[[devices objectAtIndex:i] displayName]];
+	    [recorderPopUp addItemWithTitle:[device displayName]];
     }
 	    
-	    if ([recorderPopup indexOfItemWithTitle:title] > -1)
-	    [recorderPopup selectItemWithTitle:title];
+    if ([recorderPopUp indexOfItemWithTitle:title] > -1)
+    {
+        [recorderPopUp selectItemWithTitle:title];
+    }
     
     [self recorderPopup:self];
 }
 
+// TODO: is this necessary?
 - (void)saveFrame
 {
     [[self window] saveFrameUsingName:@"Disc Info"];
