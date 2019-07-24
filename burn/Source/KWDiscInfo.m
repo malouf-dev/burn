@@ -105,9 +105,9 @@
 
 #pragma mark - Interface Methods
 
-- (IBAction)recorderPopup:(id)sender
+- (IBAction)changeRecorder:(NSPopUpButton *)recorderPopUp
 {
-    NSInteger indexOfSelectedItem = [[self recorderPopUp] indexOfSelectedItem];
+    NSInteger indexOfSelectedItem = [recorderPopUp indexOfSelectedItem];
     NSArray *devices = [DRDevice devices];
     
     if (indexOfSelectedItem < [devices count])
@@ -170,7 +170,7 @@
         [recorderPopUp selectItemWithTitle:title];
     }
     
-    [self recorderPopup:self];
+    [self changeRecorder:[self recorderPopUp]];
 }
 
 // TODO: is this necessary?

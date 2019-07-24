@@ -41,7 +41,7 @@
                             </menu>
                         </popUpButtonCell>
                         <connections>
-                            <action selector="recorderPopup:" target="-2" id="26"/>
+                            <action selector="changeRecorder:" target="-2" id="26"/>
                         </connections>
                     </popUpButton>
                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="19" customClass="KWAutoLayoutTextField">

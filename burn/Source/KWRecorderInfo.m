@@ -99,11 +99,11 @@
     }
 }
 
-#pragma mark - Interface actions
+#pragma mark - Interface Methods
 
-- (IBAction)recorderPopup:(id)sender
+- (IBAction)changeRecorder:(NSPopUpButton *)recorderPopUp
 {
-    NSInteger indexOfSelectedItem = [[self recorderPopUp] indexOfSelectedItem];
+    NSInteger indexOfSelectedItem = [recorderPopUp indexOfSelectedItem];
     NSArray *devices = [DRDevice devices];
     
     if (indexOfSelectedItem < [devices count])
@@ -118,7 +118,7 @@
     }
 }
 
-#pragma mark - nternal actions
+#pragma mark - Convenient Methods
 
 - (void)setupRecorderInfoForDevice:(DRDevice *)device
 {
@@ -166,22 +166,22 @@
 
 - (void)updateRecorderInfo
 {
-    NSPopUpButton *recorderPopup = [self recorderPopUp];
-    NSString *title = [[recorderPopup title] copy];
+    NSPopUpButton *recorderPopUp = [self recorderPopUp];
+    NSString *title = [[recorderPopUp title] copy];
 
-    [recorderPopup removeAllItems];
+    [recorderPopUp removeAllItems];
     
     for (DRDevice *device in [DRDevice devices])
     {
-	    [recorderPopup addItemWithTitle:[device displayName]];
+	    [recorderPopUp addItemWithTitle:[device displayName]];
     }
 	    
-    if ([recorderPopup indexOfItemWithTitle:title] > -1)
+    if ([recorderPopUp indexOfItemWithTitle:title] > -1)
     {
-        [recorderPopup selectItemWithTitle:title];
+        [recorderPopUp selectItemWithTitle:title];
     }
     
-    [self recorderPopup:self];
+    [self changeRecorder:[self recorderPopUp]];
 }
 
 // TODO: is this necessary?

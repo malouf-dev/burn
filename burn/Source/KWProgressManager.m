@@ -153,7 +153,7 @@
             NSImage *applicationImage = [[NSImage imageNamed:@"Burn"] copy];
 
             [applicationImage lockFocus];
-            [[NSImage imageNamed:@"-1"] drawInRect:NSMakeRect(9,10,111,16) fromRect:NSZeroRect operation:NSCompositeCopy fraction:1.0];
+            [[NSImage imageNamed:@"-1"] drawInRect:NSMakeRect(9.0, 10.0, 111.0, 16.0) fromRect:NSZeroRect operation:NSCompositeCopy fraction:1.0];
             [applicationImage unlockFocus];
             
             [NSApp setApplicationIconImage:applicationImage];
@@ -170,7 +170,7 @@
         NSProgressIndicator *progressIndicator = [self progressIndicator];
         NSImage *miniProgressIndicator;
 
-        NSRect progressRect = NSMakeRect(9,10,111,16);
+        NSRect progressRect = NSMakeRect(9.0, 10.0, 111.0, 16.0);
 
         if (_value == -1)
         {
