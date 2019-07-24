@@ -151,7 +151,7 @@
         [self setRecorderInfo:recorderInfo];
     }
 
-    [recorderInfo startRecorderPanelwithDevice:[KWCommonMethods getCurrentDevice]];
+    [recorderInfo showRecorderInfoForDevice:[KWCommonMethods getCurrentDevice]];
 }
 
 - (IBAction)showDiscInfo:(id)sender
@@ -163,7 +163,7 @@
         [self setDiscInfo:discInfo];
     }
 
-    [discInfo startDiskPanelwithDevice:[KWCommonMethods getCurrentDevice]];
+    [discInfo showDiskInfoForDevice:[KWCommonMethods getCurrentDevice]];
 }
 
 - (IBAction)openBurnSite:(id)sender

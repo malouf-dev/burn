@@ -61,9 +61,9 @@
     NSWindow *myWindow = [self window];
     DRNotificationCenter *currentCenter = [DRNotificationCenter currentRunLoopCenter];
 
-    [currentCenter addObserver:self selector:@selector(updateDiskInfo) name:DRDeviceDisappearedNotification object:nil];
-    [currentCenter addObserver:self selector:@selector(updateDiskInfo) name:DRDeviceAppearedNotification object:nil];
-    [currentCenter addObserver:self selector:@selector(updateDiskInfo) name:DRDeviceStatusChangedNotification object:nil];
+    [currentCenter addObserver:self selector:@selector(updateDiscInfo) name:DRDeviceDisappearedNotification object:nil];
+    [currentCenter addObserver:self selector:@selector(updateDiscInfo) name:DRDeviceAppearedNotification object:nil];
+    [currentCenter addObserver:self selector:@selector(updateDiscInfo) name:DRDeviceStatusChangedNotification object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveFrame) name:NSWindowWillCloseNotification object:nil];
 
@@ -78,7 +78,7 @@
 
 #pragma mark - Main Methods
 
-- (void)startDiskPanelwithDevice:(DRDevice *)device
+- (void)showDiskInfoForDevice:(DRDevice *)device
 {    
     NSWindow *myWindow = [self window];
 
@@ -98,7 +98,7 @@
     	    
 	    [recorderPopUp selectItemWithTitle:[device displayName]];
 	    
-	    [self setDiskInfo:device];
+	    [self setupDiscInfoForDevice:device];
 	    [myWindow makeKeyAndOrderFront:self];
     }
 }
@@ -108,13 +108,23 @@
 - (IBAction)recorderPopup:(id)sender
 {
     NSInteger indexOfSelectedItem = [[self recorderPopUp] indexOfSelectedItem];
-    DRDevice *device = [DRDevice devices][indexOfSelectedItem];
-    [self setDiskInfo:device];
+    NSArray *devices = [DRDevice devices];
+    
+    if (indexOfSelectedItem < [devices count])
+    {
+        DRDevice *device = devices[indexOfSelectedItem];
+        [self setupDiscInfoForDevice:device];
+    }
+    else
+    {
+        // This shouldn't happen, but just to be sure :)
+        [self updateDiscInfo];
+    }
 }
 
 #pragma mark -  Convenient Methods
 
-- (void)setDiskInfo:(DRDevice *)device
+- (void)setupDiscInfoForDevice:(DRDevice *)device
 {
     NSDictionary *mediaInfo = [device status][DRDeviceMediaInfoKey];
     NSString *type = [mediaInfo objectForKey:DRDeviceMediaTypeKey];
@@ -143,7 +153,7 @@
     }
 }
 
-- (void)updateDiskInfo
+- (void)updateDiscInfo
 {
     NSPopUpButton *recorderPopUp = [self recorderPopUp];
     NSString *title = [[recorderPopUp title] copy];

@@ -1,33 +1,42 @@
 #import "KWRecorderInfo.h"
 #import "KWCommonMethods.h"
 
+@interface KWRecorderInfo()
+
+@property (nonatomic, weak) IBOutlet NSPopUpButton *recorderPopUp;
+@property (nonatomic, weak) IBOutlet NSTextField *productTextField;
+@property (nonatomic, weak) IBOutlet NSTextField *vendorTextField;
+@property (nonatomic, weak) IBOutlet NSTextField *writesTextField;
+@property (nonatomic, weak) IBOutlet NSTextField *connectionTypeTextField;
+@property (nonatomic, weak) IBOutlet NSTextField *cacheTextField;
+@property (nonatomic, weak) IBOutlet NSTextField *bufferTextField;
+
+@property (nonatomic, strong) NSDictionary *discTypeMappings;
+
+@end
+
 @implementation KWRecorderInfo
 
-- (id)init
+- (instancetype)init
 {
     if( self = [super init] )
     {
-	    NSArray *objects = [NSArray arrayWithObjects:    @"CD-R",
-	    	    	    	    	    	    	    @"CD-RW",
-	    	    	    	    	    	    	    @"DVD-R",
-	    	    	    	    	    	    	    @"DVD-RW",
-	    	    	    	    	    	    	    @"DVD-RAM",
-	    	    	    	    	    	    	    @"DVD+R",
-	    	    	    	    	    	    	    @"DVD+R(DL)",
-	    	    	    	    	    	    	    @"DVD+RW",
-	    nil];
-	    
-	    NSArray *keys = [NSArray arrayWithObjects:    @"DRDeviceCanWriteCDRKey",
-    	    	    	    	    	    	    @"DRDeviceCanWriteCDRWKey",
-    	    	    	    	    	    	    @"DRDeviceCanWriteDVDRKey",
-    	    	    	    	    	    	    @"DRDeviceCanWriteDVDRWKey",
-    	    	    	    	    	    	    @"DRDeviceCanWriteDVDRAMKey",
-    	    	    	    	    	    	    @"DRDeviceCanWriteDVDPlusRKey",
-    	    	    	    	    	    	    @"DRDeviceCanWriteDVDPlusRDoubleLayerKey",
-    	    	    	    	    	    	    @"DRDeviceCanWriteDVDPlusRWKey",
-	    nil];
-	    
-	    discTypes = [[NSDictionary alloc] initWithObjects:objects forKeys:keys];
+        _discTypeMappings = @{  DRDeviceCanWriteCDRKey: @"CD-R",
+                                DRDeviceCanWriteCDRWKey: @"CD-RW",
+                                DRDeviceCanWriteDVDRKey: @"DVD-R",
+                                DRDeviceCanWriteDVDRWKey: @"DVD-RW",
+                                DRDeviceCanWriteDVDRAMKey: @"DVD-RAM",
+                                DRDeviceCanWriteDVDPlusRKey: @"DVD+R",
+                                DRDeviceCanWriteDVDPlusRDoubleLayerKey: @"DVD+R(DL)",
+                                DRDeviceCanWriteDVDPlusRWKey: @"DVD+RW",
+                                DRDeviceCanWriteBDRKey: @"BD-R",
+                                DRDeviceCanWriteBDREKey: @"BD-RE",
+                                DRDeviceCanWriteHDDVDRKey: @"HD DVD-R",
+                                DRDeviceCanWriteHDDVDRDualLayerKey: @"HD DVD-R(DL)",
+                                DRDeviceCanWriteHDDVDRAMKey: @"HD DVD-RAM",
+                                DRDeviceCanWriteHDDVDRWKey: @"HD DVD-RW",
+                                DRDeviceCanWriteHDDVDRWDualLayerKey: @"HD DVD-RW(DL)"
+                             };
         
         [[NSBundle mainBundle] loadNibNamed:@"KWRecorderInfo" owner:self topLevelObjects:nil];
     }
@@ -37,14 +46,14 @@
 
 - (void)dealloc
 {
-
     [[DRNotificationCenter currentRunLoopCenter] removeObserver:self name:DRDeviceStatusChangedNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
-
 }
 
 - (void)awakeFromNib
 {
+    [super awakeFromNib];
+
     NSWindow *myWindow = [self window];
     DRNotificationCenter *currentCenter = [DRNotificationCenter currentRunLoopCenter];
 
@@ -52,21 +61,19 @@
     [currentCenter addObserver:self selector:@selector(updateRecorderInfo) name:DRDeviceAppearedNotification object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveFrame) name:NSWindowWillCloseNotification object:nil];
-
+    
+    // TODO: is this necessary?
     [myWindow setFrameUsingName:@"Recorder Info"];
 
     if ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWFirstRun"] == YES)
-	    [myWindow setFrameOrigin:NSMakePoint(500,[[NSScreen mainScreen] frame].size.height - 310)];
+    {
+	    [myWindow setFrameOrigin:NSMakePoint(500.0, [[NSScreen mainScreen] frame].size.height - 310.0)];
+    }
 }
 
-//////////////////
-// Main actions //
-//////////////////
+#pragma mark - Main Methods
 
-#pragma mark -
-#pragma mark •• Main actions
-
-- (void)startRecorderPanelwithDevice:(DRDevice *)device
+- (void)showRecorderInfoForDevice:(DRDevice *)device
 {
     NSWindow *myWindow = [self window];
 
@@ -76,118 +83,108 @@
     }
     else
     {
+        NSPopUpButton *recorderPopup = [self recorderPopUp];
 	    [recorderPopup removeAllItems];
-
-	    NSArray *devices = [DRDevice devices];
-	    NSInteger i;
-	    for (i=0;i< [devices count];i++)
+        
+	    for (DRDevice *device in [DRDevice devices])
 	    {
-    	    [recorderPopup addItemWithTitle:[[devices objectAtIndex:i] displayName]];
+    	    [recorderPopup addItemWithTitle:[device displayName]];
 	    }
     	    
 	    [recorderPopup selectItemWithTitle:[device displayName]];
 	    
-	    [self setRecorderInfo:device];
+	    [self setupRecorderInfoForDevice:device];
 	    
 	    [myWindow makeKeyAndOrderFront:self];
     }
 }
 
-///////////////////////
-// Interface actions //
-///////////////////////
-
-#pragma mark -
-#pragma mark •• Interface actions
+#pragma mark - Interface actions
 
 - (IBAction)recorderPopup:(id)sender
 {
+    NSInteger indexOfSelectedItem = [[self recorderPopUp] indexOfSelectedItem];
     NSArray *devices = [DRDevice devices];
-    [self setRecorderInfo:[devices objectAtIndex:[recorderPopup indexOfSelectedItem]]];
+    
+    if (indexOfSelectedItem < [devices count])
+    {
+        DRDevice *device = devices[indexOfSelectedItem];
+        [self setupRecorderInfoForDevice:device];
+    }
+    else
+    {
+        // This shouldn't happen, but just to be sure :)
+        [self updateRecorderInfo];
+    }
 }
 
-//////////////////////
-// Internal actions //
-//////////////////////
+#pragma mark - nternal actions
 
-#pragma mark -
-#pragma mark •• Internal actions
-
-- (void)setRecorderInfo:(DRDevice *)device
+- (void)setupRecorderInfoForDevice:(DRDevice *)device
 {
     NSDictionary *deviceInfo = [device info];
 
-    [recorderProduct setStringValue:[deviceInfo objectForKey:@"DRDeviceProductNameKey"]];
-    [recorderVendor setStringValue:[deviceInfo objectForKey:@"DRDeviceVendorNameKey"]];
-    [recorderConnection setStringValue:[deviceInfo objectForKey:@"DRDevicePhysicalInterconnectKey"]];
-    [recorderCache setStringValue:[NSString localizedStringWithFormat:NSLocalizedString(@"%.0f KB", nil), [deviceInfo objectForKey:@"DRDeviceWriteBufferSizeKey"]]];
+    [[self productTextField] setStringValue:deviceInfo[DRDeviceProductNameKey]];
+    [[self vendorTextField] setStringValue:deviceInfo[DRDeviceVendorNameKey]];
+    [[self connectionTypeTextField] setStringValue:deviceInfo[DRDevicePhysicalInterconnectKey]];
+    
+    NSString *cache = [NSString localizedStringWithFormat:NSLocalizedString(@"%.0f KB", nil), deviceInfo[@"DRDeviceWriteBufferSizeKey"]];
+    [[self cacheTextField] setStringValue:cache];
 
-    NSDictionary *writeCapabilities = [deviceInfo objectForKey:@"DRDeviceWriteCapabilitiesKey"];
-    BOOL cdUnderrunProtect = [[writeCapabilities objectForKey:DRDeviceCanUnderrunProtectCDKey] boolValue];
-    BOOL canWriteDVD = [[writeCapabilities objectForKey:DRDeviceCanWriteDVDKey] boolValue];
+    NSDictionary *writeCapabilities = deviceInfo[DRDeviceWriteCapabilitiesKey];
+    BOOL cdUnderrunProtect = [writeCapabilities[DRDeviceCanUnderrunProtectCDKey] boolValue];
+    BOOL canWriteDVD = [writeCapabilities[DRDeviceCanWriteDVDKey] boolValue];
     
     if (cdUnderrunProtect && !canWriteDVD)
-	    [recorderBuffer setStringValue:NSLocalizedString(@"Yes",nil)];
+    {
+	    [[self bufferTextField] setStringValue:NSLocalizedString(@"Yes", nil)];
+    }
     
     if (canWriteDVD)
     {
-	    BOOL dvdUnderrunProtect = [[writeCapabilities objectForKey:DRDeviceCanUnderrunProtectDVDKey] boolValue];
-	    NSString *cdUnderrun;
-	    NSString *dvdUnderrun;
-	    
-	    if (cdUnderrunProtect)
-    	    cdUnderrun = NSLocalizedString(@"Yes",nil);
-	    else
-    	    cdUnderrun = NSLocalizedString(@"No",nil);
-    	    
-	    if (dvdUnderrunProtect)
-    	    dvdUnderrun = NSLocalizedString(@"Yes",nil);
-	    else
-    	    dvdUnderrun = NSLocalizedString(@"No",nil);
-    	    
-	    [recorderBuffer setStringValue:[NSString stringWithFormat:@"CD: %@ DVD: %@", cdUnderrun, dvdUnderrun]];
+	    BOOL dvdUnderrunProtect = [writeCapabilities[DRDeviceCanUnderrunProtectDVDKey] boolValue];
+	    NSString *cdUnderrun = cdUnderrunProtect ? NSLocalizedString(@"Yes", nil) : NSLocalizedString(@"No", nil);
+	    NSString *dvdUnderrun = dvdUnderrunProtect ? NSLocalizedString(@"Yes", nil) : NSLocalizedString(@"No", nil);
+	    [[self bufferTextField] setStringValue:[NSString stringWithFormat:@"CD: %@ DVD: %@", cdUnderrun, dvdUnderrun]];
     }
     
-    NSArray *typeKeys = [discTypes allKeys];
+    NSDictionary *discTypes = [self discTypeMappings];
     NSString *writesOn = @"";
     NSString *space = @"";
     
-    NSInteger i;
-    for (i=0;i< [typeKeys count];i++)
+    for (NSString *key in [discTypes allKeys])
     {
-    NSString *currentKey = [typeKeys objectAtIndex:i];
-    
-	    if ([[writeCapabilities objectForKey:currentKey] boolValue])
+        if ([writeCapabilities[key] boolValue])
 	    {
-    	    writesOn = [NSString stringWithFormat:@"%@%@%@", writesOn, space, [discTypes objectForKey:currentKey]];
+    	    writesOn = [NSString stringWithFormat:@"%@%@%@", writesOn, space, discTypes[key]];
     	    space = @" ";
 	    }
     }
     
-    [recorderWrites setStringValue:writesOn];
+    [[self writesTextField] setStringValue:writesOn];
 }
 
 - (void)updateRecorderInfo
 {
-    NSArray *devices = [DRDevice devices];
-    
+    NSPopUpButton *recorderPopup = [self recorderPopUp];
     NSString *title = [[recorderPopup title] copy];
 
     [recorderPopup removeAllItems];
-	    
-    NSInteger i;
-    for (i=0;i< [devices count];i++)
+    
+    for (DRDevice *device in [DRDevice devices])
     {
-	    [recorderPopup addItemWithTitle:[[devices objectAtIndex:i] displayName]];
+	    [recorderPopup addItemWithTitle:[device displayName]];
     }
 	    
-	    if ([recorderPopup indexOfItemWithTitle:title] > -1)
-	    [recorderPopup selectItemWithTitle:title];
-	    
+    if ([recorderPopup indexOfItemWithTitle:title] > -1)
+    {
+        [recorderPopup selectItemWithTitle:title];
+    }
     
     [self recorderPopup:self];
 }
 
+// TODO: is this necessary?
 - (void)saveFrame
 {
     [[self window] saveFrameUsingName:@"Recorder Info"];

@@ -13,6 +13,6 @@
  *
  *  @param device The device (and its disc) used to setup the panel with
  */
-- (void)startDiskPanelwithDevice:(DRDevice *)device;
+- (void)showDiskInfoForDevice:(DRDevice *)device;
 
 @end
