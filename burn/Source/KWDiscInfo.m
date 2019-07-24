@@ -88,7 +88,7 @@
     else 
     {
         NSPopUpButton *recorderPopUp = [self recorderPopUp];
-	    [recorderPopUp removeAllItems];
+        [recorderPopUp removeAllItems];
         
 	    for (DRDevice *device in [DRDevice devices])
 	    {
@@ -121,14 +121,14 @@
 
     if (kind != nil)
     {
-        NSString *freeSpace = [KWCommonMethods makeSizeFromFloat:[[mediaInfo objectForKey:DRDeviceMediaFreeSpaceKey] floatValue] * 2048];
-        NSString *usedSpace = [KWCommonMethods makeSizeFromFloat:[[mediaInfo objectForKey:DRDeviceMediaUsedSpaceKey] floatValue] * 2048];
+        NSString *freeSpace = [KWCommonMethods makeSizeFromFloat:[mediaInfo[DRDeviceMediaFreeSpaceKey] floatValue] * 2048];
+        NSString *usedSpace = [KWCommonMethods makeSizeFromFloat:[mediaInfo[DRDeviceMediaUsedSpaceKey] floatValue] * 2048];
     
 	    [[self kindTextField] setStringValue:kind];
 	    [[self freeSpaceTextField] setStringValue:freeSpace];
 	    [[self usedSpaceTextField] setStringValue:usedSpace];
 
-	    if ([[[mediaInfo objectForKey:DRDeviceMediaBlocksOverwritableKey] stringValue] isEqualTo:@"0"])
+	    if ([[mediaInfo[DRDeviceMediaBlocksOverwritableKey] stringValue] isEqualTo:@"0"])
     	    [[self writableTextField] setStringValue:NSLocalizedString(@"No",nil)];
 	    else
     	    [[self writableTextField] setStringValue:NSLocalizedString(@"Yes",nil)];
