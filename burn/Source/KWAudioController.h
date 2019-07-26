@@ -14,8 +14,8 @@
 //#import <QTKit/QTKit.h>
 //#endif
 
-@interface KWAudioController : KWMediaListController {
-
+@interface KWAudioController : KWMediaListController
+{
     //Main Window
     IBOutlet id previousButton;
     IBOutlet KWMediaPlayButton *playButton;

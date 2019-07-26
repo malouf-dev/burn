@@ -744,17 +744,37 @@ return YES;
     return [tableData count];
 }
 
-- (id) tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
+- (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
 {
     if ([tableData count] > 0)
     {
-	    NSDictionary *rowData = [tableData objectAtIndex:row];
+        NSDictionary *rowData = [tableData objectAtIndex:row];
 	    return [rowData objectForKey:[tableColumn identifier]];
     }
     else
     {
 	    return nil;
     }
+}
+
+- (NSView *)tableView:(NSTableView *)tableView viewForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
+{
+    NSString *identifier = [tableColumn identifier];
+    
+    NSDictionary *rowData = [tableData objectAtIndex:row];
+    id objectValue = [rowData objectForKey:[tableColumn identifier]];
+
+    NSTableCellView *cellView = [tableView makeViewWithIdentifier:[tableColumn identifier] owner:self];
+    if ([identifier isEqualToString:@"Icon"])
+    {
+        [[cellView imageView] setImage:objectValue];
+    }
+    else
+    {
+        [[cellView textField] setStringValue:objectValue];
+    }
+    
+    return cellView;
 }
 
 - (void)tableView:(NSTableView *)tableView setObjectValue:(id)anObject forTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row

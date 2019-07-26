@@ -49,8 +49,9 @@
 
 #import <Cocoa/Cocoa.h>
 
-@interface ImageAndTextCell : NSTextFieldCell {
-@private
+@interface ImageAndTextCell : NSTextFieldCell
+{
+    @private
     NSImage    *image;
 }
 

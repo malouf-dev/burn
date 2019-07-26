@@ -54,7 +54,8 @@
 
 @implementation ImageAndTextCell
 
-- (void)dealloc {
+- (void)dealloc
+{
     image = nil;
 }
 
@@ -133,7 +134,7 @@
 {
     if (image != nil) 
     {
-	    NSSize    imageSize;
+        NSSize    imageSize;
 	    NSRect    imageFrame;
     
 	    NSSize originalSize = [image size];

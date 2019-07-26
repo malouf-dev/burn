@@ -364,7 +364,7 @@
         NSString *currentText = [statusTextField stringValue];
         NSString *newStatusText;
 
-        if ([currentText length] > 50)
+        if ([currentText length] > 60)
         {
             newStatusText = [[currentText substringToIndex:48] stringByAppendingString:@"..."];
         }

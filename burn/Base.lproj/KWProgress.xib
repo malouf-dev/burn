@@ -34,6 +34,7 @@
                         <rect key="frame" x="20" y="59" width="64" height="64"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="64" id="3J4-b5-ivN"/>
+                            <constraint firstAttribute="height" constant="64" id="AhV-Lx-KAj"/>
                         </constraints>
                         <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="axesIndependently" image="NSApplicationIcon" id="32"/>
                     </imageView>
@@ -47,6 +48,9 @@
                     </textField>
                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="11" customClass="KWAutoLayoutTextField">
                         <rect key="frame" x="89" y="60" width="377" height="14"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="14" id="gPL-Bw-7sk"/>
+                        </constraints>
                         <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Checking file…" id="34">
                             <font key="font" metaFont="smallSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
