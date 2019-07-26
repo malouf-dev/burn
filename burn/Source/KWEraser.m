@@ -1,15 +1,32 @@
 #import "KWEraser.h"
 #import "KWProgressManager.h"
 
+@interface KWEraser()
+
+//Interface
+@property (nonatomic, weak) IBOutlet NSPopUpButton *burnerPopup;
+@property (nonatomic, weak) IBOutlet NSButton *closeButton;
+@property (nonatomic, weak) IBOutlet NSButton *completelyErase;
+@property (nonatomic, weak) IBOutlet NSButton *eraseButton;
+@property (nonatomic, weak) IBOutlet NSButton *quicklyErase;
+@property (nonatomic, weak) IBOutlet NSTextField *statusText;
+
+@property (nonatomic, weak) NSWindow *modalWindow;
+@property (copy) void(^completion)(NSDictionary *response);
+@property (nonatomic) BOOL shouldClose;
+
+@end
+
 @implementation KWEraser
 
-- (id)init
+- (instancetype)init
 {
     self = [super init];
 
-    shouldClose = NO;
-    
-    [[NSBundle mainBundle] loadNibNamed:@"KWEraser" owner:self topLevelObjects:nil];
+    if (self)
+    {
+        [[NSBundle mainBundle] loadNibNamed:@"KWEraser" owner:self topLevelObjects:nil];
+    }
 
     return self;
 }
@@ -23,13 +40,12 @@
 
 - (void)setupWindow
 {
+    NSPopUpButton *burnerPopup = [self burnerPopup];
     [burnerPopup removeAllItems];
     
-    NSArray *devices = [DRDevice devices];
-    NSInteger i;
-    for (i=0;i< [devices count];i++)
+    for (DRDevice *device in [DRDevice devices])
     {
-	    [burnerPopup addItemWithTitle:[[devices objectAtIndex:i] displayName]];
+	    [burnerPopup addItemWithTitle:[device displayName]];
     }
     
     NSString *displayName = [[self savedDevice] displayName];
@@ -43,34 +59,43 @@
     [[DRNotificationCenter currentRunLoopCenter] addObserver:self selector:@selector(statusChanged:) name:DRDeviceStatusChangedNotification object:nil];
 }
 
-- (void)beginEraseSheetForWindow:(NSWindow *)window completion:(void (^)(NSModalResponse returnCode))completion
+- (void)beginEraseSheetForWindow:(NSWindow *)modalWindow completion:(void (^)(NSDictionary *response))completion
 {
+    [self setModalWindow:modalWindow];
+    [self setCompletion:completion];
+
     [self setupWindow];
     
-    [window beginSheet:[self window] completionHandler:^(NSModalResponse returnCode)
+    [modalWindow beginSheet:[self window] completionHandler:^(NSModalResponse returnCode)
     {
         [[DRNotificationCenter currentRunLoopCenter] removeObserver:self name:DRDeviceStatusChangedNotification object:nil];
-        completion(returnCode);
+        if (returnCode == NSModalResponseOK)
+        {
+            [self erase];
+        }
+        else
+        {
+            if (completion != nil)
+            {
+                completion(@{@"ReturnCode": @"KWCanceled"});
+            }
+        }
     }];
-}
-
-- (NSInteger)beginEraseWindow
-{
-    [burnerPopup removeAllItems];
-    
-    [self setupWindow];
-    
-    NSInteger x = [NSApp runModalForWindow:[self window]];
-    [[self window] close];
-
-    return x;
 }
 
 - (void)erase
 {
+    KWProgressManager *progressManager = [KWProgressManager sharedManager];
+    [progressManager setIconImage:[NSImage imageNamed:@"Burn"]];
+    [progressManager setTask:NSLocalizedString(@"Erasing disc", nil)];
+    [progressManager setStatus:NSLocalizedString(@"Preparing...", nil)];
+    [progressManager setMaximumValue:0.0];
+    [progressManager setAllowCanceling:NO];
+    [progressManager beginSheetForWindow:[self modalWindow]];
+
     DRErase *erase = [[DRErase alloc] initWithDevice:[self currentDevice]];
 
-    if ([completelyErase state] == NSOnState)
+    if ([[self completelyErase] state] == NSOnState)
 	    [erase setEraseType:DREraseTypeComplete];
     else
 	    [erase setEraseType:DREraseTypeQuick];    
@@ -100,12 +125,13 @@
     {
 	    if ([[[deviceStatus objectForKey:DRDeviceMediaInfoKey] objectForKey:DRDeviceMediaIsErasableKey] boolValue])
 	    {
+            NSButton *closeButton = [self closeButton];
     	    [closeButton setEnabled:YES];
     	    [closeButton setTitle:NSLocalizedString(@"Eject", nil)];
 	    
-    	    [statusText setStringValue:NSLocalizedString(@"Ready to erase", nil)];
+    	    [[self statusText] setStringValue:NSLocalizedString(@"Ready to erase", nil)];
 	    
-    	    [eraseButton setEnabled:YES];
+    	    [[self eraseButton] setEnabled:YES];
 	    }
 	    else
 	    {
@@ -114,20 +140,26 @@
     }
     else if ([statusString isEqualTo:DRDeviceMediaStateInTransition])
     {
-	    [closeButton setEnabled:NO];
-	    [statusText setStringValue:NSLocalizedString(@"Waiting for the drive...", nil)];
-	    [eraseButton setEnabled:NO];
+	    [[self closeButton] setEnabled:NO];
+	    [[self statusText] setStringValue:NSLocalizedString(@"Waiting for the drive...", nil)];
+	    [[self eraseButton] setEnabled:NO];
     }
     else if ([statusString isEqualTo:DRDeviceMediaStateNone])
     {
+        NSButton *closeButton = [self closeButton];
+        
 	    if ([[[device info] objectForKey:DRDeviceLoadingMechanismCanOpenKey] boolValue])
 	    {
     	    [closeButton setEnabled:YES];
 	    
     	    if ([[deviceStatus objectForKey:DRDeviceIsTrayOpenKey] boolValue])
+            {
 	    	    [closeButton setTitle:NSLocalizedString(@"Close", nil)];
+            }
     	    else
+            {
 	    	    [closeButton setTitle:NSLocalizedString(@"Open", nil)];
+            }
 	    }
 	    else
 	    {
@@ -135,8 +167,8 @@
     	    [closeButton setEnabled:NO];
 	    }
 	    
-	    [statusText setStringValue:NSLocalizedString(@"Waiting for a disc to be inserted...", nil)];
-	    [eraseButton setEnabled:NO];
+	    [[self statusText] setStringValue:NSLocalizedString(@"Waiting for a disc to be inserted...", nil)];
+	    [[self eraseButton] setEnabled:NO];
     }
 }
 
@@ -156,18 +188,19 @@
 	    if (![[[currentDevice status] objectForKey:DRDeviceIsTrayOpenKey] boolValue])
 	    {
     	    [currentDevice openTray];
-    	    shouldClose = YES;
+            [self setShouldClose:YES];
 	    }
     }
     
-    NSArray *devices = [DRDevice devices];
-    NSInteger z;
-    for (z=0;z<[devices count];z++)
+    NSInteger i;
+    for (DRDevice *device in [DRDevice devices])
     {
-	    DRDevice *device = [devices objectAtIndex:z];
-	    
-	    if ([[[device info] objectForKey:DRDeviceLoadingMechanismCanOpenKey] boolValue] && [[[device status] objectForKey:DRDeviceIsTrayOpenKey] boolValue] && (!z) == [burnerPopup indexOfSelectedItem])
+	    if ([[[device info] objectForKey:DRDeviceLoadingMechanismCanOpenKey] boolValue] && [[[device status] objectForKey:DRDeviceIsTrayOpenKey] boolValue] && (!i) == [[self burnerPopup] indexOfSelectedItem])
+        {
     	    [device closeTray];
+        }
+        
+        i ++;
     }
 
     [self updateDevice:currentDevice];
@@ -175,8 +208,8 @@
 
 - (IBAction)cancelButton:(id)sender
 {
-    if (shouldClose)
-	    [[[DRDevice devices] objectAtIndex:[burnerPopup indexOfSelectedItem]] closeTray];
+    if ([self shouldClose])
+	    [[[DRDevice devices] objectAtIndex:[[self burnerPopup] indexOfSelectedItem]] closeTray];
 	    
     [[DRNotificationCenter currentRunLoopCenter] removeObserver:self name:DREraseStatusChangedNotification object:nil];
     
@@ -194,8 +227,9 @@
 
 - (IBAction)closeButton:(id)sender
 {
-    DRDevice *selectedDevice = [[DRDevice devices] objectAtIndex:[burnerPopup indexOfSelectedItem]];
+    DRDevice *selectedDevice = [[DRDevice devices] objectAtIndex:[[self burnerPopup] indexOfSelectedItem]];
 
+    NSButton *closeButton = [self closeButton];
     if ([[closeButton title] isEqualTo:NSLocalizedString(@"Eject", nil)])
     {
 	    [selectedDevice ejectMedia];
@@ -206,7 +240,7 @@
     }
     else if ([[closeButton title] isEqualTo:NSLocalizedString(@"Open", nil)])
     {
-	    shouldClose = YES;
+        [self setShouldClose:YES];
 	    [selectedDevice openTray];
     }
 }
@@ -238,7 +272,7 @@
 {
     DRDevice *notifDevice = [notif object];
 
-    if ([[notifDevice displayName] isEqualTo:[burnerPopup title]])
+    if ([[notifDevice displayName] isEqualTo:[[self burnerPopup] title]])
     [self updateDevice:notifDevice];
 }
 
@@ -247,7 +281,6 @@
     NSDictionary* status = [notification userInfo];
     DRErase *eraseObject = [notification object];
     NSString *currentStatusString = [status objectForKey:DRStatusStateKey];
-    NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
     NSString *time = @"";
     NSString *statusString = nil;
     
@@ -286,13 +319,31 @@
     {
 	    [[DRNotificationCenter currentRunLoopCenter] removeObserver:self name:DREraseStatusChangedNotification object:eraseObject];
 	    
-	    [defaultCenter postNotificationName:@"KWEraseFinished" object:self userInfo:[NSDictionary dictionaryWithObject:@"KWSucces" forKey:@"ReturnCode"]];
+	    [[KWProgressManager sharedManager] endSheetWithCompletion:^
+        {
+            void(^completion)(NSDictionary *response) = [self completion];
+            if (completion != nil)
+            {
+                completion(@{@"ReturnCode": @"KWSuccess"});
+            }
+        }];
+        
+        return;
     }
     else if ([currentStatusString isEqualTo:DRStatusStateFailed])
     {
 	    [[DRNotificationCenter currentRunLoopCenter] removeObserver:self name:DREraseStatusChangedNotification object:eraseObject];
     
-	    [defaultCenter postNotificationName:@"KWEraseFinished" object:self userInfo:[NSDictionary dictionaryWithObject:@"KWFailure" forKey:@"ReturnCode"]];
+	    [[KWProgressManager sharedManager] endSheetWithCompletion:^
+        {
+            void(^completion)(NSDictionary *response) = [self completion];
+            if (completion != nil)
+            {
+                completion(@{@"ReturnCode": @"KWFailure"});
+            }
+        }];
+        
+        return;
     }
     
     if (statusString)
@@ -310,24 +361,21 @@
 
 - (DRDevice *)currentDevice
 {
-    return [[DRDevice devices] objectAtIndex:[burnerPopup indexOfSelectedItem]];
+    return [[DRDevice devices] objectAtIndex:[[self burnerPopup] indexOfSelectedItem]];
 }
 
 - (DRDevice *)savedDevice
 {
     NSArray *devices = [DRDevice devices];
-    NSInteger i;
-    for (i=0;i< [devices count];i++)
+    for (DRDevice *device in devices)
     {
-    DRDevice *currentDevice = [devices objectAtIndex:i];
-    
-	    if ([[[currentDevice info] objectForKey:@"DRDeviceProductNameKey"] isEqualTo:[[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"KWDefaultDeviceIdentifier"] objectForKey:@"Product"]])
+        if ([[[device info] objectForKey:@"DRDeviceProductNameKey"] isEqualTo:[[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"KWDefaultDeviceIdentifier"] objectForKey:@"Product"]])
 	    {
-    	    return currentDevice;
+    	    return device;
 	    }
     }
     
-    return [devices objectAtIndex:0];
+    return devices[0];
 }
 
 @end

@@ -41,9 +41,15 @@
     BOOL good = YES;
     
     if (![self scanString:skipString intoString:nil])
+    {
 	    if ((good = [self scanUpToString:skipString intoString:nil]) == YES)
+        {
     	    if ((good = ![self isAtEnd]) == YES)
+            {
 	    	    [self setScanLocation:[self scanLocation] + [skipString length]];
+            }
+        }
+    }
     
     return good;
 }
@@ -60,12 +66,5 @@
     result[0] = [[self string] substringFromIndex:[self scanLocation]];
     return [result[0] length] > 0;
 }
-
-#if MAC_OS_X_VERSION_MAX_ALLOWED < 1050
-- (BOOL)scanInteger:(NSInteger *)value
-{
-    return [self scanInt:value];
-}
-#endif
 
 @end

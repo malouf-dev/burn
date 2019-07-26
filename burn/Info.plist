@@ -52,22 +52,6 @@
 		<dict>
 			<key>CFBundleTypeExtensions</key>
 			<array>
-				<string>burnTheme</string>
-			</array>
-			<key>CFBundleTypeIconFile</key>
-			<string>Theme document</string>
-			<key>CFBundleTypeName</key>
-			<string>Theme document</string>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
-			<key>LSTypeIsPackage</key>
-			<true/>
-			<key>NSPersistentStoreTypeKey</key>
-			<string>XML</string>
-		</dict>
-		<dict>
-			<key>CFBundleTypeExtensions</key>
-			<array>
 				<string>burn</string>
 			</array>
 			<key>CFBundleTypeIconFile</key>

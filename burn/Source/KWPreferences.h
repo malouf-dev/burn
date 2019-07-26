@@ -37,7 +37,7 @@
     
     NSArray *preferenceMappings;
     NSInteger dataViewHeight;
-    NSMutableArray *themePaths;
+    NSMutableArray *themeNames;
 }
 //PrefPane actions
 - (void)showPreferences;
@@ -48,8 +48,8 @@
 - (IBAction)setCompletionAction:(id)sender;
 //Video actions
 - (IBAction)setTheme:(id)sender;
-- (IBAction)addTheme:(id)sender;
-- (IBAction)deleteTheme:(id)sender;
+//- (IBAction)addTheme:(id)sender;
+//- (IBAction)deleteTheme:(id)sender;
 - (IBAction)showPreview:(id)sender;
 - (IBAction)setPreviewImage:(id)sender;
 //Advanced actions

@@ -752,32 +752,6 @@
                                             <action selector="setTheme:" target="-2" id="1805"/>
                                         </connections>
                                     </popUpButton>
-                                    <button tag="101" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1626">
-                                        <rect key="frame" x="238" y="97" width="21" height="21"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="21" id="NZ4-qC-gdM"/>
-                                        </constraints>
-                                        <buttonCell key="cell" type="square" title="+" bezelStyle="shadowlessSquare" alignment="center" enabled="NO" borderStyle="border" tag="101" inset="2" id="1936">
-                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                            <font key="font" metaFont="label"/>
-                                        </buttonCell>
-                                        <connections>
-                                            <action selector="addTheme:" target="-2" id="1809"/>
-                                        </connections>
-                                    </button>
-                                    <button tag="100" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1627">
-                                        <rect key="frame" x="218" y="97" width="21" height="21"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="21" id="Nvx-2c-0t8"/>
-                                        </constraints>
-                                        <buttonCell key="cell" type="square" title="-" bezelStyle="shadowlessSquare" alignment="center" enabled="NO" borderStyle="border" tag="100" inset="2" id="1937">
-                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                            <font key="font" metaFont="label"/>
-                                        </buttonCell>
-                                        <connections>
-                                            <action selector="deleteTheme:" target="-2" id="1808"/>
-                                        </connections>
-                                    </button>
                                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1628" customClass="KWAutoLayoutTextField">
                                         <rect key="frame" x="18" y="99" width="60" height="17"/>
                                         <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Theme:" id="1938">
@@ -837,7 +811,6 @@
                                     <constraint firstItem="879" firstAttribute="leading" secondItem="877" secondAttribute="trailing" constant="6" id="44i-PV-bBF"/>
                                     <constraint firstItem="1621" firstAttribute="top" secondItem="1620" secondAttribute="bottom" constant="7" id="4hm-im-tXW"/>
                                     <constraint firstAttribute="trailing" secondItem="1725" secondAttribute="trailing" constant="20" id="5ee-b2-gb6"/>
-                                    <constraint firstItem="1626" firstAttribute="leading" secondItem="1627" secondAttribute="trailing" constant="-1" id="5ve-Co-kJe"/>
                                     <constraint firstItem="1629" firstAttribute="leading" secondItem="853" secondAttribute="leading" constant="20" id="7XK-TN-ZqR"/>
                                     <constraint firstItem="1621" firstAttribute="leading" secondItem="1628" secondAttribute="trailing" constant="6" id="8rd-jk-tSi"/>
                                     <constraint firstItem="879" firstAttribute="centerY" secondItem="877" secondAttribute="centerY" id="AfL-aa-1Hp"/>
@@ -857,16 +830,14 @@
                                     <constraint firstItem="1618" firstAttribute="leading" secondItem="853" secondAttribute="leading" constant="12" id="PwO-fG-szt"/>
                                     <constraint firstItem="1630" firstAttribute="top" secondItem="1621" secondAttribute="bottom" constant="8" id="RYN-6I-2sq"/>
                                     <constraint firstItem="872" firstAttribute="top" secondItem="853" secondAttribute="top" constant="12" id="Sq4-Pu-6eV"/>
-                                    <constraint firstItem="1627" firstAttribute="leading" secondItem="1621" secondAttribute="trailing" constant="6" id="T5j-gi-q1j"/>
                                     <constraint firstItem="1644" firstAttribute="top" secondItem="1630" secondAttribute="bottom" constant="9" id="X1L-72-wbs"/>
                                     <constraint firstItem="876" firstAttribute="leading" secondItem="853" secondAttribute="leading" constant="20" id="XLF-W8-inb"/>
                                     <constraint firstItem="876" firstAttribute="centerY" secondItem="877" secondAttribute="centerY" id="Xfh-2i-iP7"/>
-                                    <constraint firstItem="1627" firstAttribute="centerY" secondItem="1621" secondAttribute="centerY" id="Ytc-Rm-TIa"/>
                                     <constraint firstItem="1266" firstAttribute="top" secondItem="1225" secondAttribute="bottom" constant="8" id="Z08-7N-lwM"/>
                                     <constraint firstAttribute="trailing" secondItem="1618" secondAttribute="trailing" constant="12" id="ZGS-82-2Xh"/>
                                     <constraint firstItem="1236" firstAttribute="top" secondItem="1266" secondAttribute="bottom" constant="6" id="ZYs-ju-mrh"/>
                                     <constraint firstItem="1725" firstAttribute="top" secondItem="1230" secondAttribute="bottom" constant="6" id="ahU-7F-Xyj"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="1626" secondAttribute="trailing" constant="20" id="bFm-Jg-uMg"/>
+                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="1621" secondAttribute="trailing" constant="20" id="aoj-WN-bTZ"/>
                                     <constraint firstAttribute="trailing" secondItem="1491" secondAttribute="trailing" constant="20" id="d0o-Ol-YtE"/>
                                     <constraint firstAttribute="trailing" secondItem="1225" secondAttribute="trailing" constant="12" id="dqj-Gb-y8Q"/>
                                     <constraint firstItem="875" firstAttribute="top" secondItem="867" secondAttribute="bottom" constant="8" id="drp-Td-0Dj"/>
@@ -878,6 +849,7 @@
                                     <constraint firstItem="1628" firstAttribute="width" relation="greaterThanOrEqual" secondItem="1629" secondAttribute="width" id="m3J-9k-MJC"/>
                                     <constraint firstItem="1628" firstAttribute="leading" secondItem="853" secondAttribute="leading" constant="20" id="n0X-Uf-3Bd"/>
                                     <constraint firstItem="875" firstAttribute="leading" secondItem="873" secondAttribute="trailing" constant="6" id="nZc-qM-6Im"/>
+                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="1630" secondAttribute="trailing" constant="20" id="oFb-Wt-FMk"/>
                                     <constraint firstItem="877" firstAttribute="top" secondItem="875" secondAttribute="bottom" constant="6" id="pLe-AH-BCx"/>
                                     <constraint firstAttribute="trailing" secondItem="1236" secondAttribute="trailing" constant="20" id="pch-Ab-tYd"/>
                                     <constraint firstAttribute="trailing" secondItem="1230" secondAttribute="trailing" constant="20" id="qqz-xI-VLh"/>
@@ -887,7 +859,6 @@
                                     <constraint firstItem="1491" firstAttribute="top" secondItem="877" secondAttribute="bottom" constant="10" id="tbc-pl-jD2"/>
                                     <constraint firstItem="1630" firstAttribute="width" relation="greaterThanOrEqual" secondItem="1621" secondAttribute="width" id="wCb-pm-cX6"/>
                                     <constraint firstAttribute="trailing" secondItem="878" secondAttribute="trailing" constant="20" id="xWL-I9-i7y"/>
-                                    <constraint firstItem="1626" firstAttribute="centerY" secondItem="1627" secondAttribute="centerY" id="xfH-Bb-53J"/>
                                     <constraint firstItem="1225" firstAttribute="top" secondItem="1491" secondAttribute="bottom" constant="8" id="xog-OC-IdC"/>
                                     <constraint firstItem="878" firstAttribute="leading" secondItem="875" secondAttribute="trailing" constant="6" id="yRx-Ow-yds"/>
                                     <constraint firstItem="1620" firstAttribute="leading" secondItem="853" secondAttribute="leading" constant="20" id="ySr-6o-KiR"/>
@@ -1184,7 +1155,7 @@
                 <constraint firstAttribute="trailing" secondItem="849" secondAttribute="trailing" constant="20" id="crs-zD-pcs"/>
                 <constraint firstItem="849" firstAttribute="top" secondItem="768" secondAttribute="top" constant="12" id="fW9-iI-TgO"/>
             </constraints>
-            <point key="canvasLocation" x="532" y="-228"/>
+            <point key="canvasLocation" x="-43" y="-151"/>
         </customView>
         <customView autoresizesSubviews="NO" id="1154" userLabel="advancedView">
             <rect key="frame" x="0.0" y="0.0" width="420" height="162"/>

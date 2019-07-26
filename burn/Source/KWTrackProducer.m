@@ -11,81 +11,34 @@
 #import "KWTrackProducer.h"
 #import "NSScanner-Extra.h"
 #import "KWConverter.h"
+#import "KWCommonMethods.h"
 
-@interface KWTrackProducer (DiscRecording)
+@interface KWTrackProducer ()
 
-- (BOOL) prepareTrack:(DRTrack*)track forBurn:(DRBurn*)burn toMedia:(NSDictionary*)mediaInfo;
-- (uint32_t)producePreGapForTrack:(DRTrack *)track intoBuffer:(char *)buffer length:(uint32_t)bufferLength atAddress:(uint64_t)address blockSize:(uint32_t)blockSize ioFlags:(uint32_t *)flags;
-- (uint32_t)produceDataForTrack:(DRTrack *)track intoBuffer:(char *)buffer length:(uint32_t)bufferLength atAddress:(uint64_t)address blockSize:(uint32_t)blockSize ioFlags:(uint32_t *)flags;
+@property (nonatomic, strong) NSTask *trackCreator;
+@property (nonatomic, strong) NSPipe *trackPipe;
+@property (nonatomic, strong) NSFileHandle *readHandle;
+@property (nonatomic, strong) NSFileHandle *writeHandle;
+@property (nonatomic, strong) NSFileHandle *calcHandle;
+@property (nonatomic, strong) NSPipe *calcPipe;
+@property (nonatomic, copy) NSArray *mpegFiles;
+@property (nonatomic, copy) NSString *folderPath;
+@property (nonatomic, copy) NSString *discName;
+@property (nonatomic, copy) NSString *currentAudioTrack;
+@property (nonatomic, strong) NSTimer *prepareTimer;
 
-@end
-
-
-@implementation KWTrackProducer (DiscRecording)
-
-- (BOOL)prepareTrack:(DRTrack *)track forBurn:(DRBurn *)burn toMedia:(NSDictionary *)mediaInfo
-{
-    if (folderPath)
-    {
-	    [self createImage];
-    }
-    else if ((type == 4 || type == 5) && createdTrack == NO)
-    {
-	    [self createVcdImage];
-	    createdTrack = YES;
-    }
-    else if (type == 6)
-    {
-	    [self createAudioTrack:[[track properties] objectForKey:@"KWAudioPath"]];
-    }
-
-    return YES;
-}
-
-- (uint32_t)producePreGapForTrack:(DRTrack *)track intoBuffer:(char *)buffer length:(uint32_t)bufferLength atAddress:(uint64_t)address blockSize:(uint32_t)blockSize ioFlags:(uint32_t *)flags
-{
-//    if ([[[track properties] objectForKey:@"KWFirstTrack"] boolValue] == NO)
-//    {
-//        uint32_t i;
-//        unsigned char newbuffer[bufferLength];
-//
-//        for (i = 0; i < bufferLength; i+= blockSize)
-//        {
-//            fread(newbuffer, 1, blockSize, file);
-//        }
-//    }
-
-    memset(buffer, 0, bufferLength);
-    
-    return bufferLength;
-}
-
-- (uint32_t)produceDataForTrack:(DRTrack *)track intoBuffer:(char *)buffer length:(uint32_t)bufferLength atAddress:(uint64_t)address blockSize:(uint32_t)blockSize ioFlags:(uint32_t *)flags
-{
-    currentAudioTrack = [[track properties] objectForKey:@"KWAudioPath"];
-
-    if (file)
-    {
-	    uint32_t i;
-    
-	    for (i = 0; i < bufferLength; i+= blockSize)
-	    {
-    	    fread(buffer, 1, blockSize, file);
-    	    buffer += blockSize;
-	    }
-    }
-
-    return bufferLength;
-}
-
-- (void)cleanupTrackAfterBurn:(DRTrack *)track;
-{
-    fclose(file);
-}
+// TODO: create an enum or something
+//Types 1 = hfsstandard; 2 = udf; 3 = dvd-video; 4 = vcd; 5 = svcd; 6 = audiocd 7 = dvd-audio
+@property (nonatomic) NSInteger type;
+@property (nonatomic, getter = didCreateTrack) BOOL createdTrack;
+@property (nonatomic) NSInteger currentImageSize;
 
 @end
 
 @implementation KWTrackProducer
+{
+    FILE *_file;
+}
 
 ///////////////////
 // Track actions //
@@ -97,7 +50,7 @@
 - (NSArray *)getTracksOfCueFile:(NSString *)path
 {
     NSString *binPath = [[path stringByDeletingPathExtension] stringByAppendingPathExtension:@"bin"];
-    file = fopen([binPath fileSystemRepresentation], "r");
+    _file = fopen([binPath fileSystemRepresentation], "r");
     
     NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
     return [self getTracksOfLayout:[KWCommonMethods stringWithContentsOfFile:path] withTotalSize:[attributes fileSize]];
@@ -105,7 +58,7 @@
 
 - (DRTrack *)getTrackForImage:(NSString *)path withSize:(NSInteger)size
 {
-    file = fopen([path fileSystemRepresentation], "r");
+    _file = fopen([path fileSystemRepresentation], "r");
 
     NSInteger fileSize;
 
@@ -124,20 +77,20 @@
 
 - (DRTrack *)getTrackForFolder:(NSString *)path ofType:(NSInteger)imageType withDiscName:(NSString *)name
 {
-    type = imageType;
-    folderPath = [path copy];
-    discName = [name copy];
+    [self setType:imageType];
+    [self setFolderPath:path];
+    [self setDiscName:name];
 
     return [self createDefaultTrackWithSize:[self imageSize]];
 }
 
 - (NSArray *)getTrackForVCDMPEGFiles:(NSArray *)files withDiscName:(NSString *)name ofType:(NSInteger)imageType
 {
-    discName = [name copy];
-    mpegFiles = [files copy];
-    type = imageType;
-    createdTrack = NO;
-
+    [self setDiscName:name];
+    [self setMpegFiles:files];
+    [self setType:imageType];
+    [self setCreatedTrack:NO];
+    
     return [self getTracksOfVcd];
 }
 
@@ -310,20 +263,20 @@
 {
     NSMutableArray *arguments = [NSMutableArray array];
     [arguments addObject:@"-t"];
+    NSInteger type = [self type];
     if (type == 4)
 	    [arguments addObject:@"vcd2"];
     else if (type == 5)
 	    [arguments addObject:@"svcd"];
     [arguments addObject:@"--update-scan-offsets"];
     [arguments addObject:@"-l"];
-    [arguments addObject:discName];
-    [arguments addObject:[@"--cue-file=" stringByAppendingString:@"/dev/fd/1"]];
-    [arguments addObject:[@"--bin-file=" stringByAppendingString:@"/dev/fd/2"]];
-
-    NSInteger i;
-    for (i=0;i<[mpegFiles count];i++)
+    [arguments addObject:[self discName]];
+    [arguments addObject:[@"--cue-_file=" stringByAppendingString:@"/dev/fd/1"]];
+    [arguments addObject:[@"--bin-_file=" stringByAppendingString:@"/dev/fd/2"]];
+    
+    for (NSString *path in [self mpegFiles])
     {
-	    [arguments addObject:[mpegFiles objectAtIndex:i]];
+	    [arguments addObject:path];
     }
 
     NSTask *vcdimager = [[NSTask alloc] init];
@@ -359,7 +312,7 @@
 
 - (NSArray *)getTracksOfAudioCD:(NSString *)path withToc:(NSDictionary *)toc
 {
-    file = fopen([path fileSystemRepresentation], "r");
+    _file = fopen([path fileSystemRepresentation], "r");
     NSArray *sessions = [toc objectForKey:@"Sessions"];
     NSMutableArray *mySessions = [NSMutableArray array];
     NSMutableArray *myTracks = [NSMutableArray array];
@@ -417,7 +370,7 @@
 - (DRTrack *)getAudioTrackForPath:(NSString *)path
 {
     //Set disc: type 6 = custom audio cd
-    type = 6;
+    [self setType:6];
 
     //Create our audio track
     DRTrack *track = [[DRTrack alloc] initWithProducer:self];
@@ -447,14 +400,17 @@
 
 - (void)createImage
 {
-    trackCreator = [[NSTask alloc] init];
-    trackPipe=[[NSPipe alloc] init];
+    NSTask *trackCreator = [[NSTask alloc] init];
+    [self setTrackCreator:trackCreator];
+    NSPipe *trackPipe = [[NSPipe alloc] init];
+    [self setTrackPipe:trackPipe];
     NSFileHandle *handle2 = [NSFileHandle fileHandleWithNullDevice];
     [trackCreator setStandardError:handle2];
     [trackCreator setLaunchPath:[[NSBundle mainBundle] pathForResource:@"mkisofs" ofType:@""]];
     
-    NSMutableArray *options = [NSMutableArray arrayWithObjects:@"-V", discName, @"-f", nil];
+    NSMutableArray *options = [NSMutableArray arrayWithObjects:@"-V", [self discName], @"-f", nil];
     
+    NSInteger type = [self type];
     if (type == 1)
 	    [options addObjectsFromArray:[NSArray arrayWithObjects:@"-hfs", @"--osx-hfs", @"-r", @"-joliet", @"-input-hfs-charset", [[NSBundle mainBundle] pathForResource:@"iso8859-1" ofType:@""], nil]];
     else if (type == 2)
@@ -466,14 +422,15 @@
     else if (type == 8)
 	    [options addObjectsFromArray:[NSArray arrayWithObjects:@"-r", @"-joliet", @"-joliet-long", nil]];
 	    
-    [options addObject:folderPath];
+    [options addObject:[self folderPath]];
     
     [trackCreator setArguments:options];
     [trackCreator setStandardOutput:trackPipe];
-    readHandle = [trackPipe fileHandleForReading];
+    NSFileHandle *readHandle = [trackPipe fileHandleForReading];
+    [self setReadHandle:readHandle];
     [KWCommonMethods logCommandIfNeeded:trackCreator];
     
-    file = fdopen([readHandle fileDescriptor], "r");
+    _file = fdopen([readHandle fileDescriptor], "r");
     
     [self startCreating];
 }
@@ -482,23 +439,27 @@
 {
     NSMutableArray *arguments = [NSMutableArray arrayWithObject:@"-t"];
     
+    NSInteger type = [self type];
     if (type == 4)
 	    [arguments addObject:@"vcd2"];
     else if (type == 5)
 	    [arguments addObject:@"svcd"];
     
-    [arguments addObjectsFromArray:[NSArray arrayWithObjects:@"--update-scan-offsets", @"-l", discName, [@"--cue-file=" stringByAppendingString:@"/dev/fd/1"], [@"--bin-file=" stringByAppendingString:@"/dev/fd/2"], nil]];
-    [arguments addObjectsFromArray:mpegFiles];
+    [arguments addObjectsFromArray:[NSArray arrayWithObjects:@"--update-scan-offsets", @"-l", [self discName], [@"--cue-_file=" stringByAppendingString:@"/dev/fd/1"], [@"--bin-_file=" stringByAppendingString:@"/dev/fd/2"], nil]];
+    [arguments addObjectsFromArray:[self mpegFiles]];
 
-    trackCreator = [[NSTask alloc] init];
+    NSTask *trackCreator = [[NSTask alloc] init];
+    [self setTrackCreator:trackCreator];
     [trackCreator setLaunchPath:[[NSBundle bundleForClass:[self class]] pathForResource:@"vcdimager" ofType:@""]];
     [trackCreator setArguments:arguments];
-    trackPipe=[[NSPipe alloc] init];
+    NSPipe *trackPipe = [[NSPipe alloc] init];
+    [self setTrackPipe:trackPipe];
     NSFileHandle *handle2 = [NSFileHandle fileHandleWithNullDevice];
     [trackCreator setStandardError:trackPipe];
     [trackCreator setStandardOutput:handle2];
-    readHandle = [trackPipe fileHandleForReading];
-    file = fdopen([readHandle fileDescriptor], "r");
+    NSFileHandle *readHandle = [trackPipe fileHandleForReading];
+    [self setReadHandle:readHandle];
+    _file = fdopen([readHandle fileDescriptor], "r");
     
     [self startCreating];
 }
@@ -507,25 +468,32 @@
 {
     [[[NSOperationQueue alloc] init] addOperationWithBlock:^
     {
+        NSTask *trackCreator = [self trackCreator];
         [KWCommonMethods logCommandIfNeeded:trackCreator];
         [trackCreator launch];
         
         [trackCreator waitUntilExit];
-        [readHandle closeFile];
-        readHandle = nil;
+        [[self readHandle] closeFile];
+        [self setReadHandle:nil];
     }];
 }
 
 - (void)createAudioTrack:(NSString *)path
 {
-    trackCreator = [[NSTask alloc] init];
+    NSTask *trackCreator = [[NSTask alloc] init];
+    [self setTrackCreator:trackCreator];
 
-    calcPipe = [[NSPipe alloc] init];
-    trackPipe = [[NSPipe alloc] init];
+    NSPipe *calcPipe = [[NSPipe alloc] init];
+    [self setCalcPipe:calcPipe];
+    NSPipe *trackPipe = [[NSPipe alloc] init];
+    [self setTrackPipe:trackPipe];
 
-    calcHandle = [calcPipe fileHandleForReading];
-    writeHandle = [trackPipe fileHandleForWriting];
-    readHandle = [trackPipe fileHandleForReading];
+    NSFileHandle *calcHandle = [calcPipe fileHandleForReading];
+    [self setCalcHandle:calcHandle];
+    NSFileHandle *writeHandle = [trackPipe fileHandleForWriting];
+    [self setWriteHandle:writeHandle];
+    NSFileHandle *readHandle = [trackPipe fileHandleForReading];
+    [self setReadHandle:readHandle];
 
     [trackCreator setLaunchPath:[KWCommonMethods ffmpegPath]];
     
@@ -538,11 +506,13 @@
     [trackCreator setStandardOutput:calcPipe];
     
     if (![[NSUserDefaults standardUserDefaults] boolForKey:@"KWDebug"])
+    {
 	    [trackCreator setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+    }
     
     [KWCommonMethods logCommandIfNeeded:trackCreator];
 
-    file = fdopen([readHandle fileDescriptor], "r");
+    _file = fdopen([readHandle fileDescriptor], "r");
     
     [self startAudioTrackCreation];
 }
@@ -551,11 +521,14 @@
 {
     [[[NSOperationQueue alloc] init] addOperationWithBlock:^
     {
+        NSTask *trackCreator = [self trackCreator];
         [KWCommonMethods logCommandIfNeeded:trackCreator];
         [trackCreator launch];
 
         NSData *data;
-        while([data=[calcHandle availableData] length])
+        NSFileHandle *calcHandle = [self calcHandle];
+        NSFileHandle *writeHandle = [self writeHandle];
+        while([data = [calcHandle availableData] length])
         {
             [writeHandle writeData:data];
         }
@@ -580,8 +553,9 @@
     NSFileHandle *handle;
     [mkisofs setLaunchPath:[[NSBundle mainBundle] pathForResource:@"mkisofs" ofType:@""]];
     
-    NSMutableArray *options = [NSMutableArray arrayWithObjects:@"-print-size", @"-V", discName, @"-f", nil];
+    NSMutableArray *options = [NSMutableArray arrayWithObjects:@"-print-size", @"-V", [self discName], @"-f", nil];
     
+    NSInteger type = [self type];
     if (type == 1)
 	    [options addObjectsFromArray:[NSArray arrayWithObjects:@"-hfs", @"--osx-hfs", @"-r", @"-joliet", @"-input-hfs-charset", [[NSBundle mainBundle] pathForResource:@"iso8859-1" ofType:@""], nil]];
     else if (type == 2)
@@ -593,7 +567,7 @@
     else if (type == 8)
 	    [options addObjectsFromArray:[NSArray arrayWithObjects:@"-r", @"-joliet", @"-joliet-long", nil]];
 	    
-    [options addObject:folderPath];
+    [options addObject:[self folderPath]];
 
     [mkisofs setArguments:options];
     [mkisofs setStandardError:[NSFileHandle fileHandleWithNullDevice]];
@@ -640,9 +614,9 @@
     NSArray *arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-ac", @"2", @"-", nil];
     
     if ([[KWConverter alloc] isAudioCDFile:path])
+    {
 	    arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-acodec", @"copy", @"-", nil];
-    
-    [trackCreator setArguments:arguments];
+    }
     
     [ffmpeg setArguments:arguments];
     [ffmpeg setStandardOutput:outPipe];
@@ -664,6 +638,80 @@
     [ffmpeg waitUntilExit];
 
     return size /  2352;
+}
+
+@end
+
+@interface KWTrackProducer (DiscRecording)
+
+- (BOOL) prepareTrack:(DRTrack*)track forBurn:(DRBurn*)burn toMedia:(NSDictionary*)mediaInfo;
+- (uint32_t)producePreGapForTrack:(DRTrack *)track intoBuffer:(char *)buffer length:(uint32_t)bufferLength atAddress:(uint64_t)address blockSize:(uint32_t)blockSize ioFlags:(uint32_t *)flags;
+- (uint32_t)produceDataForTrack:(DRTrack *)track intoBuffer:(char *)buffer length:(uint32_t)bufferLength atAddress:(uint64_t)address blockSize:(uint32_t)blockSize ioFlags:(uint32_t *)flags;
+
+@end
+
+
+@implementation KWTrackProducer (DiscRecording)
+
+- (BOOL)prepareTrack:(DRTrack *)track forBurn:(DRBurn *)burn toMedia:(NSDictionary *)mediaInfo
+{
+    NSInteger type = [self type];
+    if ([self folderPath])
+    {
+        [self createImage];
+    }
+    else if ((type == 4 || type == 5) && [self didCreateTrack] == NO)
+    {
+        [self createVcdImage];
+        [self setCreatedTrack:YES];
+    }
+    else if (type == 6)
+    {
+        [self createAudioTrack:[[track properties] objectForKey:@"KWAudioPath"]];
+    }
+
+    return YES;
+}
+
+- (uint32_t)producePreGapForTrack:(DRTrack *)track intoBuffer:(char *)buffer length:(uint32_t)bufferLength atAddress:(uint64_t)address blockSize:(uint32_t)blockSize ioFlags:(uint32_t *)flags
+{
+//    if ([[[track properties] objectForKey:@"KWFirstTrack"] boolValue] == NO)
+//    {
+//        uint32_t i;
+//        unsigned char newbuffer[bufferLength];
+//
+//        for (i = 0; i < bufferLength; i+= blockSize)
+//        {
+//            fread(newbuffer, 1, blockSize, _file);
+//        }
+//    }
+
+    memset(buffer, 0, bufferLength);
+    
+    return bufferLength;
+}
+
+- (uint32_t)produceDataForTrack:(DRTrack *)track intoBuffer:(char *)buffer length:(uint32_t)bufferLength atAddress:(uint64_t)address blockSize:(uint32_t)blockSize ioFlags:(uint32_t *)flags
+{
+    [self setCurrentAudioTrack:[[track properties] objectForKey:@"KWAudioPath"]];
+
+    if (_file)
+    {
+        uint32_t i;
+    
+        for (i = 0; i < bufferLength; i+= blockSize)
+        {
+            fread(buffer, 1, blockSize, _file);
+            buffer += blockSize;
+        }
+    }
+
+    return bufferLength;
+}
+
+- (void)cleanupTrackAfterBurn:(DRTrack *)track;
+{
+    fclose(_file);
 }
 
 @end

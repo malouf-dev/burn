@@ -31,12 +31,27 @@
 #import <Foundation/Foundation.h>
 #import "KWCommonMethods.h"
 
-@interface NSScanner (Extra)
+/**
+ *  Convenient NSScanner methods
+ */
+@interface NSScanner(Extra)
 
+/**
+ *  Skip past a string
+ *
+ *  @param skipString A string
+ *
+ *  @return YES if succesfull, otherwise NO
+ */
 - (BOOL)skipPastString:(NSString *)skipString;
+
+/**
+ *  Scan to end into string
+ *
+ *  @param result The scanned string
+ *
+ *  @return YES if succesfull, otherwise NO
+ */
 - (BOOL)scanToEndIntoString:(NSString **)result;
-#if MAC_OS_X_VERSION_MAX_ALLOWED < 1050
-- (BOOL)scanInteger:(NSInteger *)value;
-#endif
 
 @end

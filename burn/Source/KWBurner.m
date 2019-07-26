@@ -1,6 +1,8 @@
 #import "KWBurner.h"
 #import "KWTrackProducer.h"
 #import "KWProgressManager.h"
+#import <DiscRecording/DiscRecording.h>
+#import "KWCommonMethods.h"
 
 @interface DRCallbackDevice : DRDevice
 - (void)initWithConsumer:(id)consumer;
@@ -58,12 +60,7 @@
     return self;
 }
 
-///////////////////
-// Main actions //
-///////////////////
-
-#pragma mark -
-#pragma mark •• Main actions
+#pragma mark - Main Methods
 
 - (void)beginBurnSetupSheetForWindow:(NSWindow *)window completion:(void (^)(NSModalResponse returnCode))completion
 {
@@ -133,7 +130,7 @@
             NSPopUpButton *speedPopup = [self speedPopup];
             if ([speedPopup indexOfSelectedItem] == 0 || isIgnoreModeEnabled == YES)
             {
-                speed = [NSNumber numberWithFloat:65535.0f];
+                speed = @(65535.0f);
             }
             else
             {
@@ -160,9 +157,13 @@
 
             //Set speed
             if ([speedPopup indexOfSelectedItem] == 0 && isIgnoreModeEnabled == NO)
-                [mutableDict setObject:[speeds objectAtIndex:[speeds count]-1] forKey:DRBurnRequestedSpeedKey];
+            {
+                mutableDict[DRBurnRequestedSpeedKey] = [speeds objectAtIndex:[speeds count] -1];
+            }
             else
-                [mutableDict setObject:speed forKey:DRBurnRequestedSpeedKey];
+            {
+                mutableDict[DRBurnRequestedSpeedKey] = speed;
+            }
             //Set more sessions allowed
             [mutableDict setObject:[NSNumber numberWithBool:([[self sessionsCheckBox] state] == NSOnState)] forKey:DRBurnAppendableKey];
             //Set overwrite / erase before burning
@@ -479,12 +480,7 @@
     }
 }
 
-////////////////////////
-// Main Sheet actions //
-////////////////////////
-
-#pragma mark -
-#pragma mark •• Main Sheet actions
+#pragma mark - Main Sheet Methods
 
 - (IBAction)burnerPopup:(id)sender
 {
@@ -563,12 +559,7 @@
     }
 }
 
-///////////////////////////
-// Session Sheet actions //
-///////////////////////////
-
-#pragma mark -
-#pragma mark •• Session Sheet actions
+#pragma mark - Session Sheet Methods
 
 - (IBAction)okSession:(id)sender
 {
@@ -587,12 +578,7 @@
     [[self currentCombineCheckBox] setState:NSOffState];
 }
 
-//////////////////////////
-// Notification actions //
-//////////////////////////
-
-#pragma mark -
-#pragma mark •• Notification actions
+#pragma mark - Notification Methods
 
 - (void)statusChanged:(NSNotification *)notif
 {
@@ -710,7 +696,7 @@
 	    [[DRNotificationCenter currentRunLoopCenter] removeObserver:self name:DRBurnStatusChangedNotification object:[notification object]];
 	    
     
-	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWBurnFinished" object:self userInfo:[NSDictionary dictionaryWithObject:@"KWSucces" forKey:@"ReturnCode"]];
+	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWBurnFinished" object:self userInfo:[NSDictionary dictionaryWithObject:@"KWSuccess" forKey:@"ReturnCode"]];
     }
     else if ([currentStatusString isEqualTo:DRStatusStateFailed])
     {
@@ -746,12 +732,7 @@
     }
 }
 
-///////////////////
-// Image actions //
-///////////////////
-
-#pragma mark -
-#pragma mark •• Image actions
+#pragma mark - Image Methods
 
 - (BOOL)writeBlocks:(char*)wBlocks blockCount:(uint32_t)bCount blockSize:(uint32_t)bSize atAddress:(uint64_t)address
 {
@@ -795,12 +776,7 @@
     return NO;
 }
 
-///////////////////
-// Other actions //
-///////////////////
-
-#pragma mark -
-#pragma mark •• Other actions
+#pragma mark - Other actions
 
 - (void)prepareTypes
 {

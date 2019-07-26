@@ -1,8 +1,6 @@
 /* KWBurner */
 
 #import <Cocoa/Cocoa.h>
-#import <DiscRecording/DiscRecording.h>
-#import "KWCommonMethods.h"
 
 /**
  *  A window controller that handles burning (and creating disc images, burning to the hard disk)

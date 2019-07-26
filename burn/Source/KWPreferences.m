@@ -2,6 +2,7 @@
 #import <DiscRecording/DiscRecording.h>
 #import "KWDVDAuthorizer.h"
 #import <Sparkle/Sparkle.h>
+#import "KWConstants.h"
 
 @interface KWPreferences() <NSToolbarDelegate>
 
@@ -135,15 +136,14 @@ return self;
     NSBundle *themeBundle = [NSBundle bundleWithPath:defaultThemePath];
     NSDictionary *theme = [[NSArray arrayWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]] objectAtIndex:[[standardDefaults objectForKey:@"KWDVDThemeFormat"] intValue]];
     
-    themePaths = [[NSMutableArray alloc] init];
-    [themePaths addObject:defaultThemePath];
+    themeNames = [[NSMutableArray alloc] init];
+    [themeNames addObject:@"Default"];
     
     [themePopup addItemWithTitle:[theme objectForKey:@"KWThemeTitle"]];
 	    
     NSMutableArray *mightBeThemes = [NSMutableArray array];
     NSArray *defaultThemes = [defaultManager contentsOfDirectoryAtPath:[mainBundle pathForResource:@"Themes" ofType:@""] error:nil];
-    NSString *userThemefolder = @"~/Library/Application Support/Burn/Themes";
-    userThemefolder = [userThemefolder stringByExpandingTildeInPath];
+    NSString *userThemefolder = [@"~/Library/Application Support/Burn/Themes" stringByExpandingTildeInPath];
     NSArray *userThemes = [defaultManager contentsOfDirectoryAtPath:userThemefolder error:nil];
     
     [mightBeThemes addObjectsFromArray:defaultThemes];
@@ -169,12 +169,12 @@ return self;
 	    	    NSBundle *themeBundle = [NSBundle bundleWithPath:[themePath stringByAppendingPathComponent:currentFile]];
 	    	    NSDictionary *theme = [[NSArray arrayWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]] objectAtIndex:[[standardDefaults objectForKey:@"KWDVDThemeFormat"] intValue]];
     	    
-	    	    [themePaths addObject:[themePath stringByAppendingPathComponent:currentFile]];
+	    	    [themeNames addObject:[currentFile stringByDeletingPathExtension]];
 	    	    [themePopup addItemWithTitle:[theme objectForKey:@"KWThemeTitle"]];
     	    }
     	    else if ([currentFile isEqualTo:@"---"] && [userThemes count] > 0)
     	    {
-	    	    [themePaths addObject:@"Seperator"];
+	    	    [themeNames addObject:@"Seperator"];
 	    	    [[themePopup menu] addItem:[NSMenuItem separatorItem]];
     	    }
 	    }
@@ -308,64 +308,62 @@ return self;
 {
     NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
 
-    [standardDefaults setObject:[sender objectValue] forKey:@"KWDVDTheme"];
-    [standardDefaults setObject:[themePaths objectAtIndex:[themePopup indexOfSelectedItem]] forKey:@"KWDVDThemePath"];
+    NSInteger themeIndex = [themePopup indexOfSelectedItem];
+
+    [standardDefaults setObject:[sender objectValue] forKey:KWDVDTheme];
+    [standardDefaults setObject:themeNames[themeIndex] forKey:KWDVDThemeName];
+    // Make sure the old key is removed
+    [standardDefaults removeObjectForKey:@"KWDVDThemePath"];
 
     [self setPreviewImage:self];
 }
 
-- (IBAction)addTheme:(id)sender
-{
-    NSOpenPanel *sheet = [NSOpenPanel openPanel];
-    [sheet setCanChooseFiles:YES];
-    [sheet setCanChooseDirectories:NO];
-    [sheet setAllowsMultipleSelection:YES];
-    [sheet setAllowedFileTypes:@[@"burnTheme"]];
-    [sheet beginSheetModalForWindow:[self window] completionHandler:^(NSModalResponse result)
-    {
-        NSMutableArray *fileNames = [[NSMutableArray alloc] init];
-        for (NSURL *url in [sheet URLs])
-        {
-            [fileNames addObject:[url path]];
-        }
-        
-        [self addThemeAndShow:fileNames];
-    }];
-}
-
-- (IBAction)deleteTheme:(id)sender
-{
-    if ([themePopup indexOfSelectedItem] != 0)
-    {
-	    NSString *themePath = [themePaths objectAtIndex:[themePopup indexOfSelectedItem]];
-	    
-	    if (themePath)
-	    {
-    	    if ([KWCommonMethods removeItemAtPath:[themePaths objectAtIndex:[themePopup indexOfSelectedItem]]])
-    	    {
-	    	    [themePopup removeItemAtIndex:[themePopup indexOfSelectedItem]];
-	    	    [themePaths removeObject:themePath];
-
-	    	    if ([themePaths indexOfObject:@"Seperator"] == [themePaths count] - 1)
-	    	    {
-    	    	    NSInteger index = [themePopup numberOfItems] - 1;
-    	    	    [themePopup removeItemAtIndex:index];
-    	    	    [themePaths removeObjectAtIndex:index];
-	    	    }
-	    
-	    	    [self setTheme:themePopup];
-    	    }
-	    }
-	    else
-	    {
-    	    NSBeep();
-	    }
-    }
-    else
-    {
-	    NSBeep();
-    }
-}
+//- (IBAction)addTheme:(id)sender
+//{
+//    NSOpenPanel *sheet = [NSOpenPanel openPanel];
+//    [sheet setCanChooseFiles:YES];
+//    [sheet setCanChooseDirectories:NO];
+//    [sheet setAllowsMultipleSelection:YES];
+//    [sheet setAllowedFileTypes:@[@"burnTheme"]];
+//    [sheet beginSheetModalForWindow:[self window] completionHandler:^(NSModalResponse result)
+//    {
+//        NSMutableArray *fileNames = [[NSMutableArray alloc] init];
+//        for (NSURL *url in [sheet URLs])
+//        {
+//            [fileNames addObject:[url path]];
+//        }
+//        
+//        [self addThemeAndShow:fileNames];
+//    }];
+//}
+//
+//- (IBAction)deleteTheme:(id)sender
+//{
+//    if ([themePopup indexOfSelectedItem] > 2)
+//    {
+//        NSString *userThemefolder = @"~/Library/Application Support/Burn/Themes";
+//        NSString *themePath = [[userThemefolder stringByAppendingPathComponent:[themeNames objectAtIndex:[themePopup indexOfSelectedItem]]] stringByAppendingPathExtension:@"burnTheme"];
+//        
+//        if ([KWCommonMethods removeItemAtPath:themePath])
+//        {
+//            [themePopup removeItemAtIndex:[themePopup indexOfSelectedItem]];
+//            [themeNames removeObject:themePath];
+//
+//            if ([themeNames indexOfObject:@"Seperator"] == [themeNames count] - 1)
+//            {
+//                NSInteger index = [themePopup numberOfItems] - 1;
+//                [themePopup removeItemAtIndex:index];
+//                [themeNames removeObjectAtIndex:index];
+//            }
+//    
+//            [self setTheme:themePopup];
+//        }
+//    }
+//    else
+//    {
+//        NSBeep();
+//    }
+//}
 
 - (IBAction)showPreview:(id)sender
 {
@@ -382,7 +380,10 @@ return self;
 
 - (IBAction)setPreviewImage:(id)sender
 {
-    NSString *themePath = [themePaths objectAtIndex:[themePopup indexOfSelectedItem]];
+    NSInteger selectedThemeIndex = [themePopup indexOfSelectedItem];
+    NSString *themeName = [themeNames objectAtIndex:selectedThemeIndex];
+    NSString *themesPath = selectedThemeIndex < 3 ? [[NSBundle mainBundle] pathForResource:@"Themes" ofType:nil] : [@"~/Library/Application Support/Burn/Themes" stringByExpandingTildeInPath];
+    NSString *themePath = [[themesPath stringByAppendingPathComponent:themeName] stringByAppendingPathExtension:@"burnTheme"];
 
     if (themePath)
     {
@@ -527,7 +528,16 @@ return self;
 
 - (void)addThemeAndShow:(NSArray *)files
 {
-    [self toolbarAction:@"Video"];
+    NSToolbarItem *videoItem;
+    for (NSToolbarItem *item in [[self toolbar] items])
+    {
+        if ([[item itemIdentifier] isEqualToString:@"Video"])
+        {
+            videoItem = item;
+        }
+    }
+
+    [self toolbarAction:videoItem];
     [videoTab selectTabViewItemAtIndex:1];
 
     NSString *burnASFolder = @"~/Library/Application Support/Burn";
@@ -552,14 +562,14 @@ return self;
     	    {
 	    	    if ([themePopup indexOfItem:[NSMenuItem separatorItem]] == -1)
 	    	    {
-    	    	    [themePaths addObject:@"Seperator"];
+    	    	    [themeNames addObject:@"Seperator"];
     	    	    [[themePopup menu] addItem:[NSMenuItem separatorItem]];
 	    	    }
     	    
 	    	    NSBundle *themeBundle = [NSBundle bundleWithPath:newFile];
 	    	    NSDictionary *theme = [[NSArray arrayWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]] objectAtIndex:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDVDThemeFormat"] intValue]];
     
-	    	    [themePaths addObject:newFile];
+	    	    [themeNames addObject:[[newFile lastPathComponent] stringByDeletingPathExtension]];
 	    	    [themePopup addItemWithTitle:[theme objectForKey:@"KWThemeTitle"]];
     	    }
     	    else

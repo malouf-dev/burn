@@ -448,7 +448,7 @@ CA
                                                 <rect key="frame" x="1" y="0.0" width="431" height="331"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
-                                                    <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Data" headerView="982" id="481" customClass="KWOutlineView">
+                                                    <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Data" headerView="982" id="481" customClass="KWOutlineView">
                                                         <rect key="frame" x="0.0" y="0.0" width="431" height="306"/>
                                                         <autoresizingMask key="autoresizingMask"/>
                                                         <size key="intercellSpacing" width="3" height="2"/>
@@ -803,9 +803,9 @@ CA
                                             <rect key="frame" x="0.0" y="32" width="433" height="332"/>
                                             <clipView key="contentView" id="axL-lh-3qG">
                                                 <rect key="frame" x="1" y="0.0" width="431" height="331"/>
-                                                <autoresizingMask key="autoresizingMask"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
-                                                    <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Audio TableView" headerView="979" id="450" customClass="KWTableView">
+                                                    <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Audio TableView" headerView="979" id="450" customClass="KWTableView">
                                                         <rect key="frame" x="0.0" y="0.0" width="432" height="306"/>
                                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                         <size key="intercellSpacing" width="3" height="2"/>
@@ -1131,9 +1131,9 @@ CA
                                             <rect key="frame" x="0.0" y="32" width="433" height="332"/>
                                             <clipView key="contentView" id="Jcw-XI-HEq">
                                                 <rect key="frame" x="1" y="0.0" width="431" height="331"/>
-                                                <autoresizingMask key="autoresizingMask"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
-                                                    <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Video TableView" headerView="976" id="428" customClass="KWTableView">
+                                                    <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Video TableView" headerView="976" id="428" customClass="KWTableView">
                                                         <rect key="frame" x="0.0" y="0.0" width="431" height="306"/>
                                                         <autoresizingMask key="autoresizingMask"/>
                                                         <size key="intercellSpacing" width="3" height="2"/>

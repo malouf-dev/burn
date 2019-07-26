@@ -49,13 +49,6 @@
     [[self progressIndicator] stopAnimation:self];
 }
 
-- (void)awakeFromNib
-{
-    [super awakeFromNib];
-    
-    [[self progressImageView] setImage:[NSImage imageNamed:@"Burn"]];
-}
-
 #pragma mark - Main Methods
 
 - (void)beginSheetForWindow:(NSWindow *)window completionHandler:(void (^)(NSModalResponse returnCode))handler
@@ -115,20 +108,16 @@
 
 - (void)setTask:(NSString *)task
 {
-    [[NSOperationQueue mainQueue] addOperationWithBlock:^
-    {
-        [[self taskTextField] setStringValue:[task copy]];
-    }];
+    _task = [task copy];
+
+    [[self taskTextField] performSelectorOnMainThread:@selector(setStringValue:) withObject:_task waitUntilDone:YES];
 }
 
 - (void)setStatus:(NSString *)status
 {
     _status = [status copy];
 
-    [[NSOperationQueue mainQueue] addOperationWithBlock:^
-    {
-        [[self statusTextField] setStringValue:_status];
-    }];
+    [[self taskTextField] performSelectorOnMainThread:@selector(setStringValue:) withObject:_status waitUntilDone:YES];
 }
 
 - (void)setMaximumValue:(CGFloat)maximumValue
@@ -337,11 +326,7 @@
 - (void)setIconImage:(NSImage *)iconImage
 {
     _iconImage = [iconImage copy];
-
-    [[NSOperationQueue mainQueue] addOperationWithBlock:^
-    {
-        [[self progressImageView] setImage:_iconImage];
-    }];
+    [[self progressImageView] performSelectorOnMainThread:@selector(setImage:) withObject:_iconImage waitUntilDone:YES];
 }
 
 - (void)setAllowCanceling:(BOOL)allowCanceling

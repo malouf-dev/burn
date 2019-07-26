@@ -58,7 +58,7 @@
                                 KWRemuxMPEG2Streams: @(NO),
                                 KWLoopDVD: @(NO),
                                 KWUseTheme: @(YES),
-                                KWDVDThemePath: [[[NSBundle mainBundle] pathForResource:@"Themes" ofType:@""] stringByAppendingPathComponent:@"Default.burnTheme"],
+                                KWDVDThemeName: @"Default",
                                 KWDVDThemeFormat: @(0),
                                 KWDefaultDivXSoundType: @(0),
                                 KWCustomDivXVideoBitrate: @(NO),

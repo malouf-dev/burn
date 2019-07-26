@@ -223,31 +223,9 @@
 - (IBAction)eraseRecorder:(id)sender
 {
     eraser = [[KWEraser alloc] init];
-    [eraser beginEraseSheetForWindow:mainWindow completion:^(NSModalResponse returnCode)
+    [eraser beginEraseSheetForWindow:mainWindow completion:^(NSDictionary *response)
     {
-        if (returnCode == NSModalResponseOK)
-        {
-            KWProgressManager *progressManager = [KWProgressManager sharedManager];
-            [progressManager setIconImage:[NSImage imageNamed:@"Burn"]];
-            [progressManager setTask:NSLocalizedString(@"Erasing disc", nil)];
-            [progressManager setStatus:NSLocalizedString(@"Preparing...", nil)];
-            [progressManager setMaximumValue:0.0];
-            [progressManager setAllowCanceling:NO];
-            [progressManager beginSheetForWindow:mainWindow];
-        
-            [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(eraseFinished:) name:@"KWEraseFinished" object:nil];
-            [eraser erase];
-        }
-    }];
-}
-
-- (void)eraseFinished:(NSNotification *)notif
-{
-    NSString *returnCode = [[notif userInfo] objectForKey:@"ReturnCode"];
-    eraser = nil;
-
-    [[KWProgressManager sharedManager] endSheetWithCompletion:^
-    {
+        NSString *returnCode = response[@"ReturnCode"];
         if ([returnCode isEqualTo:@"KWFailure"])
         {
             NSImage *image = [[NSWorkspace sharedWorkspace] iconForFileType:NSFileTypeForHFSTypeCode(kGenericCDROMIcon)];

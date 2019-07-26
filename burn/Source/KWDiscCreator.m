@@ -20,6 +20,7 @@
 #import "KWProgressManager.h"
 #import "KWDRFolder.h"
 #import "KWWindowController.h"
+#import "KWConstants.h"
 
 @interface KWBurner(Private)
 
@@ -79,17 +80,8 @@
     [self setName:name];
     [self setFileSystem:fileSystem];
     
-    // TODO: why?
     NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
-    NSString *themePath = [[NSUserDefaults standardUserDefaults] objectForKey:@"KWDVDThemePath"];
-    // TODO: find out why the theme path gets set to "" for some people :(
-    if (themePath == nil || [themePath isEqualToString:@""])
-    {
-        themePath = [[[NSBundle mainBundle] pathForResource:@"Themes" ofType:nil] stringByAppendingPathComponent:@"Default.burnTheme"];
-        [standardDefaults setObject:themePath forKey:@"KWDVDThemePath"];
-    }
-
-    NSBundle *themeBundle = [NSBundle bundleWithPath:themePath];
+    NSBundle *themeBundle = [NSBundle bundleWithPath:[self currentThemePath]];
     NSString *themePropertyListFile = [themeBundle pathForResource:@"Theme" ofType:@"plist"];
     NSArray *themeArray = [NSArray arrayWithContentsOfFile:themePropertyListFile];
     NSInteger formatIndex = [[standardDefaults objectForKey:@"KWDVDThemeFormat"] intValue];
@@ -186,7 +178,7 @@
         
         if (success == 0)
         {
-            [self imageFinished:@"KWSucces"];
+            [self imageFinished:@"KWSuccess"];
         }
         else if (success == 1)
         {
@@ -256,7 +248,7 @@
     
     KWBurner *burner = [self burner];
     
-    if ([returnCode isEqualTo:@"KWSucces"])
+    if ([returnCode isEqualTo:@"KWSuccess"])
     {
         NSString *imagePath = [self imagePath];
 	    if ([[imagePath pathExtension] isEqualTo:@"cue"] && burner)
@@ -360,17 +352,8 @@
     KWBurner *burner = [[KWBurner alloc] init];
     [self setBurner:burner];
     
-    // TODO: why?
     NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
-    NSString *themePath = [standardDefaults objectForKey:@"KWDVDThemePath"];
-    // TODO: find out why the theme path gets set to "" for some people :(
-    if (themePath == nil || [themePath isEqualToString:@""])
-    {
-        themePath = [[[NSBundle mainBundle] pathForResource:@"Themes" ofType:nil] stringByAppendingPathComponent:@"Default.burnTheme"];
-        [standardDefaults setObject:themePath forKey:@"KWDVDThemePath"];
-    }
-
-    NSBundle *themeBundle = [NSBundle bundleWithPath:themePath];
+    NSBundle *themeBundle = [NSBundle bundleWithPath:[self currentThemePath]];
     NSDictionary *theme = [[NSArray arrayWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]] objectAtIndex:[[standardDefaults objectForKey:@"KWDVDThemeFormat"] intValue]];
     [self setTheme:theme];
     [self setName:name];
@@ -693,7 +676,7 @@
 
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"KWBurnFinished" object:[self burner]];
     
-    if ([returnCode isEqualTo:@"KWSucces"])
+    if ([returnCode isEqualTo:@"KWSuccess"])
     {
         [[KWProgressManager sharedManager] endSheet];
         
@@ -882,6 +865,35 @@
 - (void)stopWaiting
 {
     [self setShouldWait:NO];
+}
+
+- (NSString *)currentThemePath
+{
+    NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
+    NSString *themePath = [standardDefaults objectForKey:@"KWDVDThemePath"];
+    NSString *themeName = [standardDefaults stringForKey:KWDVDThemeName];
+    if (themePath != nil)
+    {
+        NSString *possibleThemeName = [[themePath lastPathComponent] stringByDeletingPathExtension];
+        if (![possibleThemeName isEqualToString:@"Seperator"])
+        {
+            themeName = possibleThemeName;
+            [standardDefaults setObject:themeName forKey:KWDVDThemeName];
+        }
+        [standardDefaults removeObjectForKey:@"KWDVDThemePath"];
+    }
+    
+    NSInteger selectedThemeIndex = [standardDefaults integerForKey:KWDVDTheme];
+    NSString *themesPath = selectedThemeIndex < 3 ? [[NSBundle mainBundle] pathForResource:@"Themes" ofType:nil] : [@"~/Library/Application Support/Burn/Themes" stringByExpandingTildeInPath];
+    NSString *currentThemePath = [[themesPath stringByAppendingPathComponent:themeName] stringByAppendingPathExtension:@"burnTheme"];
+
+    if (![[NSFileManager defaultManager] fileExistsAtPath:currentThemePath])
+    {
+        currentThemePath = [themesPath stringByAppendingPathComponent:@"Default.burnTheme"];
+        [standardDefaults setObject:@"Default" forKey:KWDVDThemeName];
+    }
+
+    return currentThemePath;
 }
 
 @end

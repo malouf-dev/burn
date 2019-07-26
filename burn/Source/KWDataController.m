@@ -1129,7 +1129,6 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
     NSInteger maxCharacters = [KWCommonMethods maxLabelLength:rootFolder];
     
     NSString *nameString = [self diskName];
-    NSString *oldName = [NSString stringWithString:nameString];
     
     [self changeBaseName:discName];
     
@@ -1140,9 +1139,6 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
             [self setDiskName:[nameString substringWithRange:NSMakeRange(0, maxCharacters)]];
         }
     }
-
-    if (![[[self diskName] lowercaseString] isEqualTo:[oldName lowercaseString]])
-	    NSBeep();
 }
 
 ///////////////////////
