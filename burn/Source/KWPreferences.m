@@ -144,11 +144,11 @@ return self;
     NSMutableArray *mightBeThemes = [NSMutableArray array];
     NSArray *defaultThemes = [defaultManager contentsOfDirectoryAtPath:[mainBundle pathForResource:@"Themes" ofType:@""] error:nil];
     NSString *userThemefolder = [@"~/Library/Application Support/Burn/Themes" stringByExpandingTildeInPath];
-    NSArray *userThemes = [defaultManager contentsOfDirectoryAtPath:userThemefolder error:nil];
+//    NSArray *userThemes = [defaultManager contentsOfDirectoryAtPath:userThemefolder error:nil];
     
     [mightBeThemes addObjectsFromArray:defaultThemes];
-    [mightBeThemes addObject:@"---"];
-    [mightBeThemes addObjectsFromArray:userThemes];
+//    [mightBeThemes addObject:@"---"];
+//    [mightBeThemes addObjectsFromArray:userThemes];
     
     NSInteger y;
     for (y=0;y<[mightBeThemes count];y++)
@@ -172,15 +172,22 @@ return self;
 	    	    [themeNames addObject:[currentFile stringByDeletingPathExtension]];
 	    	    [themePopup addItemWithTitle:[theme objectForKey:@"KWThemeTitle"]];
     	    }
-    	    else if ([currentFile isEqualTo:@"---"] && [userThemes count] > 0)
-    	    {
-	    	    [themeNames addObject:@"Seperator"];
-	    	    [[themePopup menu] addItem:[NSMenuItem separatorItem]];
-    	    }
+//            else if ([currentFile isEqualTo:@"---"] && [userThemes count] > 0)
+//            {
+//                [themeNames addObject:@"Seperator"];
+//                [[themePopup menu] addItem:[NSMenuItem separatorItem]];
+//            }
 	    }
     }
     
-    [themePopup selectItemAtIndex:[[standardDefaults objectForKey:@"KWDVDTheme"] intValue]];
+    NSInteger themeIndex = [[standardDefaults objectForKey:@"KWDVDTheme"] intValue];
+    if (themeIndex > 1)
+    {
+        themeIndex = 0;
+        [standardDefaults setObject:@(0) forKey:KWDVDTheme];
+    }
+    
+    [themePopup selectItemAtIndex:themeIndex];
     
     //Load the options for our views
     [self setViewOptions:[NSArray arrayWithObjects:generalView, burnerView, dataView, audioView, videoView, advancedView, nil]];

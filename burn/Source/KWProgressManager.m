@@ -117,7 +117,7 @@
 {
     _status = [status copy];
 
-    [[self taskTextField] performSelectorOnMainThread:@selector(setStringValue:) withObject:_status waitUntilDone:YES];
+    [[self statusTextField] performSelectorOnMainThread:@selector(setStringValue:) withObject:_status waitUntilDone:YES];
 }
 
 - (void)setMaximumValue:(CGFloat)maximumValue
