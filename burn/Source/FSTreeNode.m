@@ -241,7 +241,7 @@
 	    }
 	    else
 	    {
-    	    [NSThread detachNewThreadSelector:@selector(setFolderSize) toTarget:self withObject:nil];
+            [self setFolderSize];
     	    return @"--";
 	    }
     }

@@ -86,8 +86,8 @@
 	    [progressPanel setMaximumValue:0.0];
 	    [progressPanel setAllowCanceling:NO];
 	    [progressPanel beginSheetForWindow:mainWindow];
-    
-	    [NSThread detachNewThreadSelector:@selector(mount:) toTarget:self withObject:currentPath];
+     
+        [self mount:currentPath];
     }
     else
     {
@@ -104,35 +104,38 @@
 
 - (void)mount:(NSString *)path
 {
-    NSString *string;
-    NSArray *arguments = [NSArray arrayWithObjects:@"mount",@"-plist",@"-noverify",@"-noautofsck",path, nil];
-    BOOL status = [KWCommonMethods launchNSTaskAtPath:@"/usr/bin/hdiutil" withArguments:arguments outputError:NO outputString:YES output:&string];
-
-    if (!status || [string rangeOfString:@"<key>mount-point</key>"].length == 0)
+    [[[NSOperationQueue alloc] init] addOperationWithBlock:^
     {
-        [progressPanel endSheetWithCompletion:^
+        NSString *string;
+        NSArray *arguments = [NSArray arrayWithObjects:@"mount",@"-plist",@"-noverify",@"-noautofsck",path, nil];
+        BOOL status = [KWCommonMethods launchNSTaskAtPath:@"/usr/bin/hdiutil" withArguments:arguments outputError:NO outputString:YES output:&string];
+
+        if (!status || [string rangeOfString:@"<key>mount-point</key>"].length == 0)
         {
-            KWAlert *alert = [[KWAlert alloc] init];
-            [alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
-            [alert setMessageText:NSLocalizedString(@"Mounting image failed",nil)];
-            [alert setInformativeText:NSLocalizedString(@"There was a problem mounting the image",nil)];
-            [alert setDetails:string];
-            [alert setAlertStyle:NSWarningAlertStyle];
+            [progressPanel endSheetWithCompletion:^
+            {
+                KWAlert *alert = [[KWAlert alloc] init];
+                [alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
+                [alert setMessageText:NSLocalizedString(@"Mounting image failed",nil)];
+                [alert setInformativeText:NSLocalizedString(@"There was a problem mounting the image",nil)];
+                [alert setDetails:string];
+                [alert setAlertStyle:NSWarningAlertStyle];
+                
+                [alert beginSheetModalForWindow:mainWindow modalDelegate:self didEndSelector:nil contextInfo:nil];
+            }];
+        }
+        else
+        {
+            [progressPanel endSheet];
             
-            [alert beginSheetModalForWindow:mainWindow modalDelegate:self didEndSelector:nil contextInfo:nil];
-        }];
-    }
-    else
-    {
-        [progressPanel endSheet];
-        
-	    if (imageMountedPath)
-	    {
-    	    imageMountedPath = nil;
-	    }
+            if (imageMountedPath)
+            {
+                imageMountedPath = nil;
+            }
 
-	    imageMountedPath = [[[[[[[string componentsSeparatedByString:@"<key>mount-point</key>"] objectAtIndex:1] componentsSeparatedByString:@"<string>"] objectAtIndex:1] componentsSeparatedByString:@"</string>"] objectAtIndex:0] copy];
-    }
+            imageMountedPath = [[[[[[[string componentsSeparatedByString:@"<key>mount-point</key>"] objectAtIndex:1] componentsSeparatedByString:@"<string>"] objectAtIndex:1] componentsSeparatedByString:@"</string>"] objectAtIndex:0] copy];
+        }
+    }];
 }
 
 //Here we will be checking if it is a valid image / if the file exists

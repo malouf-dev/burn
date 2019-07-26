@@ -11,6 +11,7 @@
 #import "KWToolbarKiller.h"
 #import "KWTabViewItem.h"
 #import <Carbon/Carbon.h>
+#import <LetsMove/LetsMove.h>
 
 @interface KWWindowController() <NSToolbarDelegate>
 
@@ -23,6 +24,8 @@
 - (void)applicationDidFinishLaunching:(NSNotification *)notification
 {
     [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:self];
+    
+    PFMoveToApplicationsFolderIfNecessary();
 }
 
 - (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification

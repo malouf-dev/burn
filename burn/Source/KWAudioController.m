@@ -207,7 +207,7 @@
     	    NSNumber *pregap = [[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultPregap"];
     	    unsigned preGapLengthInFrames = (unsigned)([pregap floatValue] * 75.0);
     	    
-    	    NSMutableDictionary    *trackProperties = [NSMutableDictionary dictionaryWithDictionary:[track properties]];
+    	    NSMutableDictionary *trackProperties = [NSMutableDictionary dictionaryWithDictionary:[track properties]];
     	    [trackProperties setObject:[NSNumber numberWithUnsignedInt:preGapLengthInFrames] forKey:DRPreGapLengthKey];
     	    [track setProperties:trackProperties];
     	    [tracks addObject:track];
@@ -232,8 +232,12 @@
     	    	    }
     	    	    
     	    	    [cdtext setObject:album forKey:DRCDTextTitleKey ofTrack:0];
-    	    	    [nameTextField setStringValue:album];
-	    	    }
+              
+                    [[NSOperationQueue mainQueue] addOperationWithBlock:^
+                    {
+    	    	        [nameTextField setStringValue:album];
+                    }];
+                }
 	    	    else
 	    	    {
     	    	    if (![[cdtext objectForKey:DRCDTextPerformerKey ofTrack:0] isEqualTo:[soundTag getTagArtist]])
@@ -249,7 +253,11 @@
     	    	    if (![[cdtext objectForKey:DRCDTextTitleKey ofTrack:0] isEqualTo:album])
     	    	    {
 	    	    	    [cdtext setObject:NSLocalizedString(@"Untitled", nil) forKey:DRCDTextTitleKey ofTrack:0];
-	    	    	    [nameTextField setStringValue:NSLocalizedString(@"Untitled", nil)];
+               
+                        [[NSOperationQueue mainQueue] addOperationWithBlock:^
+                        {
+                            [nameTextField setStringValue:NSLocalizedString(@"Untitled", nil)];
+                        }];
     	    	    }
 	    	    }
     	    

@@ -253,7 +253,7 @@
 }
 
 //Create a track for burning
-- (id)myTrackWithBurner:(KWBurner *)burner errorString:(NSString **)error
+- (id)myTrackWithBurner:(KWBurner *)burner theme:(NSDictionary *)theme errorString:(NSString **)error
 {
     if (selectedTypeIndex == 2)
     {
@@ -262,7 +262,7 @@
     
         [temporaryFiles addObject:outputFolder];
 
-        NSInteger success = [self authorizeFolderAtPathIfNeededAtPath:outputFolder errorString:&*error];
+        NSInteger success = [self authorizeFolderAtPathIfNeededAtPath:outputFolder theme:theme errorString:&*error];
 
 	    if (success == 0)
 	    {
@@ -317,7 +317,7 @@
     return nil;
 }
 
-- (NSInteger)authorizeFolderAtPathIfNeededAtPath:(NSString *)path errorString:(NSString **)error
+- (NSInteger)authorizeFolderAtPathIfNeededAtPath:(NSString *)path theme:(NSDictionary *)theme errorString:(NSString **)error
 {
     NSInteger success;
     NSDictionary *currentData = [tableData objectAtIndex:0];
@@ -335,27 +335,11 @@
         [progressManager setTask:NSLocalizedString(@"Authoring DVD...",nil)];
         [progressManager setStatus:NSLocalizedString(@"Processing: ",nil)];
     
-	    DVDAuthorizer = [[KWDVDAuthorizer alloc] init];
+	    DVDAuthorizer = [[KWDVDAuthorizer alloc] initWithTheme:theme];
 	    NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
 	    if ([standardDefaults boolForKey:@"KWUseTheme"] == YES)
 	    {
-    	    NSBundle *themeBundle = [NSBundle bundleWithPath:[standardDefaults objectForKey:@"KWDVDThemePath"]];
-    	    NSDictionary *theme = [[NSArray arrayWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]] objectAtIndex:[[standardDefaults objectForKey:@"KWDVDThemeFormat"] intValue]];
-            
-            // TODO: somehow this happens, not sure how though
-//            if ([[theme allKeys] count] == 0)
-//            {
-//                NSString *content = [NSString stringWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"] encoding:NSUTF8StringEncoding error:nil];
-//                if ([content length] > 100)
-//                {
-//                    content = [content substringToIndex:100];
-//                }
-//
-//                *error = [NSString stringWithFormat:@"Failed to load DVD theme, debug information: Path: %@, format: %i, contents: %@", [standardDefaults objectForKey:@"KWDVDThemePath"], [[standardDefaults objectForKey:@"KWDVDThemeFormat"] intValue], content];
-//                return 1;
-//            }
-            
-    	    success = [DVDAuthorizer createDVDMenuFiles:path withTheme:theme withFileArray:tableData withSize:[NSNumber numberWithInt:totalSize / 2] withName:[self discName] errorString:&*error];
+            success = [DVDAuthorizer createDVDMenuFiles:path withTheme:theme withFileArray:tableData withSize:[NSNumber numberWithInt:totalSize / 2] withName:[self discName] errorString:&*error];
 	    }
 	    else
 	    {

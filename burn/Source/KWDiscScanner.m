@@ -126,13 +126,7 @@
     [progressScan startAnimation:self];
     [tableData removeAllObjects];
     [tableView reloadData];
-
-    [NSThread detachNewThreadSelector:@selector(scan:) toTarget:self withObject:nil];
-}
-
-//The thread
-- (void)scan:(id)args
-{
+    
     [self scanDisks];
 }
 

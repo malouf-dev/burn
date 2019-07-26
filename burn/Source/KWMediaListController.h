@@ -95,6 +95,7 @@
 - (void)saveImage:(id)sender;
 //Bogusmethod used in subclass
 - (id)myTrackWithBurner:(KWBurner *)burner errorString:(NSString **)error;
+- (id)myTrackWithBurner:(KWBurner *)burner theme:(NSDictionary *)theme errorString:(NSString **)error;
 
 //Save actions
 //Open .burn document

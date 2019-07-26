@@ -17,7 +17,7 @@
     float totalSize;
 }
 
-- (NSInteger)createSVCDImage:(NSString *)path withFiles:(NSArray *)files withLabel:(NSString *)label createVCD:(BOOL)VCD hideExtension:(NSNumber *)hide errorString:(NSString **)error;
+- (NSInteger)createSVCDImage:(NSString *)path withFiles:(NSArray *)files withLabel:(NSString *)label createVCD:(BOOL)VCD hideExtension:(BOOL)hide errorString:(NSString **)error;
 - (void)stopVcdimager;
 
 @end

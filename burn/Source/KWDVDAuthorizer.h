@@ -22,6 +22,8 @@
     NSInteger fileSize;
 }
 
+- (instancetype)initWithTheme:(NSDictionary *)theme;
+
 //Standard DVD-Video
 - (NSInteger)createStandardDVDFolderAtPath:(NSString *)path withFileArray:(NSArray *)fileArray withSize:(NSNumber *)size errorString:(NSString **)error;
 - (void)createStandardDVDXMLAtPath:(NSString *)path withFileArray:(NSArray *)fileArray errorString:(NSString **)error;

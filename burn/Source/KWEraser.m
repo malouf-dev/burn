@@ -188,7 +188,7 @@
     }
     else
     {
-	    [NSApp stopModalWithCode:NSCancelButton];
+	    [NSApp stopModalWithCode:NSModalResponseCancel];
     }
 }
 
@@ -218,12 +218,12 @@
     if ([[self window] isSheet])
     {
         NSWindow *window = [self window];
-	    [[window sheetParent] endSheet:window returnCode:NSModalResponseCancel];
         [window orderOut:self];
+	    [[window sheetParent] endSheet:window returnCode:NSModalResponseOK];
     }
     else
     {
-	    [NSApp stopModalWithCode:NSOKButton];
+	    [NSApp stopModalWithCode:NSModalResponseOK];
     }
 }
 

@@ -26,7 +26,7 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
-- (NSInteger)createSVCDImage:(NSString *)path withFiles:(NSArray *)files withLabel:(NSString *)label createVCD:(BOOL)VCD hideExtension:(NSNumber *)hide errorString:(NSString **)error
+- (NSInteger)createSVCDImage:(NSString *)path withFiles:(NSArray *)files withLabel:(NSString *)label createVCD:(BOOL)VCD hideExtension:(BOOL)hide errorString:(NSString **)error
 {
     NSFileManager *defaultManager = [NSFileManager defaultManager];
     NSString *cueFile = [path stringByAppendingPathExtension:@"cue"];
@@ -99,12 +99,12 @@
     {
         if ([defaultManager fileExistsAtPath:cueFile])
         {
-            [defaultManager setAttributes:@{NSFileExtensionHidden: hide} ofItemAtPath:cueFile error:nil];
+            [defaultManager setAttributes:@{NSFileExtensionHidden: @(hide)} ofItemAtPath:cueFile error:nil];
         }
         
         if ([defaultManager fileExistsAtPath:binFile])
         {
-            [defaultManager setAttributes:@{NSFileExtensionHidden: hide} ofItemAtPath:binFile error:nil];
+            [defaultManager setAttributes:@{NSFileExtensionHidden: @(hide)} ofItemAtPath:binFile error:nil];
         }
 
         string=[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];

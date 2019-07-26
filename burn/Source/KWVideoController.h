@@ -34,7 +34,7 @@
 //Set type temporary to video for burning
 - (void)burn:(id)sender;
 //Create a track for burning
-- (NSInteger)authorizeFolderAtPathIfNeededAtPath:(NSString *)path errorString:(NSString **)error;
+- (NSInteger)authorizeFolderAtPathIfNeededAtPath:(NSString *)path theme:(NSDictionary *)theme errorString:(NSString **)error;
 
 //Other actions
 //Get files from the tableData

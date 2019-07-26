@@ -1586,14 +1586,14 @@ CA
         </customObject>
         <customObject id="542" userLabel="KWDiscCreator" customClass="KWDiscCreator">
             <connections>
-                <outlet property="audioControllerOutlet" destination="793" id="794"/>
-                <outlet property="copyControllerOutlet" destination="541" id="698"/>
-                <outlet property="dataControllerOutlet" destination="540" id="697"/>
+                <outlet property="audioController" destination="793" id="794"/>
+                <outlet property="dataController" destination="540" id="697"/>
+                <outlet property="discCopyController" destination="541" id="698"/>
                 <outlet property="mainTabView" destination="390" id="696"/>
                 <outlet property="mainWindow" destination="388" id="695"/>
                 <outlet property="saveCombineSessions" destination="572" id="614"/>
                 <outlet property="saveImageView" destination="571" id="700"/>
-                <outlet property="videoControllerOutlet" destination="758" id="782"/>
+                <outlet property="videoController" destination="758" id="782"/>
                 <outlet property="windowController" destination="579" id="TPg-qK-xdW"/>
             </connections>
         </customObject>

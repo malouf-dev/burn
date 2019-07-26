@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FE0F83F722E8F3E2003122C8 /* LetsMove.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE0F83F622E8F3E2003122C8 /* LetsMove.framework */; };
+		FE0F83F822E8F454003122C8 /* LetsMove.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = FE0F83F622E8F3E2003122C8 /* LetsMove.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		FE1B8C2E22CD2C290029EA24 /* KWMediaNextButton.m in Sources */ = {isa = PBXBuildFile; fileRef = FE1B8C2D22CD2C290029EA24 /* KWMediaNextButton.m */; };
 		FE1B8C3122CD2C7E0029EA24 /* KWMediaStopButton.m in Sources */ = {isa = PBXBuildFile; fileRef = FE1B8C3022CD2C7E0029EA24 /* KWMediaStopButton.m */; };
 		FE31516122CCB3B400692452 /* Gear with arrow (dark).png in Resources */ = {isa = PBXBuildFile; fileRef = FE31515E22CCB3B400692452 /* Gear with arrow (dark).png */; };
@@ -176,6 +178,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				FE0F83F822E8F454003122C8 /* LetsMove.framework in Copy Frameworks */,
 				FE9EFE6322CB2C40000D97E5 /* MultiTag.framework in Copy Frameworks */,
 				FE9EFE6422CB2C40000D97E5 /* Sparkle.framework in Copy Frameworks */,
 			);
@@ -199,6 +202,7 @@
 		FE0413130E62D415007FD22B /* ru */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ru; path = "ru.lproj/Copy document.icns"; sourceTree = "<group>"; };
 		FE0413140E62D415007FD22B /* ru */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ru; path = "ru.lproj/Theme document.icns"; sourceTree = "<group>"; };
 		FE0F3C5E22E59E5F007856A8 /* KWConstants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = KWConstants.h; path = Source/KWConstants.h; sourceTree = "<group>"; };
+		FE0F83F622E8F3E2003122C8 /* LetsMove.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = LetsMove.framework; path = Frameworks/LetsMove.framework; sourceTree = "<group>"; };
 		FE1396C80F88D82E0056809A /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = ko; path = ko.lproj/Credits.html; sourceTree = "<group>"; };
 		FE1396C90F88D82F0056809A /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		FE1396CA0F88D82F0056809A /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -612,6 +616,7 @@
 			files = (
 				FE6AE64422E4A1A0005DDE39 /* AVKit.framework in Frameworks */,
 				FE9119A922E458F100CF5171 /* CoreMedia.framework in Frameworks */,
+				FE0F83F722E8F3E2003122C8 /* LetsMove.framework in Frameworks */,
 				FEC9BB8322C7B83800A17077 /* AVFoundation.framework in Frameworks */,
 				FE9EFE6122CB2C36000D97E5 /* MultiTag.framework in Frameworks */,
 				FEF8A87612D9D2BF00FE302C /* Cocoa.framework in Frameworks */,
@@ -779,12 +784,12 @@
 			children = (
 				FEE1255B0BAC1339001D474B /* KWApplication.h */,
 				FEE1255A0BAC1339001D474B /* KWApplication.m */,
+				FEE5CDDD0BA583AC00FAD174 /* KWPreferences */,
+				FE195ECA0BE2A5DF001558D4 /* KWInspector */,
 				FEE12CD70BAC5821001D474B /* KWEjecter */,
 				FE0342600BA8050200622112 /* KWDiscInfo */,
 				FE0340060BA7FBD300622112 /* KWRecorderInfo */,
-				FEE5CDDD0BA583AC00FAD174 /* KWPreferences */,
-				FEF9892D0D97B1A100BF78E3 /* KWProgress */,
-				FE195ECA0BE2A5DF001558D4 /* KWInspector */,
+				FEF9892D0D97B1A100BF78E3 /* KWProgressManager */,
 				FEF987720D97A7FD00BF78E3 /* KWBurner */,
 				FEF987730D97A80800BF78E3 /* KWEraser */,
 				FEF98A2C0D97B43D00BF78E3 /* Other */,
@@ -866,6 +871,7 @@
 		FEA1527012DAEC910073FA9B /* Included Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				FE0F83F622E8F3E2003122C8 /* LetsMove.framework */,
 				FE9EFE5F22CB2C36000D97E5 /* MultiTag.framework */,
 				FE9EFE6022CB2C36000D97E5 /* Sparkle.framework */,
 			);
@@ -1112,13 +1118,13 @@
 			name = KWDVDAuthorizer;
 			sourceTree = "<group>";
 		};
-		FEF9892D0D97B1A100BF78E3 /* KWProgress */ = {
+		FEF9892D0D97B1A100BF78E3 /* KWProgressManager */ = {
 			isa = PBXGroup;
 			children = (
 				FEF9892E0D97B1C500BF78E3 /* KWProgressManager.h */,
 				FEF9892F0D97B1C500BF78E3 /* KWProgressManager.m */,
 			);
-			name = KWProgress;
+			name = KWProgressManager;
 			sourceTree = "<group>";
 		};
 		FEF989690D97B2F300BF78E3 /* KWSVCDImager */ = {

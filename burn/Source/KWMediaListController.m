@@ -313,53 +313,56 @@
 //Convert files to path
 - (void)convertFiles:(NSString *)path
 {
-    NSMutableArray *filePaths = [[NSMutableArray alloc] init];
-
-    NSInteger x;
-    for (x=0;x<[incompatibleFiles count];x++)
+    [[[NSOperationQueue alloc] init] addOperationWithBlock:^
     {
-	    [filePaths addObject:[[incompatibleFiles objectAtIndex:x] objectForKey:@"Path"]];
-    }
+        NSMutableArray *filePaths = [[NSMutableArray alloc] init];
 
-    [incompatibleFiles removeAllObjects];
-
-    converter = [[KWConverter alloc] init];
-    
-    NSDictionary *options = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:path, convertExtension, [[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultRegion"], [NSNumber numberWithInt:convertKind], nil]  forKeys:[NSArray arrayWithObjects:@"KWConvertDestination", @"KWConvertExtension", @"KWConvertRegion", @"KWConvertKind", nil]];
-    NSString *errorString;
-    
-    NSInteger result = [converter batchConvert:filePaths withOptions:options errorString:&errorString];
-
-    NSArray *succeededFiles = [NSArray arrayWithArray:[converter succesArray]];
-
-    NSInteger y;
-    for (y=0;y<[succeededFiles count];y++)
-    {
-	    [self addFile:[succeededFiles objectAtIndex:y] isSelfEncoded:YES];
-    }
-
-    if (result == 0)
-    {
-        [[KWProgressManager sharedManager] endSheet];
-    
-	    NSString *finishMessage;
-    
-	    if ([filePaths count] > 1)
-    	    finishMessage = [NSString stringWithFormat:NSLocalizedString(@"Finished converting %ld files", nil),(long)[filePaths count]];
-	    else
-    	    finishMessage = NSLocalizedString(@"Finished converting 1 file", nil);
-	    
-        NSString *firstPath = filePaths[0];
-        NSImage *image = [[NSWorkspace sharedWorkspace] iconForFile:firstPath];
-        [windowController showNotificationWithTitle:NSLocalizedString(@"Finished converting", nil) withMessage:finishMessage withImage:image];
-    }
-    else if (result == 1)
-    {
-        [[KWProgressManager sharedManager] endSheetWithCompletion:^
+        NSInteger x;
+        for (x=0;x<[incompatibleFiles count];x++)
         {
-            [self showConvertFailAlert:errorString];
-        }];
-    }
+            [filePaths addObject:[[incompatibleFiles objectAtIndex:x] objectForKey:@"Path"]];
+        }
+
+        [incompatibleFiles removeAllObjects];
+
+        converter = [[KWConverter alloc] init];
+        
+        NSDictionary *options = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:path, convertExtension, [[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultRegion"], [NSNumber numberWithInt:convertKind], nil]  forKeys:[NSArray arrayWithObjects:@"KWConvertDestination", @"KWConvertExtension", @"KWConvertRegion", @"KWConvertKind", nil]];
+        NSString *errorString;
+        
+        NSInteger result = [converter batchConvert:filePaths withOptions:options errorString:&errorString];
+
+        NSArray *succeededFiles = [NSArray arrayWithArray:[converter succesArray]];
+
+        NSInteger y;
+        for (y=0;y<[succeededFiles count];y++)
+        {
+            [self addFile:[succeededFiles objectAtIndex:y] isSelfEncoded:YES];
+        }
+
+        if (result == 0)
+        {
+            [[KWProgressManager sharedManager] endSheet];
+        
+            NSString *finishMessage;
+        
+            if ([filePaths count] > 1)
+                finishMessage = [NSString stringWithFormat:NSLocalizedString(@"Finished converting %ld files", nil),(long)[filePaths count]];
+            else
+                finishMessage = NSLocalizedString(@"Finished converting 1 file", nil);
+            
+            NSString *firstPath = filePaths[0];
+            NSImage *image = [[NSWorkspace sharedWorkspace] iconForFile:firstPath];
+            [windowController showNotificationWithTitle:NSLocalizedString(@"Finished converting", nil) withMessage:finishMessage withImage:image];
+        }
+        else if (result == 1)
+        {
+            [[KWProgressManager sharedManager] endSheetWithCompletion:^
+            {
+                [self showConvertFailAlert:errorString];
+            }];
+        }
+    }];
 }
 
 //Show an alert if needed (protected or no default files
@@ -461,8 +464,8 @@
                 [progressManager setIconImage:[[NSWorkspace sharedWorkspace] iconForFileType:convertExtension]];
                 [progressManager setMaximumValue:100.0 * [incompatibleFiles count]];
                 [progressManager beginSheetForWindow:mainWindow];
-            
-                [NSThread detachNewThreadSelector:@selector(convertFiles:) toTarget:self withObject:[[sheet URL] path]];
+                
+                [self convertFiles:[[sheet URL] path]];
             }
             else
             {
@@ -515,6 +518,11 @@
 
 //Bogusmethod used in subclass
 - (id)myTrackWithBurner:(KWBurner *)burner errorString:(NSString **)error
+{
+    return [self myTrackWithBurner:burner theme:nil errorString:error];
+}
+
+- (id)myTrackWithBurner:(KWBurner *)burner theme:(NSDictionary *)theme errorString:(NSString **)error
 {
     return nil;
 }

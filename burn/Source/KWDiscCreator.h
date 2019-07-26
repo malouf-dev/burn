@@ -7,60 +7,27 @@
 //
 
 #import <Cocoa/Cocoa.h>
-#import <DiscRecording/DiscRecording.h>
-#import "KWBurner.h"
-#import "KWProgressManager.h"
-#import "KWDRFolder.h"
-#import "KWWindowController.h"
 
+/**
+ *  A class that creates disc images and burned discs
+ */
 @interface KWDiscCreator : NSObject 
-{
-//Main outlets
-    IBOutlet id mainWindow;
-    IBOutlet id mainTabView;
-    
-    //Controllers
-    IBOutlet id dataControllerOutlet;
-    IBOutlet id audioControllerOutlet;
-    IBOutlet id videoControllerOutlet;
-    IBOutlet id copyControllerOutlet;
-    
-    //Sessions outlets
-    IBOutlet id saveCombineSessions;
-    IBOutlet id saveImageView;
-    
-    //Variables
-    KWBurner *burner;
-    BOOL isBurning;
-    NSString *discName;
-    NSString *imagePath;
-    BOOL hiddenExtension;
-    NSMutableArray *extensionHiddenArray;
-    BOOL shouldWait;
-    NSString *errorString;
-}
 
-//Sessions actions
-- (IBAction)saveCombineSessions:(id)sender;
-
-//Image actions
+/**
+ *  Save image
+ *
+ *  @param name The image file name to use
+ *  @param type The image file type
+ *  @param fileSystem The file system to use
+ */
 - (void)saveImageWithName:(NSString *)name withType:(NSInteger)type withFileSystem:(NSString *)fileSystem;
-- (void)createImage:(NSDictionary *)dict;
-- (void)showAuthorFailedOfType:(NSInteger)type;
-- (void)imageFinished:(id)object;
 
-//Burn actions
+/**
+ *  Burn a disc
+ *
+ *  @param name The image file name to use
+ *  @param type The image file type
+ */
 - (void)burnDiscWithName:(NSString *)name withType:(NSInteger)type;
-- (void)burnTracks;
-- (void)burnFinished:(NSNotification*)notif;
-
-//Other actions
-- (NSArray *)getCombinableFormats:(BOOL)needAudioCDCheck;
-- (DRFSObject *)newDRFSObject:(DRFSObject *)object;
-- (BOOL)waitForMediaIfNeeded;
-- (void)stopWaiting;
-
-// TODO: Find a better way to set the notification delegate and send a notification
-@property (nonatomic, weak) IBOutlet KWWindowController *windowController;
 
 @end

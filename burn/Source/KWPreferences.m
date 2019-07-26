@@ -388,7 +388,7 @@ return self;
     {
 	    NSBundle *themeBundle = [NSBundle bundleWithPath:themePath];
 	    NSDictionary *theme = [[NSArray arrayWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]] objectAtIndex:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDVDThemeFormat"] intValue]];
-    
+        
 	    [previewImageView setImage:[[KWDVDAuthorizer alloc] getPreviewImageFromTheme:theme ofType:[previewImagePopup indexOfSelectedItem]]];
     }
 }
