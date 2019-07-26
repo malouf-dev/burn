@@ -73,7 +73,7 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
 	    	    	    	    	    	    	    	    nil];
     
 	    //Root folder of the disc
-	    KWDRFolder *folderObj = [[KWDRFolder alloc] initWithName:NSLocalizedString(@"Untitled", Localized)];
+	    KWDRFolder *folderObj = [[KWDRFolder alloc] initWithName:NSLocalizedString(@"Untitled", nil)];
 	    //Put our rootfolder in de noteData from our outlineview
 	    FSNodeData *nodeData = [[FSFolderNodeData alloc] initWithFSObject:folderObj];
 	    
@@ -409,9 +409,9 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
 	    else
 	    {
     	    if ([self isCompatible])
-	    	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:[(FSNodeData*)[treeData nodeData] fsObject] userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWDataDisc",@"Type",nil]];
+	    	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:[(FSNodeData*)[treeData nodeData] fsObject] userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWDataDisc",@"Type", nil]];
     	    else
-	    	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type",nil]];
+	    	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type", nil]];
 	    }
     
 	    lastSelectedItem = [fileSystemPopup title];
@@ -491,7 +491,7 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
 
 - (IBAction)newVirtualFolder:(id)sender 
 {    
-    KWDRFolder *folderObj = [[KWDRFolder alloc] initWithName:NSLocalizedString(@"Untitled Folder",nil)];
+    KWDRFolder *folderObj = [[KWDRFolder alloc] initWithName:NSLocalizedString(@"Untitled Folder", nil)];
     [folderObj setFolderSize:[NSString localizedStringWithFormat:NSLocalizedString(@"%.0f KB", nil), 0]];
     
     id nodeData = [[FSFolderNodeData alloc] initWithFSObject:folderObj];
@@ -883,7 +883,7 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
     NSSavePanel *sheet = [NSSavePanel savePanel];
     [sheet setAllowedFileTypes:@[@"burn"]];
     [sheet setCanSelectHiddenExtension:YES];
-    [sheet setMessage:NSLocalizedString(@"Choose a location to save the burn file",nil)];
+    [sheet setMessage:NSLocalizedString(@"Choose a location to save the burn file", nil)];
 
     [sheet beginSheetModalForWindow:mainWindow completionHandler:^(NSModalResponse result)
     {
@@ -902,7 +902,7 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
             }
             else
             {
-                [KWCommonMethods standardAlertWithMessageText:NSLocalizedString(@"Failed to save Burn file",nil) withInformationText:errorString withParentWindow:mainWindow];
+                [KWCommonMethods standardAlertWithMessageText:NSLocalizedString(@"Failed to save Burn file", nil) withInformationText:errorString withParentWindow:mainWindow];
             }
         }
     }];
@@ -932,10 +932,10 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
 	    [newProperties setObject:tempDict forKey:@"Disc Properties"];
     }
 
-    NSDictionary *burnFileProperties = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[self diskName],[NSDictionary dictionaryWithDictionary:newProperties],[self getFileArray:[(DRFolder *)[(FSNodeData*)[treeData nodeData] fsObject] children]],nil] forKeys:[NSArray arrayWithObjects:@"Name",@"Properties",@"Files",nil]];
+    NSDictionary *burnFileProperties = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[self diskName],[NSDictionary dictionaryWithDictionary:newProperties],[self getFileArray:[(DRFolder *)[(FSNodeData*)[treeData nodeData] fsObject] children]], nil] forKeys:[NSArray arrayWithObjects:@"Name",@"Properties",@"Files", nil]];
     NSArray *sheetFilesystems = [[NSUserDefaults standardUserDefaults] objectForKey:@"KWAdvancedFilesystems"];
     
-    return [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithInt:0],[fileSystemPopup objectValue],sheetFilesystems,burnFileProperties,nil] forKeys:[NSArray arrayWithObjects:@"KWType",@"KWSubType",@"KWDataTypes",@"KWProperties",nil]];
+    return [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithInt:0],[fileSystemPopup objectValue],sheetFilesystems,burnFileProperties, nil] forKeys:[NSArray arrayWithObjects:@"KWType",@"KWSubType",@"KWDataTypes",@"KWProperties", nil]];
 }
 
 //Make a array with the files
@@ -1077,9 +1077,9 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
     }
     
     if ([self isCompatible])
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:[(FSNodeData*)[treeData nodeData] fsObject] userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWDataDisc",@"Type",nil]];
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:[(FSNodeData*)[treeData nodeData] fsObject] userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWDataDisc",@"Type", nil]];
     else
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type",nil]];
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type", nil]];
 }
 
 - (void)discPropertiesChanged:(NSNotification *)notif
@@ -1157,9 +1157,9 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
     [self updateFileSystem];
 
     if ([self isCompatible])
-	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:[(FSNodeData*)[treeData nodeData] fsObject] userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWDataDisc",@"Type",nil]];
+	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:[(FSNodeData*)[treeData nodeData] fsObject] userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWDataDisc",@"Type", nil]];
     else
-	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type",nil]];
+	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type", nil]];
 }
 
 - (void)outlineViewSelectionDidChange:(NSNotification *)notification
@@ -1170,13 +1170,13 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
     if ([self isCompatible])
     {
 	    if (selectedNode == treeData)
-    	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:[(FSNodeData*)[treeData nodeData] fsObject] userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWDataDisc",@"Type",nil]];
+    	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:[(FSNodeData*)[treeData nodeData] fsObject] userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWDataDisc",@"Type", nil]];
 	    else
-    	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:[self selectedDRFSObjects] userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWData" ,@"Type",nil]];
+    	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:[self selectedDRFSObjects] userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWData" ,@"Type", nil]];
     }
     else
     {
-	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type",nil]];
+	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type", nil]];
     }
 }
 

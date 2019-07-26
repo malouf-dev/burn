@@ -456,7 +456,7 @@
     NSMutableArray *options = [NSMutableArray arrayWithObjects:@"-V", discName, @"-f", nil];
     
     if (type == 1)
-	    [options addObjectsFromArray:[NSArray arrayWithObjects:@"-hfs", @"--osx-hfs", @"-r", @"-joliet", @"-input-hfs-charset", [[NSBundle mainBundle] pathForResource:@"iso8859-1" ofType:@""],nil]];
+	    [options addObjectsFromArray:[NSArray arrayWithObjects:@"-hfs", @"--osx-hfs", @"-r", @"-joliet", @"-input-hfs-charset", [[NSBundle mainBundle] pathForResource:@"iso8859-1" ofType:@""], nil]];
     else if (type == 2)
 	    [options addObject:@"-udf"];
     else if (type == 3)
@@ -583,7 +583,7 @@
     NSMutableArray *options = [NSMutableArray arrayWithObjects:@"-print-size", @"-V", discName, @"-f", nil];
     
     if (type == 1)
-	    [options addObjectsFromArray:[NSArray arrayWithObjects:@"-hfs", @"--osx-hfs", @"-r", @"-joliet", @"-input-hfs-charset", [[NSBundle mainBundle] pathForResource:@"iso8859-1" ofType:@""],nil]];
+	    [options addObjectsFromArray:[NSArray arrayWithObjects:@"-hfs", @"--osx-hfs", @"-r", @"-joliet", @"-input-hfs-charset", [[NSBundle mainBundle] pathForResource:@"iso8859-1" ofType:@""], nil]];
     else if (type == 2)
 	    [options addObject:@"-udf"];
     else if (type == 3)

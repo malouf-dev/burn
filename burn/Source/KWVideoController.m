@@ -31,10 +31,10 @@
 	    	    	    	    	    	    	    	    nil];
 
     //Here are our tableviews data stored
-    VCDTableData = [[NSMutableArray alloc] init];
-    SVCDTableData = [[NSMutableArray alloc] init];
-    DVDTableData = [[NSMutableArray alloc] init];
-    DIVXTableData = [[NSMutableArray alloc] init];
+    vcdTableData = [[NSMutableArray alloc] init];
+    svcdTableData = [[NSMutableArray alloc] init];
+    dvdTableData = [[NSMutableArray alloc] init];
+    divxTableData = [[NSMutableArray alloc] init];
     
     //Setup supported filetypes (QuickTime and ffmpeg)
     allowedFileTypes = [KWCommonMethods mediaTypes];
@@ -137,18 +137,18 @@
                 [temporaryFiles addObject:outputFile];
                 converter = [[KWConverter alloc] init];
                 KWProgressManager *progressManager = [KWProgressManager sharedManager];
-                [progressManager setStatus:[NSLocalizedString(@"Remuxing: ",nil) stringByAppendingString:[defaultManager displayNameAtPath:outputFile]]];
+                [progressManager setStatus:[NSLocalizedString(@"Remuxing: ", nil) stringByAppendingString:[defaultManager displayNameAtPath:outputFile]]];
 
                 if ([converter remuxMPEG2File:path outPath:outputFile] == YES)
                     filePath = outputFile;
                 else
                     filePath = @"";
                 
-                [progressManager setStatus:NSLocalizedString(@"Scanning for files and folders",nil)];
+                [progressManager setStatus:NSLocalizedString(@"Scanning for files and folders", nil)];
     	    }
     	    
     	    //If we have seperate m2v and mp3/ac2 files mux them, if set in the preferences
-    	    if (([[path pathExtension] isEqualTo:@"m2v"] || [fileType isEqualTo:@"'MPG2'"]) && [[tableViewPopup title] isEqualTo:NSLocalizedString(@"DVD-Video",nil)] && [standardDefaults boolForKey:@"KWMuxSeperateStreams"] == YES)
+    	    if (([[path pathExtension] isEqualTo:@"m2v"] || [fileType isEqualTo:@"'MPG2'"]) && [[tableViewPopup title] isEqualTo:NSLocalizedString(@"DVD-Video", nil)] && [standardDefaults boolForKey:@"KWMuxSeperateStreams"] == YES)
     	    {
                 NSString *fileName = [[[path lastPathComponent] stringByDeletingPathExtension] stringByAppendingPathExtension:@"mpg"];
                 NSString *outputFile = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
@@ -160,14 +160,14 @@
                 if ([converter canCombineStreams:path])
                 {
                     KWProgressManager *progressManager = [KWProgressManager sharedManager];
-                    [progressManager setStatus:[NSLocalizedString(@"Creating: ",nil) stringByAppendingString:[[[defaultManager displayNameAtPath:path] stringByDeletingPathExtension] stringByAppendingPathExtension:@"mpg"]]];
+                    [progressManager setStatus:[NSLocalizedString(@"Creating: ", nil) stringByAppendingString:[[[defaultManager displayNameAtPath:path] stringByDeletingPathExtension] stringByAppendingPathExtension:@"mpg"]]];
 
                     if ([converter combineStreams:path atOutputPath:outputFile] == YES)
                         filePath = [[path stringByDeletingPathExtension] stringByAppendingPathExtension:@"mpg"];
                     else
                         filePath = @"";
             
-                    [progressManager setStatus:NSLocalizedString(@"Scanning for files and folders",nil)];
+                    [progressManager setStatus:NSLocalizedString(@"Scanning for files and folders", nil)];
                 }
     	    }
 	    
@@ -268,7 +268,7 @@
 	    {
             KWProgressManager *progressManager = [KWProgressManager sharedManager];
             [progressManager setMaximumValue:0.0];
-            [progressManager setStatus:NSLocalizedString(@"Preparing...", Localized)];
+            [progressManager setStatus:NSLocalizedString(@"Preparing...", nil)];
     	    
     	    return [[KWTrackProducer alloc] getTrackForFolder:outputFolder ofType:3 withDiscName:discName];
 	    }
@@ -332,18 +332,18 @@
      
         KWProgressManager *progressManager = [KWProgressManager sharedManager];
         [progressManager setMaximumValue:totalSize];
-        [progressManager setTask:NSLocalizedString(@"Authoring DVD...",nil)];
-        [progressManager setStatus:NSLocalizedString(@"Processing: ",nil)];
+        [progressManager setTask:NSLocalizedString(@"Authoring DVD...", nil)];
+        [progressManager setStatus:NSLocalizedString(@"Processing: ", nil)];
     
-	    DVDAuthorizer = [[KWDVDAuthorizer alloc] initWithTheme:theme];
+	    dvdAuthorizer = [[KWDVDAuthorizer alloc] init];
 	    NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
 	    if ([standardDefaults boolForKey:@"KWUseTheme"] == YES)
 	    {
-            success = [DVDAuthorizer createDVDMenuFiles:path withTheme:theme withFileArray:tableData withSize:[NSNumber numberWithInt:totalSize / 2] withName:[self discName] errorString:&*error];
+            success = [dvdAuthorizer createDVDMenuFiles:path withTheme:theme withFileArray:tableData withMaxProgressSize:totalSize / 2 withName:[self discName] errorString:&*error];
 	    }
 	    else
 	    {
-    	    success = [DVDAuthorizer createStandardDVDFolderAtPath:path withFileArray:tableData withSize:[NSNumber numberWithInt:totalSize / 2] errorString:&*error];
+    	    success = [dvdAuthorizer createStandardDVDFolderAtPath:path withFileArray:tableData withMaxProgressSize:totalSize / 2 errorString:&*error];
 	    }
     }
 
@@ -364,11 +364,11 @@
     if (selectedTypeIndex == 2 && [tableView selectedRow] > -1)
     {
 	    if (![[[[tableData objectAtIndex:0] objectForKey:@"Name"] lowercaseString] isEqualTo:@"video_ts"])
-	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWDVD",@"Type",nil]];
+	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWDVD",@"Type", nil]];
     }
     else
     {
-	    [defaultCenter postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type",nil]];
+	    [defaultCenter postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type", nil]];
     }
 }
 
@@ -385,21 +385,21 @@
 
     if (selrow == 0)
     {
-	    tableData = VCDTableData;
+	    tableData = vcdTableData;
 	    currentType = 4;
 	    currentFileSystem = @"-vcd";
 	    convertKind = 1;
     }
     else if (selrow == 1)
     {
-	    tableData = SVCDTableData;
+	    tableData = svcdTableData;
 	    currentType = 4;
 	    currentFileSystem = @"-svcd";
 	    convertKind = 2;
     }
     else if (selrow == 2)
     {
-	    tableData = DVDTableData;
+	    tableData = dvdTableData;
 	    isDVD = YES;
 	    convertKind = 3;
 	    optionsPopup = dvdOptionsPopup;
@@ -407,7 +407,7 @@
     }
     else if (selrow == 3)
     {
-	    tableData = DIVXTableData;
+	    tableData = divxTableData;
 	    convertExtension = @"avi";
 	    useRegion = NO;
 	    canBeReorderd = NO;
@@ -477,7 +477,7 @@
 
 - (void)volumeLabelSelected:(NSNotification *)notif
 {
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type",nil]];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type", nil]];
 }
 
 - (float)totalSVCDSize

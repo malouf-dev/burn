@@ -126,7 +126,7 @@
 //Encode the file
 - (NSInteger)encodeFileAtPath:(NSString *)path
 {
-    NSString *statusString = [NSLocalizedString(@"Encoding: ", Localized) stringByAppendingString:[[NSFileManager defaultManager] displayNameAtPath:path]];
+    NSString *statusString = [NSLocalizedString(@"Encoding: ", nil) stringByAppendingString:[[NSFileManager defaultManager] displayNameAtPath:path]];
     [[KWProgressManager sharedManager] setStatus:statusString];
     
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -266,7 +266,7 @@
 
     if (convertKind == 1 || convertKind == 2)
     {
-	    [args addObjectsFromArray:[NSArray arrayWithObjects:@"-target",ffmpegFormat,@"-ac",@"2",@"-aspect",aspect,nil]];
+	    [args addObjectsFromArray:[NSArray arrayWithObjects:@"-target",ffmpegFormat,@"-ac",@"2",@"-aspect",aspect, nil]];
     }
     else if (convertKind == 4)
     {
@@ -322,7 +322,7 @@
     }
     else if (convertKind == 3)
     {
-	    [args addObjectsFromArray:[NSArray arrayWithObjects:@"-target",ffmpegFormat,@"-ac",@"2", @"-aspect",aspect,@"-acodec",nil]];
+	    [args addObjectsFromArray:[NSArray arrayWithObjects:@"-target",ffmpegFormat,@"-ac",@"2", @"-aspect",aspect,@"-acodec", nil]];
 	    
 	    if (copyAudio == NO)
 	    {
@@ -528,7 +528,7 @@
 	    else if (audioWorks == NO)
     	    [arguments addObject:@"-an"];
 	    	    
-	    [arguments addObjectsFromArray:[NSArray arrayWithObjects:@"-ac",@"2",@"-r",@"25",@"-y", tempFile,nil]];
+	    [arguments addObjectsFromArray:[NSArray arrayWithObjects:@"-ac",@"2",@"-r",@"25",@"-y", tempFile, nil]];
 	    
 	    NSString *string;
 	    [KWCommonMethods launchNSTaskAtPath:[KWCommonMethods ffmpegPath] withArguments:arguments outputError:YES outputString:YES output:&string];
@@ -1012,7 +1012,7 @@
 - (BOOL)remuxMPEG2File:(NSString *)path outPath:(NSString *)outFile
 {
     status = 2;
-    NSArray *arguments = [NSArray arrayWithObjects:@"-threads",[[NSNumber numberWithInt:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWEncodingThreads"] intValue]] stringValue],@"-i",path,@"-y",@"-acodec",@"copy",@"-vcodec",@"copy",@"-target",@"dvd",outFile,nil];
+    NSArray *arguments = [NSArray arrayWithObjects:@"-threads",[[NSNumber numberWithInt:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWEncodingThreads"] intValue]] stringValue],@"-i",path,@"-y",@"-acodec",@"copy",@"-vcodec",@"copy",@"-target",@"dvd",outFile, nil];
     //Not used yet
     NSString *errorsString;
     BOOL result = [KWCommonMethods launchNSTaskAtPath:[KWCommonMethods ffmpegPath] withArguments:arguments outputError:YES outputString:YES output:&errorsString];
@@ -1054,7 +1054,7 @@
     if (audioFile)
     {
 	    status = 2;
-	    NSArray *arguments = [NSArray arrayWithObjects:@"-threads",[[NSNumber numberWithInt:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWEncodingThreads"] intValue]] stringValue],@"-i",path,@"-threads",[[NSNumber numberWithInt:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWEncodingThreads"] intValue]] stringValue],@"-i",audioFile,@"-y",@"-acodec",@"copy",@"-vcodec",@"copy",@"-target",@"dvd",outputPath,nil];
+	    NSArray *arguments = [NSArray arrayWithObjects:@"-threads",[[NSNumber numberWithInt:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWEncodingThreads"] intValue]] stringValue],@"-i",path,@"-threads",[[NSNumber numberWithInt:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWEncodingThreads"] intValue]] stringValue],@"-i",audioFile,@"-y",@"-acodec",@"copy",@"-vcodec",@"copy",@"-target",@"dvd",outputPath, nil];
 	    //Not used yet
 	    NSString *errorsString;
 	    BOOL result = [KWCommonMethods launchNSTaskAtPath:[KWCommonMethods ffmpegPath] withArguments:arguments outputError:YES outputString:YES output:&errorsString];
@@ -1097,7 +1097,7 @@
 - (NSImage *)getImageAtPath:(NSString *)path atTime:(NSInteger)time isWideScreen:(BOOL)wide
 {
     // TODO: Change after ffmpeg is updated, used version produces grey images
-    //NSArray *arguments = [NSArray arrayWithObjects:@"-ss",[[NSNumber numberWithInt:0] stringValue],@"-i",path,@"-vframes",@"1" ,@"-f",@"image2",@"-",nil];
+    //NSArray *arguments = [NSArray arrayWithObjects:@"-ss",[[NSNumber numberWithInt:0] stringValue],@"-i",path,@"-vframes",@"1" ,@"-f",@"image2",@"-", nil];
     NSArray *arguments = @[@"-i", path, @"-ss", [[NSNumber numberWithInt:time] stringValue], @"-vframes", @"1", @"-f", @"image2", @"-"];
     NSData *data;
     NSImage *image;

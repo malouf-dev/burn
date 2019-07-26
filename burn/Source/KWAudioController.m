@@ -112,7 +112,7 @@
     [self tableViewPopup:self];
 
     //Set the Inspector window to empty
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type",nil]];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type", nil]];
 }
 
 //////////////////
@@ -385,9 +385,11 @@
         
             id mcn = [cdtext objectForKey:DRCDTextMCNISRCKey ofTrack:0];
             if (mcn)
+            {
                 [burnProperties setObject:mcn forKey:DRMediaCatalogNumberKey];
+            }
         
-            [burner addBurnProperties:burnProperties];
+            [burner setExtraBurnProperties:burnProperties];
         }
 	    
 	    return tracks;
@@ -412,16 +414,16 @@
     if (selrow == 0)
     {
 	    if ([tableView selectedRow] == -1)
-    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioDisc",@"Type",nil]];
+    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioDisc",@"Type", nil]];
 	    else
-    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudio",@"Type",nil]];
+    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudio",@"Type", nil]];
     }
     else if (selrow == 1)
     {
 	    if ([tableView selectedRow] == -1)
-    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type",nil]];
+    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type", nil]];
 	    else
-    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioMP3",@"Type",nil]];
+    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioMP3",@"Type", nil]];
     }
 }
 
@@ -463,7 +465,7 @@
     [self stop:self];
 
     [self getTableView];
-    [[[tableView tableColumnWithIdentifier:@"Size"] headerCell] setStringValue:NSLocalizedString(@"Size",nil)];
+    [[[tableView tableColumnWithIdentifier:@"Size"] headerCell] setStringValue:NSLocalizedString(@"Size", nil)];
 
     //Set the icon, tabview and textfield
     if (selectedTypeIndex == 0)
@@ -473,7 +475,7 @@
 	    optionsPopup = audioOptionsPopup;
 	    optionsMappings = audioOptionsMappings;
     
-	    [[[tableView tableColumnWithIdentifier:@"Size"] headerCell] setStringValue:NSLocalizedString(@"Time",nil)];
+	    [[[tableView tableColumnWithIdentifier:@"Size"] headerCell] setStringValue:NSLocalizedString(@"Time", nil)];
 	    
 	    [accessOptions setEnabled:YES];
     }
@@ -509,9 +511,9 @@
 	    NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
     
 	    if (selectedTypeIndex == 0)
-    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioDisc",@"Type",nil]];
+    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioDisc",@"Type", nil]];
 	    else if (selectedTypeIndex == 1)
-    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioMP3Disc",@"Type",nil]];
+    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioMP3Disc",@"Type", nil]];
     }
 }
 
@@ -954,9 +956,9 @@
     NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
 
     if ([tableViewPopup indexOfSelectedItem] == 0)
-	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioDisc",@"Type",nil]];
+	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioDisc",@"Type", nil]];
     else
-	    [defaultCenter postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type",nil]];
+	    [defaultCenter postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type", nil]];
 }
 
 - (BOOL)respondsToSelector:(SEL)aSelector

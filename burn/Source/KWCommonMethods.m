@@ -699,7 +699,7 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
     NSFileHandle *handle;
     NSString *string;
     [du setLaunchPath:@"/usr/bin/du"];
-    [du setArguments:[NSArray arrayWithObjects:@"-s",path,nil]];
+    [du setArguments:[NSArray arrayWithObjects:@"-s",path, nil]];
     [du setStandardOutput:pipe];
     [du setStandardError:[NSFileHandle fileHandleWithNullDevice]];
     handle=[pipe fileHandleForReading];
@@ -883,7 +883,7 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
 
 + (NSImage *)getImageForName:(NSString *)name
 {
-    NSDictionary *customImageDictionary = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSImage imageNamed:@"General"], [NSImage imageNamed:@"Burn"], [[NSWorkspace sharedWorkspace] iconForFileType:NSFileTypeForHFSTypeCode(kGenericCDROMIcon)], [NSImage imageNamed:@"Sound"], [[NSWorkspace sharedWorkspace] iconForFileType:@".mpg"], [NSImage imageNamed:@"Advanced"], nil] forKeys:[NSArray arrayWithObjects:@"General", @"Burner",@"Data",@"Audio",@"Video",@"Advanced",nil]];
+    NSDictionary *customImageDictionary = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSImage imageNamed:@"General"], [NSImage imageNamed:@"Burn"], [[NSWorkspace sharedWorkspace] iconForFileType:NSFileTypeForHFSTypeCode(kGenericCDROMIcon)], [NSImage imageNamed:@"Sound"], [[NSWorkspace sharedWorkspace] iconForFileType:@".mpg"], [NSImage imageNamed:@"Advanced"], nil] forKeys:[NSArray arrayWithObjects:@"General", @"Burner",@"Data",@"Audio",@"Video",@"Advanced", nil]];
 
     return [customImageDictionary objectForKey:name];
 }
@@ -1160,7 +1160,7 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
 + (void)standardAlertWithMessageText:(NSString *)message withInformationText:(NSString *)information withParentWindow:(NSWindow *)parent
 {
     NSAlert *alert = [[NSAlert alloc] init];
-    [alert addButtonWithTitle:NSLocalizedString(@"OK", Localized)];
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
     [alert setMessageText:message];
     [alert setInformativeText:information];
     

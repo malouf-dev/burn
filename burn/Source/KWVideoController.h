@@ -17,11 +17,11 @@
     IBOutlet id divxOptionsPopup;
     
     //Variables
-    NSMutableArray *VCDTableData;
-    NSMutableArray *SVCDTableData;
-    NSMutableArray *DVDTableData;
-    NSMutableArray *DIVXTableData;
-    KWDVDAuthorizer *DVDAuthorizer;
+    NSMutableArray *vcdTableData;
+    NSMutableArray *svcdTableData;
+    NSMutableArray *dvdTableData;
+    NSMutableArray *divxTableData;
+    KWDVDAuthorizer *dvdAuthorizer;
     
     NSArray *dvdOptionsMappings;
     NSArray *divxOptionsMappings;

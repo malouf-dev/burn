@@ -21,6 +21,14 @@
 #import "KWDRFolder.h"
 #import "KWWindowController.h"
 
+@interface KWBurner(Private)
+
+- (IBAction)combineSessions:(id)sender;
+- (void)prepareTypes;
+- (void)setCombineBox:(id)box;
+
+@end
+
 @interface KWDiscCreator()
 
 @property (nonatomic, weak) IBOutlet NSWindow *mainWindow;
@@ -44,11 +52,11 @@
 @property (nonatomic, copy) NSString *name;
 @property (nonatomic, copy) NSString *fileSystem;
 @property (nonatomic, strong) NSDictionary *theme;
-@property (nonatomic, strong) NSString *discName;
-@property (nonatomic, strong) NSString *imagePath;
+@property (nonatomic, copy) NSString *discName;
+@property (nonatomic, copy) NSString *imagePath;
 @property (nonatomic, getter = shouldHideExtension) BOOL hiddenExtension;
 @property (nonatomic, strong) NSMutableArray *extensionHiddenArray;
-@property (nonatomic, strong) NSString *errorString;
+@property (nonatomic, copy) NSString *errorString;
 @property (nonatomic) BOOL shouldWait;
 
 @end
@@ -82,17 +90,24 @@
     }
 
     NSBundle *themeBundle = [NSBundle bundleWithPath:themePath];
-    NSDictionary *theme = [[NSArray arrayWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]] objectAtIndex:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDVDThemeFormat"] intValue]];
+    NSString *themePropertyListFile = [themeBundle pathForResource:@"Theme" ofType:@"plist"];
+    NSArray *themeArray = [NSArray arrayWithContentsOfFile:themePropertyListFile];
+    NSInteger formatIndex = [[standardDefaults objectForKey:@"KWDVDThemeFormat"] intValue];
+    NSDictionary *theme = themeArray[formatIndex];
     [self setTheme:theme];
     
     if ([fileSystem isEqualTo:@"-vcd"] || [fileSystem isEqualTo:@"-svcd"] || [fileSystem isEqualTo:@"-audio-cd"])
+    {
 	    extension = @"cue";
+    }
     else
+    {
 	    extension = @"iso";
+    }
 
     //Setup save sheet
     NSSavePanel *sheet = [NSSavePanel savePanel];
-    [sheet setMessage:NSLocalizedString(@"Choose a location to save the image file",nil)];
+    [sheet setMessage:NSLocalizedString(@"Choose a location to save the image file", nil)];
     [sheet setAllowedFileTypes:@[extension]];
     [sheet setCanSelectHiddenExtension:YES];
     [sheet setNameFieldStringValue:name];
@@ -109,7 +124,7 @@
 	    //Setup combining options
 	    NSArray *types = [self getCombinableFormats:YES];
 
-	    if ([types count] > 1 && [types containsObject:[NSNumber numberWithInt:type]])
+	    if ([types count] > 1 && [types containsObject:@(type)])
 	    {
     	    [burner setCombinableTypes:types];
     	    [burner prepareTypes];
@@ -119,11 +134,11 @@
      
         [self setBurner:burner];
     
-	    info = [[NSArray alloc] initWithObjects:name, nil];
+	    info = @[name];
     }
     else
     {
-	    info = [[NSArray alloc] initWithObjects:name, fileSystem, nil];
+	    info = @[name, fileSystem];
     }
     
     //Show save sheet
@@ -132,26 +147,25 @@
     {
          if (result == NSModalResponseOK)
         {
-            NSString *imagePath = [[NSString alloc] initWithString:[[sheet URL] path]];
+            NSURL *imageURL = [sheet URL];
             
             KWProgressManager *progressManager = [KWProgressManager sharedManager];
-            [progressManager setTask:NSLocalizedString(@"Creating image file",nil)];
-            [progressManager setStatus:NSLocalizedString(@"Preparing...",nil)];
-            [progressManager setIconImage:[[NSWorkspace sharedWorkspace] iconForFileType:[imagePath pathExtension]]];
+            [progressManager setTask:NSLocalizedString(@"Creating image file", nil)];
+            [progressManager setStatus:NSLocalizedString(@"Preparing...", nil)];
+            [progressManager setIconImage:[[NSWorkspace sharedWorkspace] iconForFileType:[imageURL pathExtension]]];
             [progressManager setMaximumValue:0.0];
             [progressManager beginSheetForWindow:mainWindow];
-            [self setImagePath:imagePath];
+            [self setImagePath:[imageURL path]];
             
             if ([info count] == 1)
             {
-                [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(imageFinished) name:@"KWBurnFinished" object:[self burner]]
-                ;
+                [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(imageFinished:) name:@"KWBurnFinished" object:[self burner]];
                 [self setHiddenExtension:[sheet isExtensionHidden]];
                 [self burnTracks:[self theme]];
             }
             else
             {
-               [self createImageAtPath:imagePath hideExtension:[sheet isExtensionHidden]];
+               [self createImageAtPath:[imageURL path] hideExtension:[sheet isExtensionHidden]];
             }
         }
     }];
@@ -163,7 +177,7 @@
     {
         NSInteger success = 0;
 
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(imageFinished) name:@"KWBurnFinished" object:[self burner]];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(imageFinished:) name:@"KWBurnFinished" object:[self burner]];
         
         KWSVCDImager *SVCDImager = [[KWSVCDImager alloc] init];
         NSString *anErrorString;
@@ -190,17 +204,17 @@
     [[KWProgressManager sharedManager] endSheetWithCompletion:^
     {
         KWAlert *alert = [[KWAlert alloc] init];
-        [alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
+        [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
         
         if (type == 0)
-            [alert setMessageText:NSLocalizedString(@"Failed to create temporary folder",nil)];
+            [alert setMessageText:NSLocalizedString(@"Failed to create temporary folder", nil)];
         else
-            [alert setMessageText:NSLocalizedString(@"Authoring failed",nil)];
+            [alert setMessageText:NSLocalizedString(@"Authoring failed", nil)];
         
         if (type < 3)
-            [alert setInformativeText:NSLocalizedString(@"There was a problem authoring the DVD",nil)];
+            [alert setInformativeText:NSLocalizedString(@"There was a problem authoring the DVD", nil)];
         else
-            [alert setInformativeText:NSLocalizedString(@"There was a problem copying the disc",nil)];
+            [alert setInformativeText:NSLocalizedString(@"There was a problem copying the disc", nil)];
         
         if ([[self errorString] rangeOfString:@"KWConsole:"].length > 0)
             [alert setDetails:[self errorString]];
@@ -246,7 +260,9 @@
     {
         NSString *imagePath = [self imagePath];
 	    if ([[imagePath pathExtension] isEqualTo:@"cue"] && burner)
+        {
     	    [KWCommonMethods writeString:[[self audioController] cueStringWithBinFile:[[[imagePath lastPathComponent] stringByDeletingPathExtension] stringByAppendingPathExtension:@"bin"]] toFile:imagePath errorString:nil];
+        }
         
         // TODO: why???
         [[NSOperationQueue mainQueue] addOperationWithBlock:^
@@ -259,7 +275,9 @@
                 NSDictionary *infoDict = [copyControllerOutlet isoInfo];
                 
                 if (infoDict)
+                {
                     [infoDict writeToFile:[[imagePath stringByDeletingPathExtension] stringByAppendingPathExtension:@"isoInfo"] atomically:YES];
+                }
             }
         }];
 	    
@@ -281,21 +299,29 @@
         [[KWProgressManager sharedManager] endSheetWithCompletion:^
         {
             KWAlert *alert = [[KWAlert alloc] init];
-            [alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
-            [alert setMessageText:NSLocalizedString(@"Image failed",nil)];
+            [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
+            [alert setMessageText:NSLocalizedString(@"Image failed", nil)];
             [alert setAlertStyle:NSWarningAlertStyle];
             
             // TODO: why can be empty
             if (burner && [object userInfo][@"Error"])
+            {
                 [alert setInformativeText:[[object userInfo] objectForKey:@"Error"]];
+            }
             else
-                [alert setInformativeText:NSLocalizedString(@"There was a problem creating the image",nil)];
+            {
+                [alert setInformativeText:NSLocalizedString(@"There was a problem creating the image", nil)];
+            }
         
             NSString *errorString = [self errorString];
             if ([errorString rangeOfString:@"KWConsole:"].length > 0)
+            {
                 [alert setDetails:errorString];
+            }
             else
-                [alert setInformativeText:errorString == nil ? NSLocalizedString(@"There was a problem creating the image",nil) : errorString];
+            {
+                [alert setInformativeText:errorString == nil ? NSLocalizedString(@"There was a problem creating the image", nil) : errorString];
+            }
             
             [alert beginSheetModalForWindow:[self mainWindow] modalDelegate:self didEndSelector:nil contextInfo:nil];
         }];
@@ -303,7 +329,9 @@
     else if ([returnCode isEqualTo:@"KWCanceled"])
     {
 	    if (burner)
+        {
     	    [KWCommonMethods removeItemAtPath:[self imagePath]];
+        }
     }
     
     if (burner)
@@ -351,7 +379,7 @@
 
     //Check if the user wants to copy the disc in the burning device
     KWCopyController *copyControllerOutlet = [self discCopyController];
-    [burner setIgnoreMode:(type == 3 && [[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaInfoKey] && [[copyControllerOutlet myDisc] isEqualTo:[@"/dev/" stringByAppendingString:[[[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaInfoKey] objectForKey:DRDeviceMediaBSDNameKey]]])];
+    [burner setIgnoreModeEnabled:(type == 3 && [[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaInfoKey] && [[copyControllerOutlet myDisc] isEqualTo:[@"/dev/" stringByAppendingString:[[[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaInfoKey] objectForKey:DRDeviceMediaBSDNameKey]]])];
 
     [burner setType:type];
     [burner setCombinableTypes:[self getCombinableFormats:NO]];
@@ -363,14 +391,18 @@
             if ((([copyControllerOutlet isCueFile] || ([copyControllerOutlet isAudioCD] && [[[mainTabView selectedTabViewItem] identifier] isEqualTo:@"Copy"])) || ([[self audioController] isAudioCD] && [[[mainTabView selectedTabViewItem] identifier] isEqualTo:@"Audio"])) && ![burner isCD])
             {
                 NSAlert *alert = [[NSAlert alloc] init];
-                [alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
-                [alert setMessageText:NSLocalizedString(@"No CD",nil)];
+                [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
+                [alert setMessageText:NSLocalizedString(@"No CD", nil)];
                 [alert setAlertStyle:NSWarningAlertStyle];
                 
                 if ([copyControllerOutlet isCueFile])
-                    [alert setInformativeText:NSLocalizedString(@"A cue/bin file needs to be burned on a CD",nil)];
+                {
+                    [alert setInformativeText:NSLocalizedString(@"A cue/bin file needs to be burned on a CD", nil)];
+                }
                 else
-                    [alert setInformativeText:NSLocalizedString(@"To burn a Audio-CD the media should be a CD",nil)];
+                {
+                    [alert setInformativeText:NSLocalizedString(@"To burn a Audio-CD the media should be a CD", nil)];
+                }
             
                 [alert beginSheetModalForWindow:mainWindow modalDelegate:self didEndSelector:nil contextInfo:nil];
             }
@@ -379,7 +411,7 @@
                 KWProgressManager *progressManager = [KWProgressManager sharedManager];
                 [progressManager setIconImage:[NSImage imageNamed:@"Burn"]];
                 [progressManager setTask:[NSString stringWithFormat:NSLocalizedString(@"Burning '%@'", nil), [self name]]];
-                [progressManager setStatus:NSLocalizedString(@"Preparing...",nil)];
+                [progressManager setStatus:NSLocalizedString(@"Preparing...", nil)];
                 [progressManager setMaximumValue:0.0];
                 [progressManager beginSheetForWindow:mainWindow];
                 
@@ -405,7 +437,7 @@
         [rootFolder setExplicitFilesystemMask:0];
     
         KWBurner *burner = [self burner];
-        if ([[burner types] containsObject:[NSNumber numberWithInt:1]])
+        if ([[burner types] containsObject:@(1)])
         {
             NSString *anErrorString;
             id audioTracks = [[self audioController] myTrackWithBurner:burner errorString:&anErrorString];
@@ -420,10 +452,9 @@
                     
                     if ([audioTracks isVirtual])
                     {
-                        NSInteger x;
-                        for (x=0;x<[[audioTracks children] count];x++)
+                        for (DRFSObject *child in [audioTracks children])
                         {
-                            [rootFolder addChild:[self newDRFSObject:(DRFSObject *)[[audioTracks children] objectAtIndex:x]]];
+                            [rootFolder addChild:[self newDRFSObject:child]];
                         }
                     }
                     else
@@ -446,7 +477,7 @@
             }
         }
         
-        if ([[burner types] containsObject:[NSNumber numberWithInt:2]] && result == 0)
+        if ([[burner types] containsObject:@(2)] && result == 0)
         {
             NSString *anErrorString;
             id videoTracks = [[self videoController] myTrackWithBurner:burner theme:[self theme] errorString:&anErrorString];
@@ -468,10 +499,9 @@
                     
                     if ([videoTracks isVirtual])
                     {
-                        NSInteger x;
-                        for (x=0;x<[[videoTracks children] count];x++)
+                        for (DRFSObject *child in [videoTracks children])
                         {
-                            [rootFolder addChild:[self newDRFSObject:(DRFSObject *)[[videoTracks children] objectAtIndex:x]]];
+                            [rootFolder addChild:[self newDRFSObject:child]];
                         }
                     }
                     else
@@ -494,7 +524,7 @@
             }
         }
 
-        if ([[burner types] containsObject:[NSNumber numberWithInt:0]] && result == 0)
+        if ([[burner types] containsObject:@(0)] && result == 0)
         {
             NSString *anErrorString;
             id dataTracks = [[self dataController]
@@ -521,13 +551,14 @@
                         [self setExtensionHiddenArray:[[NSMutableArray alloc] init]];
                     }
                 
-                    NSInteger x;
-                    for (x=0;x<[[dataTracks children] count];x++)
+                    for (DRFSObject *child in [dataTracks children])
                     {
-                        if ([[(DRFSObject *)[[dataTracks children] objectAtIndex:x] baseName] isEqualTo:@".VolumeIcon.icns"])
+                        if ([[child baseName] isEqualTo:@".VolumeIcon.icns"])
+                        {
                             [rootFolder setProperty:[NSNumber numberWithUnsignedShort:1024] forKey:DRMacFinderFlags inFilesystem:DRHFSPlus];
+                        }
                     
-                        [rootFolder addChild:[self newDRFSObject:(DRFSObject *)[[dataTracks children] objectAtIndex:x]]];
+                        [rootFolder addChild:[self newDRFSObject:child]];
                     }
                 }
                 else
@@ -549,18 +580,24 @@
             }
         }
         
-        if ([[burner types] containsObject:[NSNumber numberWithInt:3]] && result == 0)
+        if ([[burner types] containsObject:@(3)] && result == 0)
         {
             NSString *anErrorString;
             id copyTracks = [[self discCopyController] myTrackWithErrorString:&anErrorString andLayerBreak:&layerBreak];
             [self setErrorString:anErrorString];
         
             if ([copyTracks isKindOfClass:[NSNumber class]])
+            {
                 result = [copyTracks intValue];
+            }
             else if ([copyTracks isKindOfClass:[NSArray class]])
+            {
                 [tracks addObjectsFromArray:copyTracks];
+            }
             else
+            {
                 [tracks addObject:copyTracks];
+            }
         }
 
         if (result == 0)
@@ -574,12 +611,13 @@
                 KWProgressManager *progressManager = [KWProgressManager sharedManager];
                 [progressManager setMaximumValue:0.0];
                 [progressManager setTask:[NSString stringWithFormat:NSLocalizedString(@"Creating image file '%@'", nil), [[NSFileManager defaultManager] displayNameAtPath:imagePath]]];
-                [progressManager setStatus:NSLocalizedString(@"Preparing...",nil)];
+                [progressManager setStatus:NSLocalizedString(@"Preparing...", nil)];
                 
                 NSString *anErrorString;
-                if ([KWCommonMethods createFileAtPath:imagePath attributes:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:[self shouldHideExtension]], NSFileExtensionHidden,nil] errorString:&anErrorString])
+                if ([KWCommonMethods createFileAtPath:imagePath attributes:@{NSFileExtensionHidden: @([self shouldHideExtension])} errorString:&anErrorString])
                 {
-                    [burner performSelectorOnMainThread:@selector(burnTrackToImage:) withObject:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:imagePath, tracks, nil] forKeys:[NSArray arrayWithObjects:@"Path",@"Track",nil]] waitUntilDone:YES];
+                    NSDictionary *options = @{@"Path": imagePath, @"Track": tracks};
+                    [burner performSelectorOnMainThread:@selector(burnTrackToImage:) withObject:options waitUntilDone:YES];
                 }
                 else
                 {
@@ -606,7 +644,7 @@
                     KWProgressManager *progressManager = [KWProgressManager sharedManager];
                     [progressManager setCancelHandler:nil];
                     [progressManager setTask:[NSString stringWithFormat:NSLocalizedString(@"Burning '%@'", nil), [self name]]];
-                    [progressManager setStatus:NSLocalizedString(@"Preparing...",nil)];
+                    [progressManager setStatus:NSLocalizedString(@"Preparing...", nil)];
                     [burner performSelectorOnMainThread:@selector(setLayerBreak:) withObject:layerBreak waitUntilDone:YES];
                     [burner performSelectorOnMainThread:@selector(burnTrack:) withObject:tracks waitUntilDone:YES];
                 }
@@ -672,8 +710,8 @@
         [[KWProgressManager sharedManager] endSheetWithCompletion:^
         {
             KWAlert *alert = [[KWAlert alloc] init];
-            [alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
-            [alert setMessageText:NSLocalizedString(@"Burning failed",nil)];
+            [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
+            [alert setMessageText:NSLocalizedString(@"Burning failed", nil)];
             [alert setInformativeText:[[notif userInfo] objectForKey:@"Error"]];
             [alert setAlertStyle:NSWarningAlertStyle];
             [alert setDetails:[self errorString]];
@@ -700,13 +738,19 @@
     KWVideoController *videoControllerOutlet = [self videoController];
 
     if ([dataControllerOutlet isCombinable] && ([dataControllerOutlet isOnlyHFSPlus] || (![audioControllerOutlet isAudioCD] || needAudioCDCheck)))
-	    [formats addObject:[NSNumber numberWithInt:0]];
+    {
+	    [formats addObject:@(0)];
+    }
     
     if ([audioControllerOutlet isCombinable])
-	    [formats addObject:[NSNumber numberWithInt:1]];
+    {
+	    [formats addObject:@(1)];
+    }
     
     if ([videoControllerOutlet isCombinable] && (![audioControllerOutlet isAudioCD] || needAudioCDCheck))
-	    [formats addObject:[NSNumber numberWithInt:2]];
+    {
+	    [formats addObject:@(2)];
+    }
 
     return formats;
 }
@@ -719,10 +763,9 @@
     {
         newObject = [DRFolder virtualFolderWithName:[object baseName]];
     
-        NSInteger x;
-        for (x=0;x<[[(DRFolder *)object children] count];x++)
+        for (DRFSObject *child in [(DRFolder *)object children])
         {
-            [(DRFolder *)newObject addChild:[self newDRFSObject:[[(DRFolder *)object children] objectAtIndex:x]]];
+            [(DRFolder *)newObject addChild:[self newDRFSObject:child]];
         }
     }
     else
@@ -744,7 +787,8 @@
             NSMutableArray *extensionHiddenArray = [self extensionHiddenArray];
             if (extensionHiddenArray)
             {
-                [extensionHiddenArray addObject:[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[object sourcePath], isExtensionHiddenNumber,nil] forKeys:[NSArray arrayWithObjects:@"Path",@"Extension Hidden",nil]]];
+                // TODO: make it into an object instead of a dictionary
+                [extensionHiddenArray addObject:@{@"Path": [object sourcePath], @"Extension Hidden": isExtensionHiddenNumber}];
             }
             
             newObject = [DRFile fileWithPath:[object sourcePath]];
@@ -809,18 +853,23 @@
     {
 	    if ([[[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaStateKey] isEqualTo:DRDeviceMediaStateMediaPresent])
 	    {
+            // TODO: is a bit too long :P
     	    if ([[[[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaInfoKey] objectForKey:DRDeviceMediaIsBlankKey] boolValue] || [[[[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaInfoKey] objectForKey:DRDeviceMediaIsAppendableKey] boolValue] || ([[[[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaInfoKey] objectForKey:DRDeviceMediaIsOverwritableKey] boolValue] && [[[[self burner] properties] objectForKey:DRBurnOverwriteDiscKey] boolValue]))
-	    	    return YES;
+            {
+                return YES;
+            }
     	    else
+            {
 	    	    [[KWCommonMethods savedDevice] ejectMedia];
+            }
 	    }
 	    else if ([[[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaStateKey] isEqualTo:DRDeviceMediaStateInTransition])
 	    {
-    	    [[KWProgressManager sharedManager] setStatus:NSLocalizedString(@"Waiting for the drive...", Localized)];
+    	    [[KWProgressManager sharedManager] setStatus:NSLocalizedString(@"Waiting for the drive...", nil)];
 	    }
 	    else if ([[[[KWCommonMethods savedDevice] status] objectForKey:DRDeviceMediaStateKey] isEqualTo:DRDeviceMediaStateNone])
 	    {
-    	    [[KWProgressManager sharedManager] setStatus:NSLocalizedString(@"Waiting for a disc to be inserted...", Localized)];
+    	    [[KWProgressManager sharedManager] setStatus:NSLocalizedString(@"Waiting for a disc to be inserted...", nil)];
 	    }
     }
     

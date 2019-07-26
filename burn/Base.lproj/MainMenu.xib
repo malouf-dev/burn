@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="14490.70" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
+        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14490.70"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -14,13 +15,17 @@
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <customObject id="579" userLabel="KWWindowController" customClass="KWWindowController">
             <connections>
+                <outlet property="audioController" destination="793" id="yMb-gD-Jf3"/>
                 <outlet property="burnButton" destination="504" id="704"/>
                 <outlet property="changeRecorderButton" destination="506" id="VvD-bq-oyy"/>
+                <outlet property="dataController" destination="540" id="x5D-5K-LPi"/>
                 <outlet property="defaultBurner" destination="505" id="705"/>
+                <outlet property="discCopyController" destination="541" id="QuD-za-fvr"/>
                 <outlet property="itemHelp" destination="277" id="725"/>
                 <outlet property="mainTabView" destination="390" id="718"/>
                 <outlet property="mainWindow" destination="388" id="717"/>
                 <outlet property="newTabView" destination="7XP-s5-3Ph" id="yvo-Hv-xaB"/>
+                <outlet property="videoController" destination="758" id="WhE-K4-c33"/>
             </connections>
         </customObject>
         <menu title="MainMenu" systemMenu="main" id="29" userLabel="MainMenu">
@@ -441,7 +446,7 @@ CA
                                             <rect key="frame" x="0.0" y="32" width="433" height="332"/>
                                             <clipView key="contentView" id="tYI-3E-xn0">
                                                 <rect key="frame" x="1" y="0.0" width="431" height="331"/>
-                                                <autoresizingMask key="autoresizingMask"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Data" headerView="982" id="481" customClass="KWOutlineView">
                                                         <rect key="frame" x="0.0" y="0.0" width="431" height="306"/>

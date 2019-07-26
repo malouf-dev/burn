@@ -12,8 +12,17 @@
 #import "KWTabViewItem.h"
 #import <Carbon/Carbon.h>
 #import <LetsMove/LetsMove.h>
+#import "KWDataController.h"
+#import "KWAudioController.h"
+#import "KWVideoController.h"
+#import "KWCopyController.h"
 
 @interface KWWindowController() <NSToolbarDelegate>
+
+@property (nonatomic, weak) IBOutlet KWDataController *dataController;
+@property (nonatomic, weak) IBOutlet KWAudioController *audioController;
+@property (nonatomic, weak) IBOutlet KWVideoController *videoController;
+@property (nonatomic, weak) IBOutlet KWCopyController *discCopyController;
 
 @property (nonatomic, weak) IBOutlet NSButton *changeRecorderButton;
 
@@ -48,13 +57,6 @@
     
     NSUserNotificationCenter *defaultUserNotificationCenter = [NSUserNotificationCenter defaultUserNotificationCenter];
     [defaultUserNotificationCenter deliverNotification:userNotification];
-}
-
-- (id)init
-{
-    self = [super init];
-
-    return self;
 }
 
 - (void)dealloc 
@@ -178,7 +180,7 @@
 
 - (IBAction)newTabViewAction:(id)sender
 {
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type",nil]];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWChangeInspector" object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty",@"Type", nil]];
     [mainTabView selectTabViewItemAtIndex:[newTabView selectedSegment]];
 }
 
@@ -227,8 +229,8 @@
         {
             KWProgressManager *progressManager = [KWProgressManager sharedManager];
             [progressManager setIconImage:[NSImage imageNamed:@"Burn"]];
-            [progressManager setTask:NSLocalizedString(@"Erasing disc", Localized)];
-            [progressManager setStatus:NSLocalizedString(@"Preparing...", Localized)];
+            [progressManager setTask:NSLocalizedString(@"Erasing disc", nil)];
+            [progressManager setStatus:NSLocalizedString(@"Preparing...", nil)];
             [progressManager setMaximumValue:0.0];
             [progressManager setAllowCanceling:NO];
             [progressManager beginSheetForWindow:mainWindow];
@@ -252,9 +254,9 @@
             [self showNotificationWithTitle:NSLocalizedString(@"Erasing failed", nil) withMessage:NSLocalizedString(@"There was a problem erasing the disc", nil) withImage:image];
             
             NSAlert *alert = [[NSAlert alloc] init];
-            [alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
-            [alert setMessageText:NSLocalizedString(@"Erasing failed",nil)];
-            [alert setInformativeText:NSLocalizedString(@"There was a problem erasing the disc",nil)];
+            [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
+            [alert setMessageText:NSLocalizedString(@"Erasing failed", nil)];
+            [alert setInformativeText:NSLocalizedString(@"There was a problem erasing the disc", nil)];
             [alert setAlertStyle:NSWarningAlertStyle];
         
             [alert beginSheetModalForWindow:self->mainWindow modalDelegate:self didEndSelector:nil contextInfo:nil];
@@ -344,7 +346,7 @@
 
 
     id segment;
-    NSArray *descriptions = [NSArray arrayWithObjects:NSLocalizedString(@"Select to create a data disc", nil),NSLocalizedString(@"Select to create a audio disc", nil),NSLocalizedString(@"Select to create a video disc", nil),NSLocalizedString(@"Select to copy a disc or disk image", nil),nil];
+    NSArray *descriptions = [NSArray arrayWithObjects:NSLocalizedString(@"Select to create a data disc", nil),NSLocalizedString(@"Select to create a audio disc", nil),NSLocalizedString(@"Select to create a video disc", nil),NSLocalizedString(@"Select to copy a disc or disk image", nil), nil];
     NSEnumerator *e = [segments objectEnumerator];
     
     NSInteger i = 0;
@@ -414,7 +416,7 @@
 	    
 	    if ([[[device status] objectForKey:DRDeviceMediaStateKey] isEqualTo:DRDeviceMediaStateInTransition] || space == -1)
 	    {
-    	    return [NSString stringWithFormat:@"%@\n%@", [device displayName], NSLocalizedString(@"No disc",nil)];
+    	    return [NSString stringWithFormat:@"%@\n%@", [device displayName], NSLocalizedString(@"No disc", nil)];
 	    }
 	    else
 	    {
@@ -433,7 +435,7 @@
     }
     else
     {
-	    return NSLocalizedString(@"No Recorder",nil);
+	    return NSLocalizedString(@"No Recorder", nil);
     }
 }
 
@@ -446,15 +448,12 @@
 
 - (void)open:(NSString *)pathname
 {
-    SEL aSelector;
-    id object = nil;
-
-    if ([[KWCommonMethods diskImageTypes] containsObject:[[pathname pathExtension] lowercaseString]] || [[[NSWorkspace sharedWorkspace] mountedLocalVolumePaths] containsObject:pathname])
+    BOOL isDiscImage = [[KWCommonMethods diskImageTypes] containsObject:[[pathname pathExtension] lowercaseString]];
+    BOOL isDiscVolume = [[[NSWorkspace sharedWorkspace] mountedLocalVolumePaths] containsObject:pathname];
+    if (isDiscImage || isDiscVolume)
     {
 	    [mainTabView selectTabViewItemWithIdentifier:@"Copy"];
-	    
-	    aSelector = @selector(checkImage:);
-	    object = pathname;
+        [[self discCopyController] checkImage:pathname];
     }
     else if ([[[pathname pathExtension] lowercaseString] isEqualTo:@"burn"])
     {
@@ -463,34 +462,26 @@
 	    if (burnFile)
 	    {
     	    [mainTabView selectTabViewItemAtIndex:[[burnFile objectForKey:@"KWType"] intValue]];
-
-    	    aSelector = @selector(openBurnDocument:);
-    	    object = pathname;
+         
+            KWTabViewItem *tabViewItem = (KWTabViewItem *)[mainTabView selectedTabViewItem];
+            id controller = [tabViewItem myController];
+            [controller openBurnDocument:pathname];
 	    }
 	    else 
 	    {
-    	    [KWCommonMethods standardAlertWithMessageText:NSLocalizedString(@"Invalid Burn file", nil) withInformationText:NSLocalizedString(@"The Burn file is corrupt or a wrong filetype", nil) withParentWindow:mainWindow];
+            NSString *message = NSLocalizedString(@"Invalid Burn file", nil);
+            NSString *information = NSLocalizedString(@"The Burn file is corrupt or a wrong filetype", nil);
+    	    [KWCommonMethods standardAlertWithMessageText:message withInformationText:information withParentWindow:mainWindow];
 	    }
     }
     else if ([[[pathname pathExtension] lowercaseString] isEqualTo:@"burntheme"])
     {
-	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWDVDThemeOpened" object:[NSArray arrayWithObjects:pathname,nil]];
+	    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWDVDThemeOpened" object:[NSArray arrayWithObjects:pathname, nil]];
     }
     else
     {
 	    [mainTabView selectTabViewItemWithIdentifier:@"Data"];
-	    
-	    aSelector = @selector(addDroppedOnIconFiles:);
-	    object = [NSArray arrayWithObject:pathname];
-    }
-    
-    if (object)
-    {
-	    KWTabViewItem *tabViewItem = (KWTabViewItem *)[mainTabView selectedTabViewItem];
-	    id controller = [tabViewItem myController];
-	    
-        // TODO: just write things out, since it's saver for ARC and us :)
-	    [controller performSelector:aSelector withObject:[object copy]];
+	    [[self dataController] addDroppedOnIconFiles:@[pathname]];
     }
 }
 

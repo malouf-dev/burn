@@ -23,7 +23,7 @@ NSArray *args = [[NSProcessInfo processInfo] arguments];
 		fprintf(stderr,"Usage: Burn <verb> <options>\n<verb> is one of the following:\nadd\nburn\nconvert");
 		//NSTask *open = [[NSTask init] alloc];
 		//[open setLaunchPath:@"/usr/bin/open"];
-		//[open setArguments:[NSArray arrayWithObjects:@"-a",@"Burn",[args objectAtIndex:2],nil]];
+		//[open setArguments:[NSArray arrayWithObjects:@"-a",@"Burn",[args objectAtIndex:2], nil]];
 		//[open launch];
 		//[[NSWorkspace sharedWorkspace] openFile:[args objectAtIndex:2] withApplication:[[NSBundle mainBundle] bundlePath]];
 		}

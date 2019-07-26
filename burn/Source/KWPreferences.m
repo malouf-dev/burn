@@ -465,7 +465,7 @@ return self;
     [[self window] setContentView:[[NSView alloc] initWithFrame:frame]];
     [self resizeWindowOnSpotWithRect:[view frame]];
     [[self window] setContentView:view];
-    [[self window] setTitle:NSLocalizedString(itemIdentifier, Localized)];
+    [[self window] setTitle:NSLocalizedString(itemIdentifier, nil)];
 
     [[NSUserDefaults standardUserDefaults] setObject:itemIdentifier forKey:@"KWSavedPrefView"];
 }
@@ -473,17 +473,29 @@ return self;
 - (id)myViewWithIdentifier:(NSString *)identifier
 {
     if ([identifier isEqualTo:@"General"])
+    {
 	    return generalView;
+    }
     else if ([identifier isEqualTo:@"Burner"])
+    {
 	    return burnerView;
+    }
     else if ([identifier isEqualTo:@"Data"])
+    {
 	    return dataView;
+    }
     else if ([identifier isEqualTo:@"Audio"])
+    {
 	    return audioView;
+    }
     else if ([identifier isEqualTo:@"Video"])
+    {
 	    return videoView;
+    }
     else if ([identifier isEqualTo:@"Advanced"])
+    {
 	    return advancedView;
+    }
     
     return nil;
 }
@@ -510,7 +522,7 @@ return self;
 
 - (void)settingsChangedByOptionsMenuInMainWindow
 {
-    [self setViewOptions:[NSArray arrayWithObjects:dataView,audioView,videoView,nil]];
+    [self setViewOptions:[NSArray arrayWithObjects:dataView,audioView,videoView, nil]];
 }
 
 - (void)addThemeAndShow:(NSArray *)files
@@ -564,7 +576,7 @@ return self;
     }
     else
     {
-	    [KWCommonMethods standardAlertWithMessageText:NSLocalizedString(@"Failed to install theme in the 'Application Support' folder",nil) withInformationText:string withParentWindow:[self window]];
+	    [KWCommonMethods standardAlertWithMessageText:NSLocalizedString(@"Failed to install theme in the 'Application Support' folder", nil) withInformationText:string withParentWindow:[self window]];
     }
 
 }

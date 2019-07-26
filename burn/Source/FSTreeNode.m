@@ -297,9 +297,9 @@
 	    if ([[NSApp mainWindow] attachedSheet] == nil)
 	    {
 	    NSAlert *alert = [[NSAlert alloc] init];
-	    [alert addButtonWithTitle:NSLocalizedString(@"OK",nil)];
-	    [alert setMessageText:NSLocalizedString(@"Some files are to large",nil)];
-	    [alert setInformativeText:NSLocalizedString(@"The PC (Joliet) or ISO9660 filesystem can only handle files smaller than 2GB",nil)];
+	    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
+	    [alert setMessageText:NSLocalizedString(@"Some files are to large", nil)];
+	    [alert setInformativeText:NSLocalizedString(@"The PC (Joliet) or ISO9660 filesystem can only handle files smaller than 2GB", nil)];
 	    [alert setAlertStyle:NSWarningAlertStyle];
 	    [alert beginSheetModalForWindow:[NSApp mainWindow] modalDelegate:self didEndSelector:nil contextInfo:nil];
 	    }

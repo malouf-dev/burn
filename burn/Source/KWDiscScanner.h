@@ -19,7 +19,6 @@
 - (void)beginSetupSheetForWindow:(NSWindow *)window modelessDelegate:(id)modelessDelegate didEndSelector:(SEL)didEndSelector contextInfo:(void *)contextInfo;
 - (void)scanDisks;
 - (void)beginScanning;
-- (void)scan:(id)args;
 
 //Interface actions
 - (IBAction)chooseScan:(id)sender;

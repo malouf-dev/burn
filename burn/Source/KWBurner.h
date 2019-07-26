@@ -4,92 +4,76 @@
 #import <DiscRecording/DiscRecording.h>
 #import "KWCommonMethods.h"
 
+/**
+ *  A window controller that handles burning (and creating disc images, burning to the hard disk)
+ */
 @interface KWBurner : NSWindowController
-{
-    //Main Sheet outlets
-    IBOutlet id burnButton;
-    IBOutlet id burnerPopup;
-    IBOutlet id closeButton;
-    IBOutlet id eraseCheckBox;
-    IBOutlet id sessionsCheckBox;
-    IBOutlet id speedPopup;
-    IBOutlet id statusText;
-    IBOutlet id combineCheckBox;
-    IBOutlet id numberOfCopiesText;
-    IBOutlet id numberOfCopiesBox;
-    
-    //Session Panel Outlets
-    IBOutlet id sessionsPanel;
-    IBOutlet id sessions;
-    IBOutlet id dataSession;
-    IBOutlet id audioSession;
-    IBOutlet id videoSession;
-    
-    //Variables
-    BOOL shouldClose;
-    NSInteger size;
-    NSInteger trackNumber; //Must delete
-    DRDevice *savedDevice;
-    NSDictionary *properties;
-    DRBurn *burn;
-    NSDictionary *extraBurnProperties;
-    BOOL userCanceled;
-    NSString *imagePath;
-    id currentCombineCheckBox;
-    BOOL ignoreMode;
-    BOOL isOverwritable;
-    NSNumber *layerBreak;
-}
 
-//Main actions
+/**
+ *  Show a burn setup sheet
+ *
+ *  @param window The modal window
+ *  @param completion Send when the sheet closes with a return code
+ */
 - (void)beginBurnSetupSheetForWindow:(NSWindow *)window completion:(void (^)(NSModalResponse returnCode))completion;
-- (void)burnDiskImageAtPath:(NSString *)path;
-- (void)writeTrack:(id)track;
-- (void)setLayerBreak:(id)layerBreak;
-- (void)burnTrack:(id)track;
-- (void)burnTrackToImage:(NSDictionary *)dict;
-- (NSInteger)getImageSizeAtPath:(NSString *)path;
-- (void)updateDevice:(DRDevice *)device;
-//Main Sheet actions
-- (IBAction)burnButton:(id)sender;
-- (IBAction)burnerPopup:(id)sender;
-- (IBAction)cancelButton:(id)sender;
-- (IBAction)closeButton:(id)sender;
-- (IBAction)combineSessions:(id)sender;
-//Session Panel actions
-- (IBAction)okSession:(id)sender;
-- (IBAction)cancelSession:(id)sender;
-//Notification actions
-- (void)statusChanged:(NSNotification *)notif;
-- (void)mediaChanged:(NSNotification *)notification;
-- (void)burnNotification:(NSNotification*)notification;
-//Other actions
-- (void)setIgnoreMode:(BOOL)mode;
-- (void)prepareTypes;
-- (void)setCombineBox:(id)box;
-- (DRDevice *)currentDevice;
-- (void)populateSpeeds:(DRDevice *)device;
-- (DRDevice *)savedDevice;
-- (BOOL)canBurn;
-- (BOOL)isCD;
-- (void)addBurnProperties:(NSDictionary *)properties;
-- (NSDictionary *)properties;
 
+/**
+ *  Ignore mode enabled or not
+ */
+@property (nonatomic, getter = isIgnoreModeEnabled) BOOL ignoreModeEnabled;
+
+/**
+ *  Burn properties
+ */
+@property (nonatomic, copy) NSDictionary *properties;
+
+/**
+ *  Burn extra properties
+ */
+@property (nonatomic, copy) NSDictionary *extraBurnProperties;
+
+/**
+ *  The burn type
+ */
 @property (nonatomic) NSInteger type;
-@property (nonatomic, getter = isCombineSessionsEnabled) BOOL combineSessionsEnabled;
-@property (nonatomic, getter = isCombinedDataSessionEnabled) BOOL combinedDataSessionEnabled;
-@property (nonatomic, getter = isCombinedAudioSessionEnabled) BOOL combinedAudioSessionEnabled;
-@property (nonatomic, getter = isCombinedVideoSessionEnabled) BOOL combinedVideoSessionEnabled;
-- (NSArray *)types;
 
+/**
+ *  Combine sessions enabled or not
+ */
+@property (nonatomic, getter = isCombineSessionsEnabled) BOOL combineSessionsEnabled;
+
+/**
+ *  Combine data sessions enabled or not
+ */
+@property (nonatomic, getter = isCombinedDataSessionEnabled) BOOL combinedDataSessionEnabled;
+
+/**
+ *  Combine audio sessions enabled or not
+ */
+@property (nonatomic, getter = isCombinedAudioSessionEnabled) BOOL combinedAudioSessionEnabled;
+
+/**
+ *  Combine video sessions enabled or not
+ */
+@property (nonatomic, getter = isCombinedVideoSessionEnabled) BOOL combinedVideoSessionEnabled;
+
+/**
+ *  Combinable types
+ */
 @property (nonatomic, strong) NSArray *combinableTypes; // TODO: Is this used or usefull to expose?
 
-@end
+/**
+ *  Get types
+ *
+ *  @return An array of types
+ */
+- (NSArray *)types;
 
-@interface DRCallbackDevice : DRDevice
-{
-
-}
-- (void)initWithConsumer:(id)consumer;
+/**
+ *  If the current disc is a CD
+ *
+ * @return YES or NO
+ */
+- (BOOL)isCD;
 
 @end

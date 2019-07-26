@@ -21,7 +21,7 @@
     protectedFiles =  [[NSMutableArray alloc] init];
     
     //Known protected files can't be converted
-    knownProtectedFiles = [[[NSArray alloc] initWithObjects:@"m4p",@"m4b",NSFileTypeForHFSTypeCode('M4P '),NSFileTypeForHFSTypeCode('M4B '),nil] mutableCopy];
+    knownProtectedFiles = [[[NSArray alloc] initWithObjects:@"m4p",@"m4b",NSFileTypeForHFSTypeCode('M4P '),NSFileTypeForHFSTypeCode('M4B '), nil] mutableCopy];
     
     //Here we store our temporary files which will be deleting acording to the prefences set for deletion
     temporaryFiles = [[NSMutableArray alloc] init];
@@ -58,7 +58,7 @@
     [tableView setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
 
     //The user can drag files into the tableview (including iMovie files)
-    [tableView registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType,@"NSGeneralPboardType",@"CorePasteboardFlavorType 0x6974756E",nil]];
+    [tableView registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType,@"NSGeneralPboardType",@"CorePasteboardFlavorType 0x6974756E", nil]];
 }
 
 //////////////////
@@ -316,11 +316,10 @@
     [[[NSOperationQueue alloc] init] addOperationWithBlock:^
     {
         NSMutableArray *filePaths = [[NSMutableArray alloc] init];
-
-        NSInteger x;
-        for (x=0;x<[incompatibleFiles count];x++)
+        
+        for (NSDictionary *fileDictionary in incompatibleFiles)
         {
-            [filePaths addObject:[[incompatibleFiles objectAtIndex:x] objectForKey:@"Path"]];
+            [filePaths addObject:fileDictionary[@"Path"]];
         }
 
         [incompatibleFiles removeAllObjects];
@@ -333,11 +332,10 @@
         NSInteger result = [converter batchConvert:filePaths withOptions:options errorString:&errorString];
 
         NSArray *succeededFiles = [NSArray arrayWithArray:[converter succesArray]];
-
-        NSInteger y;
-        for (y=0;y<[succeededFiles count];y++)
+        
+        for (NSString *filePath in succeededFiles)
         {
-            [self addFile:[succeededFiles objectAtIndex:y] isSelfEncoded:YES];
+            [self addFile:filePath isSelfEncoded:YES];
         }
 
         if (result == 0)
@@ -347,9 +345,13 @@
             NSString *finishMessage;
         
             if ([filePaths count] > 1)
+            {
                 finishMessage = [NSString stringWithFormat:NSLocalizedString(@"Finished converting %ld files", nil),(long)[filePaths count]];
+            }
             else
+            {
                 finishMessage = NSLocalizedString(@"Finished converting 1 file", nil);
+            }
             
             NSString *firstPath = filePaths[0];
             NSImage *image = [[NSWorkspace sharedWorkspace] iconForFile:firstPath];
@@ -597,14 +599,14 @@
                 [tempArray replaceObjectAtIndex:i withObject:tempDict];
             }
         
-            NSDictionary *burnFileProperties = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:tempArray,[nameTextField stringValue],nil] forKeys:[NSArray arrayWithObjects:@"Files",@"Name",nil]];
+            NSDictionary *burnFileProperties = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:tempArray,[nameTextField stringValue], nil] forKeys:[NSArray arrayWithObjects:@"Files",@"Name", nil]];
             
             NSInteger type = currentType;
             
                 if (currentType == 4)
                 type = 2;
             
-            NSDictionary *burnFile = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithInt:type],[NSNumber numberWithInt:[tableViewPopup indexOfSelectedItem]],burnFileProperties,nil] forKeys:[NSArray arrayWithObjects:@"KWType",@"KWSubType",@"KWProperties",nil]];
+            NSDictionary *burnFile = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[NSNumber numberWithInt:type],[NSNumber numberWithInt:[tableViewPopup indexOfSelectedItem]],burnFileProperties, nil] forKeys:[NSArray arrayWithObjects:@"KWType",@"KWSubType",@"KWProperties", nil]];
             NSString *errorString;
             
             if ([KWCommonMethods writeDictionary:burnFile toFile:[[sheet URL] path] errorString:&errorString])
@@ -616,7 +618,7 @@
             }
             else
             {
-                [KWCommonMethods standardAlertWithMessageText:NSLocalizedString(@"Failed to save Burn file",nil) withInformationText:errorString withParentWindow:mainWindow];
+                [KWCommonMethods standardAlertWithMessageText:NSLocalizedString(@"Failed to save Burn file", nil) withInformationText:errorString withParentWindow:mainWindow];
             }
         }
     }];
@@ -637,7 +639,7 @@
 - (void)setTableViewState:(NSNotification *)notif
 {
     if ([[notif object] boolValue] == YES)
-	    [tableView registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType,@"NSGeneralPboardType",@"CorePasteboardFlavorType 0x6974756E",nil]];
+	    [tableView registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType,@"NSGeneralPboardType",@"CorePasteboardFlavorType 0x6974756E", nil]];
     else
 	    [tableView unregisterDraggedTypes];
 }
@@ -768,7 +770,7 @@ return YES;
 	    id object = [tableData objectAtIndex:[[rows lastObject] intValue]];
 	    NSData *data = [NSArchiver archivedDataWithRootObject:object];
 
-	    [pboard declareTypes: [NSArray arrayWithObjects:@"NSGeneralPboardType",@"KWRemoveRowPboardType",@"KWDraggedRows",nil] owner:nil];
+	    [pboard declareTypes: [NSArray arrayWithObjects:@"NSGeneralPboardType",@"KWRemoveRowPboardType",@"KWDraggedRows", nil] owner:nil];
 	    [pboard setData:data forType:@"NSGeneralPboardType"];
 	    [pboard setString:[[rows lastObject] stringValue] forType:@"KWRemoveRowPboardType"];
 	    [pboard setPropertyList:rows forType:@"KWDraggedRows"];

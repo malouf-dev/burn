@@ -101,9 +101,9 @@
 	    if ([[[deviceStatus objectForKey:DRDeviceMediaInfoKey] objectForKey:DRDeviceMediaIsErasableKey] boolValue])
 	    {
     	    [closeButton setEnabled:YES];
-    	    [closeButton setTitle:NSLocalizedString(@"Eject", Localized)];
+    	    [closeButton setTitle:NSLocalizedString(@"Eject", nil)];
 	    
-    	    [statusText setStringValue:NSLocalizedString(@"Ready to erase", Localized)];
+    	    [statusText setStringValue:NSLocalizedString(@"Ready to erase", nil)];
 	    
     	    [eraseButton setEnabled:YES];
 	    }
@@ -115,7 +115,7 @@
     else if ([statusString isEqualTo:DRDeviceMediaStateInTransition])
     {
 	    [closeButton setEnabled:NO];
-	    [statusText setStringValue:NSLocalizedString(@"Waiting for the drive...", Localized)];
+	    [statusText setStringValue:NSLocalizedString(@"Waiting for the drive...", nil)];
 	    [eraseButton setEnabled:NO];
     }
     else if ([statusString isEqualTo:DRDeviceMediaStateNone])
@@ -125,17 +125,17 @@
     	    [closeButton setEnabled:YES];
 	    
     	    if ([[deviceStatus objectForKey:DRDeviceIsTrayOpenKey] boolValue])
-	    	    [closeButton setTitle:NSLocalizedString(@"Close", Localized)];
+	    	    [closeButton setTitle:NSLocalizedString(@"Close", nil)];
     	    else
-	    	    [closeButton setTitle:NSLocalizedString(@"Open", Localized)];
+	    	    [closeButton setTitle:NSLocalizedString(@"Open", nil)];
 	    }
 	    else
 	    {
-    	    [closeButton setTitle:NSLocalizedString(@"Close", Localized)];
+    	    [closeButton setTitle:NSLocalizedString(@"Close", nil)];
     	    [closeButton setEnabled:NO];
 	    }
 	    
-	    [statusText setStringValue:NSLocalizedString(@"Waiting for a disc to be inserted...", Localized)];
+	    [statusText setStringValue:NSLocalizedString(@"Waiting for a disc to be inserted...", nil)];
 	    [eraseButton setEnabled:NO];
     }
 }
@@ -196,15 +196,15 @@
 {
     DRDevice *selectedDevice = [[DRDevice devices] objectAtIndex:[burnerPopup indexOfSelectedItem]];
 
-    if ([[closeButton title] isEqualTo:NSLocalizedString(@"Eject", Localized)])
+    if ([[closeButton title] isEqualTo:NSLocalizedString(@"Eject", nil)])
     {
 	    [selectedDevice ejectMedia];
     }
-    else if ([[closeButton title] isEqualTo:NSLocalizedString(@"Close", Localized)])
+    else if ([[closeButton title] isEqualTo:NSLocalizedString(@"Close", nil)])
     {
 	    [selectedDevice closeTray];
     }
-    else if ([[closeButton title] isEqualTo:NSLocalizedString(@"Open", Localized)])
+    else if ([[closeButton title] isEqualTo:NSLocalizedString(@"Open", nil)])
     {
 	    shouldClose = YES;
 	    [selectedDevice openTray];
@@ -272,15 +272,15 @@
 
     if ([currentStatusString isEqualTo:DRStatusStatePreparing])
     {
-	    statusString = NSLocalizedString(@"Preparing...", Localized);
+	    statusString = NSLocalizedString(@"Preparing...", nil);
     }
     else if ([currentStatusString isEqualTo:DRStatusStateErasing])
     {
-	    statusString = [NSLocalizedString(@"Erasing disc", Localized) stringByAppendingString:time];
+	    statusString = [NSLocalizedString(@"Erasing disc", nil) stringByAppendingString:time];
     }
     else if ([currentStatusString isEqualTo:DRStatusStateFinishing])
     {
-	    statusString = NSLocalizedString(@"Finishing...", Localized);
+	    statusString = NSLocalizedString(@"Finishing...", nil);
     }
     else if ([currentStatusString isEqualTo:DRStatusStateDone])
     {

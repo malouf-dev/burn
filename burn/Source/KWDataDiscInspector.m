@@ -307,7 +307,7 @@ static NSArray* filesystemNameTagMappings = nil;
 	    NSMutableDictionary *tempDict = [NSMutableDictionary dictionary];
 	    [tempDict addEntriesFromDictionary:properties];
 	    
-	    NSArray *fileKeys = [NSArray arrayWithObjects:DRCopyrightFile, DRBibliographicFile, DRAbstractFile,nil];
+	    NSArray *fileKeys = [NSArray arrayWithObjects:DRCopyrightFile, DRBibliographicFile, DRAbstractFile, nil];
 	    
 	    NSInteger x;
 	    for (x=0;x<[fileKeys count];x++)
@@ -420,7 +420,7 @@ static NSArray* filesystemNameTagMappings = nil;
     }
     else
     {
-	    [[NSArray arrayWithObjects:hfsBoundsT, hfsBoundsL, hfsBoundsB, hfsBoundsR,nil] makeObjectsPerformSelector:@selector(setStringValue:) withObject:@""];
+	    [[NSArray arrayWithObjects:hfsBoundsT, hfsBoundsL, hfsBoundsB, hfsBoundsR, nil] makeObjectsPerformSelector:@selector(setStringValue:) withObject:@""];
     }
     
     data = [filesystemRoot propertyForKey:DRMacScrollPosition inFilesystem:DRHFSPlus mergeWithOtherFilesystems:NO];

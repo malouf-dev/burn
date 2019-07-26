@@ -9,10 +9,20 @@
 #import "KWDVDAuthorizer.h"
 #import "KWConverter.h"
 #import "KWProgressManager.h"
+#import "KWCommonMethods.h"
 
 @interface KWDVDAuthorizer()
 
 @property (nonatomic, strong) NSDictionary *theme;
+@property (nonatomic, getter = didUserCancel) BOOL userCanceled;
+@property (nonatomic, strong) NSTimer *timer;
+
+@property (nonatomic, strong) NSTask *dvdauthor;
+@property (nonatomic, strong) NSTask *spumux;
+@property (nonatomic, strong) NSTask *ffmpeg;
+
+@property (nonatomic) CGFloat progressSize;
+@property (nonatomic) NSInteger fileSize;
 
 @end
 
@@ -25,8 +35,6 @@
     if (self != nil)
     {
         _theme = theme;
-    
-        userCanceled = NO;
 
         [[KWProgressManager sharedManager] setCancelHandler:^
         {
@@ -44,16 +52,25 @@
 
 - (void)cancelAuthoring
 {
+    NSTask *spumux = [self spumux];
     if (spumux)
+    {
 	    [spumux terminate];
+    }
     
+    NSTask *dvdauthor = [self dvdauthor];
     if (dvdauthor)
+    {
 	    [dvdauthor terminate];
+    }
     
+    NSTask *ffmpeg = [self ffmpeg];
     if (ffmpeg)
+    {
 	    [ffmpeg terminate];
+    }
     
-    userCanceled = YES;
+    [self setUserCanceled:YES];
 }
 
 ////////////////////////////
@@ -63,7 +80,7 @@
 #pragma mark -
 #pragma mark •• DVD-Video without menu
 
-- (NSInteger)createStandardDVDFolderAtPath:(NSString *)path withFileArray:(NSArray *)fileArray withSize:(NSNumber *)size errorString:(NSString **)error
+- (NSInteger)createStandardDVDFolderAtPath:(NSString *)path withFileArray:(NSArray *)fileArray withMaxProgressSize:(CGFloat)maxProgressSize errorString:(NSString **)error
 {
     BOOL result;
 
@@ -72,8 +89,8 @@
     //Create a xml file with chapters if there are any
     if (result)
 	    [self createStandardDVDXMLAtPath:path withFileArray:fileArray errorString:&*error];
-
-    progressSize = size;
+    
+    [self setProgressSize:maxProgressSize];
 
     //Author the DVD
     
@@ -84,7 +101,7 @@
 
     if (result == NO)
     {
-	    if (userCanceled)
+	    if ([self didUserCancel])
     	    success = 2;
 	    else
     	    success = 1;
@@ -97,7 +114,7 @@
     {
         BOOL pal = ([[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultRegion"] intValue] == 0);
     
-	    NSArray *arguments = [NSArray arrayWithObjects:@"-T",@"-o",path,nil];
+	    NSArray *arguments = [NSArray arrayWithObjects:@"-T",@"-o",path, nil];
 	    BOOL status = [KWCommonMethods launchNSTaskAtPath:[[NSBundle mainBundle] pathForResource:@"dvdauthor" ofType:@""] withArguments:arguments outputError:YES outputString:YES output:&*error environment:@{@"VIDEO_FORMAT": pal ? @"PAL" : @"NTSC"}];
 
 	    if (!status)
@@ -112,7 +129,7 @@
     {
         [KWCommonMethods removeItemAtPath:path];
     
-	    if (userCanceled)
+	    if ([self didUserCancel])
     	    return 2;
 	    else
     	    return 1;
@@ -181,18 +198,18 @@
 #pragma mark •• DVD-Video with menu
 
 //Create a menu with given files and chapters
-- (NSInteger)createDVDMenuFiles:(NSString *)path withTheme:(NSDictionary *)theme withFileArray:(NSArray *)fileArray withSize:(NSNumber *)size withName:(NSString *)name errorString:(NSString **)error
+- (NSInteger)createDVDMenuFiles:(NSString *)path withTheme:(NSDictionary *)theme withFileArray:(NSArray *)fileArray withMaxProgressSize:(CGFloat)maxProgressSize withName:(NSString *)name errorString:(NSString **)error
 {
     [self setTheme:theme];
 
     NSString *themeFolderPath = [path stringByAppendingPathComponent:@"THEME_TS"];
     NSString *dvdXMLPath = [themeFolderPath stringByAppendingPathComponent:@"dvdauthor.xml"];
-    progressSize = size;
+    [self setProgressSize:maxProgressSize];
 
     //Set value for our progress panel
     KWProgressManager *progressManager = [KWProgressManager sharedManager];
     [progressManager setValue:-1];
-    [progressManager setStatus:NSLocalizedString(@"Creating DVD Theme", Localized)];
+    [progressManager setStatus:NSLocalizedString(@"Creating DVD Theme", nil)];
 
     BOOL success = YES;
 
@@ -241,7 +258,7 @@
     
     if (!success)
     {
-	    if (userCanceled)
+	    if ([self didUserCancel])
     	    return 2;
 	    else
     	    return 1;
@@ -468,7 +485,7 @@
 	    NSPipe *pipe2=[[NSPipe alloc] init];
 	    NSFileHandle *myHandle = [pipe fileHandleForWriting];
 	    NSFileHandle *myHandle2 = [pipe2 fileHandleForReading];
-	    ffmpeg = [[NSTask alloc] init];
+	    NSTask *ffmpeg = [[NSTask alloc] init];
 	    NSString *format;
     
 	    if ([[standardUserDefaults objectForKey:@"KWDefaultRegion"] intValue] == 0)
@@ -484,16 +501,16 @@
 	    
 	    NSArray *arguments;
 	    if ([[standardUserDefaults objectForKey:@"KWDVDThemeFormat"] intValue] == 0)
-    	    arguments = [NSArray arrayWithObjects: @"-shortest", @"-f",@"image2pipe",@"-threads",[[NSNumber numberWithInt:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWEncodingThreads"] intValue]] stringValue], @"-i",@"pipe:.jpg",@"-f", @"s16le", @"-ac", @"2", @"-i", @"/dev/zero",@"-target",format,@"-",@"-an",nil];
+    	    arguments = [NSArray arrayWithObjects: @"-shortest", @"-f",@"image2pipe",@"-threads",[[NSNumber numberWithInt:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWEncodingThreads"] intValue]] stringValue], @"-i",@"pipe:.jpg",@"-f", @"s16le", @"-ac", @"2", @"-i", @"/dev/zero",@"-target",format,@"-",@"-an", nil];
 	    else
-    	    arguments = [NSArray arrayWithObjects: @"-shortest", @"-f",@"image2pipe",@"-threads",[[NSNumber numberWithInt:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWEncodingThreads"] intValue]] stringValue], @"-i",@"pipe:.jpg",@"-f", @"s16le", @"-ac", @"2", @"-i", @"/dev/zero", @"-target",format,@"-",@"-an",@"-aspect",@"16:9",nil];
+    	    arguments = [NSArray arrayWithObjects: @"-shortest", @"-f",@"image2pipe",@"-threads",[[NSNumber numberWithInt:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWEncodingThreads"] intValue]] stringValue], @"-i",@"pipe:.jpg",@"-f", @"s16le", @"-ac", @"2", @"-i", @"/dev/zero", @"-target",format,@"-",@"-an",@"-aspect",@"16:9", nil];
     
 	    [ffmpeg setArguments:arguments];
 	    [ffmpeg setStandardInput:pipe];
 	    [ffmpeg setStandardOutput:pipe2];
 	    [ffmpeg setStandardError:[NSFileHandle fileHandleWithNullDevice]];
 
-	    spumux = [[NSTask alloc] init];
+	    NSTask *spumux = [[NSTask alloc] init];
 	    
 	    if (![KWCommonMethods createFileAtPath:path attributes:nil errorString:&*error])
     	    return NO;
@@ -509,8 +526,11 @@
 	    handle=[errorPipe fileHandleForReading];
 	    [KWCommonMethods logCommandIfNeeded:spumux];
 	    [spumux launch];
+        [self setSpumux:spumux];
+     
 	    [KWCommonMethods logCommandIfNeeded:ffmpeg];
 	    [ffmpeg launch];
+        [self setFfmpeg:ffmpeg];
     
 	    NSData *tiffData = [image TIFFRepresentation];
 	    NSBitmapImageRep *bitmap = [NSBitmapImageRep imageRepWithData:tiffData];
@@ -764,7 +784,7 @@
 {
     NSFileManager *defaultManager = [NSFileManager defaultManager];
 
-    dvdauthor=[[NSTask alloc] init];
+    NSTask *dvdauthor = [[NSTask alloc] init];
     NSPipe *pipe2 = [[NSPipe alloc] init];
     NSPipe *pipe=[[NSPipe alloc] init];
     NSFileHandle *handle;
@@ -777,7 +797,7 @@
     BOOL pal = ([[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultRegion"] intValue] == 0);
     [dvdauthor setEnvironment:@{@"VIDEO_FORMAT": pal ? @"PAL" : @"NTSC"}];
 
-    [dvdauthor setArguments:[NSArray arrayWithObjects:@"-x",xmlFile,nil]];
+    [dvdauthor setArguments:[NSArray arrayWithObjects:@"-x",xmlFile, nil]];
     [dvdauthor setStandardError:pipe];
     [dvdauthor setStandardOutput:pipe2];
     
@@ -803,6 +823,7 @@
     
     [KWCommonMethods logCommandIfNeeded:dvdauthor];
     [dvdauthor launch];
+    [self setDvdauthor:dvdauthor];
 
     totalSize = totalSize / 1024 / 1024;
     
@@ -835,7 +856,7 @@
 	    
 	    if ([string rangeOfString:@"Generating VTS with the following video attributes"].length > 0)
 	    {
-            [[KWProgressManager sharedManager] setStatus:NSLocalizedString(@"Generating DVD folder", Localized)];
+            [[KWProgressManager sharedManager] setStatus:NSLocalizedString(@"Generating DVD folder", nil)];
     	    currentProcces = 2;
 	    }
 
@@ -846,7 +867,7 @@
     	    if (currentProcces == 1)
     	    {
 	    	    progressValue = [[[[[string componentsSeparatedByString:@"MB"] objectAtIndex:0] componentsSeparatedByString:@"at "] objectAtIndex:1] floatValue] / totalSize * 100;
-                [[KWProgressManager sharedManager] setValue:(([progressSize floatValue] / 100) * progressValue)];
+                [[KWProgressManager sharedManager] setValue:(([self progressSize] / 100) * progressValue)];
                 
             }
     	    else
@@ -856,7 +877,8 @@
 	    	    if (progressValue > 0 && progressValue < 101)
 	    	    {
                     KWProgressManager *progressManager = [KWProgressManager sharedManager];
-                    [progressManager setValue:([progressSize floatValue])+(([progressSize floatValue] / 100) * progressValue)];
+                    CGFloat progressSize = [self progressSize];
+                    [progressManager setValue:progressSize + ((progressSize / 100) * progressValue)];
                     [progressManager setStatus:[NSString stringWithFormat:NSLocalizedString(@"Generating DVD folder: (%.0f%@)", nil), progressValue, @"%"]];
 	    	    }
     	    }
@@ -866,7 +888,7 @@
     
     [dvdauthor waitUntilExit];
     
-    returnCode = ([dvdauthor terminationStatus] == 0 && userCanceled == NO);
+    returnCode = ([dvdauthor terminationStatus] == 0 && [self didUserCancel] == NO);
     
     errorString = [errorString stringByAppendingString:[[NSString alloc] initWithData:[handle2 readDataToEndOfFile] encoding:NSUTF8StringEncoding]];
     
@@ -1384,11 +1406,11 @@
 
     if (type == 0)
     {
-	    image = [self rootMenuWithTitles:YES withName:NSLocalizedString(@"Title Menu",nil) withSecondButton:YES];
+	    image = [self rootMenuWithTitles:YES withName:NSLocalizedString(@"Title Menu", nil) withSecondButton:YES];
     }
     else if (type == 1)
     {
-	    image = [self rootMenuWithTitles:NO withName:NSLocalizedString(@"Chapter Menu",nil) withSecondButton:YES];
+	    image = [self rootMenuWithTitles:NO withName:NSLocalizedString(@"Chapter Menu", nil) withSecondButton:YES];
     }
     else if (type == 2 || type == 3)
     {
@@ -1408,7 +1430,7 @@
     
     	    [images addObject:[self previewImage]];
     
-    	    NSString *name = NSLocalizedString(@"Preview",nil);
+    	    NSString *name = NSLocalizedString(@"Preview", nil);
     
     	    if (type == 2)
 	    	    [nameDict setObject:name forKey:@"Path"];

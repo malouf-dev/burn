@@ -140,13 +140,13 @@
 	    [[self usedSpaceTextField] setStringValue:usedSpace];
 
 	    if ([[mediaInfo[DRDeviceMediaBlocksOverwritableKey] stringValue] isEqualTo:@"0"])
-    	    [[self writableTextField] setStringValue:NSLocalizedString(@"No",nil)];
+    	    [[self writableTextField] setStringValue:NSLocalizedString(@"No", nil)];
 	    else
-    	    [[self writableTextField] setStringValue:NSLocalizedString(@"Yes",nil)];
+    	    [[self writableTextField] setStringValue:NSLocalizedString(@"Yes", nil)];
     }
     else
     {
-	    [[self kindTextField] setStringValue:NSLocalizedString(@"No disc",nil)];
+	    [[self kindTextField] setStringValue:NSLocalizedString(@"No disc", nil)];
 	    [[self freeSpaceTextField] setStringValue:@""];
 	    [[self usedSpaceTextField] setStringValue:@""];
 	    [[self writableTextField] setStringValue:@""];

@@ -48,9 +48,9 @@
     
     NSString *status;
     if ([files count] > 1)
-	    status = NSLocalizedString(@"Writing tracks", Localized);
+	    status = NSLocalizedString(@"Writing tracks", nil);
     else
-	    status = NSLocalizedString(@"Writing track", Localized);
+	    status = NSLocalizedString(@"Writing track", nil);
     
     KWProgressManager *progressManager = [KWProgressManager sharedManager];
     [progressManager setMaximumValue:totalSize];

@@ -58,8 +58,8 @@
     
     if (indexOfSelectedItem >= [devices count] || (![devices[indexOfSelectedItem] ejectMedia]))
     {
-        NSString *message = NSLocalizedString(@"Failed to eject", Localized);
-        NSString *information = NSLocalizedString(@"Could not eject media from the drive", Localized);
+        NSString *message = NSLocalizedString(@"Failed to eject", nil);
+        NSString *information = NSLocalizedString(@"Could not eject media from the drive", nil);
     
         [KWCommonMethods standardAlertWithMessageText:message withInformationText:information withParentWindow:nil];
     }

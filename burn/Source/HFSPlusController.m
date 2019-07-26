@@ -220,7 +220,7 @@
 	    }
 	    else
 	    {
-    	    [[NSArray arrayWithObjects:boundsTop, boundsLeft, boundsBottom, boundsRight,nil] makeObjectsPerformSelector:@selector(setStringValue:) withObject:@""];
+    	    [[NSArray arrayWithObjects:boundsTop, boundsLeft, boundsBottom, boundsRight, nil] makeObjectsPerformSelector:@selector(setStringValue:) withObject:@""];
 	    }
     
 	    data = [self getPropertyForKey:DRMacIconLocation];

@@ -95,7 +95,7 @@
             }
             else
             {
-                [progressTextScan setStringValue:NSLocalizedString(@"No discs, try inserting a cd/dvd.", Localized)];
+                [progressTextScan setStringValue:NSLocalizedString(@"No discs, try inserting a cd/dvd.", nil)];
                 [chooseScan setEnabled:NO];
             }
         }];
@@ -105,7 +105,7 @@
     {
         if ([mountedRemovableMedia count] == 0)
         {
-            [progressTextScan setStringValue:NSLocalizedString(@"No discs, try inserting a cd/dvd.", Localized)];
+            [progressTextScan setStringValue:NSLocalizedString(@"No discs, try inserting a cd/dvd.", nil)];
             [chooseScan setEnabled:NO];
             [cancelScan setEnabled:YES];
             [progressScan setHidden:YES];
@@ -122,7 +122,7 @@
     [chooseScan setEnabled:NO];
     [progressScan setHidden:NO];
     [progressTextScan setHidden:NO];
-    [progressTextScan setStringValue:NSLocalizedString(@"Scanning for disks...", Localized)];
+    [progressTextScan setStringValue:NSLocalizedString(@"Scanning for disks...", nil)];
     [progressScan startAnimation:self];
     [tableData removeAllObjects];
     [tableView reloadData];
