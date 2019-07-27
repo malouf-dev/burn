@@ -252,8 +252,9 @@
     if ([[self window] isSheet])
     {
         NSWindow *window = [self window];
+        NSWindow *sheetParent = [window sheetParent];
         [window orderOut:self];
-	    [[window sheetParent] endSheet:window returnCode:NSModalResponseOK];
+        [sheetParent endSheet:window returnCode:NSModalResponseOK];
     }
     else
     {

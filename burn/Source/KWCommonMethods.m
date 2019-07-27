@@ -752,7 +752,7 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
     return size;
 }
 
-+ (NSArray*)allSelectedItemsInTableView:(NSTableView *)tableView fromArray:(NSArray *)array
++ (NSArray *)allSelectedItemsInTableView:(NSTableView *)tableView fromArray:(NSArray *)array
 {
     NSMutableArray *items = [NSMutableArray array];
     NSIndexSet *indexSet = [tableView selectedRowIndexes];

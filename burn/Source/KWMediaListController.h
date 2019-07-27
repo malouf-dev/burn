@@ -69,8 +69,6 @@
 - (void)addDVDFolder:(NSString *)path;
 //Check files in a seperate thread
 - (void)checkFiles:(NSArray *)paths;
-//Set our BOOL to stop the checking thread
-- (void)setCancelAdding;
 //Check if it is QuickTime protected file
 - (BOOL)isProtected:(NSString *)path;
 

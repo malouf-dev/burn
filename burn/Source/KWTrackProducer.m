@@ -15,17 +15,9 @@
 
 @interface KWTrackProducer ()
 
-@property (nonatomic, strong) NSTask *trackCreator;
-@property (nonatomic, strong) NSPipe *trackPipe;
-@property (nonatomic, strong) NSFileHandle *readHandle;
-@property (nonatomic, strong) NSFileHandle *writeHandle;
-@property (nonatomic, strong) NSFileHandle *calcHandle;
-@property (nonatomic, strong) NSPipe *calcPipe;
 @property (nonatomic, copy) NSArray *mpegFiles;
 @property (nonatomic, copy) NSString *folderPath;
 @property (nonatomic, copy) NSString *discName;
-@property (nonatomic, copy) NSString *currentAudioTrack;
-@property (nonatomic, strong) NSTimer *prepareTimer;
 
 // TODO: create an enum or something
 //Types 1 = hfsstandard; 2 = udf; 3 = dvd-video; 4 = vcd; 5 = svcd; 6 = audiocd 7 = dvd-audio
@@ -286,16 +278,14 @@
     NSPipe *pipe2=[[NSPipe alloc] init];
     [vcdimager setStandardError:pipe];
     [vcdimager setStandardOutput:pipe2];
-    NSFileHandle *handle=[pipe fileHandleForReading];
-    NSFileHandle *handle2=[pipe2 fileHandleForReading];
+    NSFileHandle *handle = [pipe fileHandleForReading];
+    NSFileHandle *handle2 = [pipe2 fileHandleForReading];
     
     [KWCommonMethods logCommandIfNeeded:vcdimager];
     [vcdimager launch];
 
     NSData *data;
     NSInteger size = 0;
-
-    
 
     while([data=[handle availableData] length])
     {
@@ -401,9 +391,7 @@
 - (void)createImage
 {
     NSTask *trackCreator = [[NSTask alloc] init];
-    [self setTrackCreator:trackCreator];
     NSPipe *trackPipe = [[NSPipe alloc] init];
-    [self setTrackPipe:trackPipe];
     NSFileHandle *handle2 = [NSFileHandle fileHandleWithNullDevice];
     [trackCreator setStandardError:handle2];
     [trackCreator setLaunchPath:[[NSBundle mainBundle] pathForResource:@"mkisofs" ofType:@""]];
@@ -427,12 +415,18 @@
     [trackCreator setArguments:options];
     [trackCreator setStandardOutput:trackPipe];
     NSFileHandle *readHandle = [trackPipe fileHandleForReading];
-    [self setReadHandle:readHandle];
     [KWCommonMethods logCommandIfNeeded:trackCreator];
     
     _file = fdopen([readHandle fileDescriptor], "r");
     
-    [self startCreating];
+    [[[NSOperationQueue alloc] init] addOperationWithBlock:^
+    {
+        [KWCommonMethods logCommandIfNeeded:trackCreator];
+        [trackCreator launch];
+        
+        [trackCreator waitUntilExit];
+        [readHandle closeFile];
+    }];
 }
 
 - (void)createVcdImage
@@ -449,51 +443,35 @@
     [arguments addObjectsFromArray:[self mpegFiles]];
 
     NSTask *trackCreator = [[NSTask alloc] init];
-    [self setTrackCreator:trackCreator];
     [trackCreator setLaunchPath:[[NSBundle bundleForClass:[self class]] pathForResource:@"vcdimager" ofType:@""]];
     [trackCreator setArguments:arguments];
     NSPipe *trackPipe = [[NSPipe alloc] init];
-    [self setTrackPipe:trackPipe];
     NSFileHandle *handle2 = [NSFileHandle fileHandleWithNullDevice];
     [trackCreator setStandardError:trackPipe];
     [trackCreator setStandardOutput:handle2];
     NSFileHandle *readHandle = [trackPipe fileHandleForReading];
-    [self setReadHandle:readHandle];
     _file = fdopen([readHandle fileDescriptor], "r");
     
-    [self startCreating];
-}
-
-- (void)startCreating
-{
     [[[NSOperationQueue alloc] init] addOperationWithBlock:^
     {
-        NSTask *trackCreator = [self trackCreator];
         [KWCommonMethods logCommandIfNeeded:trackCreator];
         [trackCreator launch];
         
         [trackCreator waitUntilExit];
-        [[self readHandle] closeFile];
-        [self setReadHandle:nil];
+        [readHandle closeFile];
     }];
 }
 
 - (void)createAudioTrack:(NSString *)path
 {
     NSTask *trackCreator = [[NSTask alloc] init];
-    [self setTrackCreator:trackCreator];
 
     NSPipe *calcPipe = [[NSPipe alloc] init];
-    [self setCalcPipe:calcPipe];
     NSPipe *trackPipe = [[NSPipe alloc] init];
-    [self setTrackPipe:trackPipe];
 
     NSFileHandle *calcHandle = [calcPipe fileHandleForReading];
-    [self setCalcHandle:calcHandle];
     NSFileHandle *writeHandle = [trackPipe fileHandleForWriting];
-    [self setWriteHandle:writeHandle];
     NSFileHandle *readHandle = [trackPipe fileHandleForReading];
-    [self setReadHandle:readHandle];
 
     [trackCreator setLaunchPath:[KWCommonMethods ffmpegPath]];
     
@@ -514,20 +492,11 @@
 
     _file = fdopen([readHandle fileDescriptor], "r");
     
-    [self startAudioTrackCreation];
-}
-
-- (void)startAudioTrackCreation
-{
     [[[NSOperationQueue alloc] init] addOperationWithBlock:^
     {
-        NSTask *trackCreator = [self trackCreator];
-        [KWCommonMethods logCommandIfNeeded:trackCreator];
         [trackCreator launch];
 
         NSData *data;
-        NSFileHandle *calcHandle = [self calcHandle];
-        NSFileHandle *writeHandle = [self writeHandle];
         while([data = [calcHandle availableData] length])
         {
             [writeHandle writeData:data];
@@ -536,6 +505,8 @@
         [trackCreator waitUntilExit];
 
         [writeHandle closeFile];
+        [readHandle closeFile];
+        [calcHandle closeFile];
     }];
 }
 
@@ -549,7 +520,7 @@
 - (float)imageSize
 {
     NSTask *mkisofs = [[NSTask alloc] init];
-    NSPipe *pipe=[[NSPipe alloc] init];
+    NSPipe *pipe = [[NSPipe alloc] init];
     NSFileHandle *handle;
     [mkisofs setLaunchPath:[[NSBundle mainBundle] pathForResource:@"mkisofs" ofType:@""]];
     
@@ -675,17 +646,6 @@
 
 - (uint32_t)producePreGapForTrack:(DRTrack *)track intoBuffer:(char *)buffer length:(uint32_t)bufferLength atAddress:(uint64_t)address blockSize:(uint32_t)blockSize ioFlags:(uint32_t *)flags
 {
-//    if ([[[track properties] objectForKey:@"KWFirstTrack"] boolValue] == NO)
-//    {
-//        uint32_t i;
-//        unsigned char newbuffer[bufferLength];
-//
-//        for (i = 0; i < bufferLength; i+= blockSize)
-//        {
-//            fread(newbuffer, 1, blockSize, _file);
-//        }
-//    }
-
     memset(buffer, 0, bufferLength);
     
     return bufferLength;
@@ -693,8 +653,6 @@
 
 - (uint32_t)produceDataForTrack:(DRTrack *)track intoBuffer:(char *)buffer length:(uint32_t)bufferLength atAddress:(uint64_t)address blockSize:(uint32_t)blockSize ioFlags:(uint32_t *)flags
 {
-    [self setCurrentAudioTrack:[[track properties] objectForKey:@"KWAudioPath"]];
-
     if (_file)
     {
         uint32_t i;

@@ -95,8 +95,8 @@
 - (IBAction)deleteFiles:(id)sender
 {    
     //Remove rows
-    NSArray *selectedObjects = [KWCommonMethods allSelectedItemsInTableView:tableView fromArray:tableData];
-    [tableData removeObjectsInArray:selectedObjects];
+    NSIndexSet *selectedRowIndexes = [tableView selectedRowIndexes];
+    [tableData removeObjectsAtIndexes:selectedRowIndexes];
     
     //Update the tableview
     [tableView deselectAll:nil];
@@ -126,8 +126,6 @@
 //Check files in a seperate thread
 - (void)checkFiles:(NSArray *)paths
 {
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(setCancelAdding) name:@"cancelAdding" object:nil];
-
     cancelAddingFiles = NO;
     
     KWProgressManager *progressManager = [KWProgressManager sharedManager];
@@ -137,18 +135,16 @@
     [progressManager setMaximumValue:0.0];
     [progressManager beginSheetForWindow:mainWindow completionHandler:^(NSModalResponse returnCode)
     {
-        
+        if (returnCode == NSModalResponseCancel)
+        {
+            self->cancelAddingFiles = YES;
+        }
     }];
     
-    [[[NSOperationQueue alloc] init] addOperationWithBlock:^{
+    [[[NSOperationQueue alloc] init] addOperationWithBlock:^
+    {
         [self checkFilesInThread:paths];
     }];
-}
-
-//Set our BOOL to stop the checking thread
-- (void)setCancelAdding
-{
-    cancelAddingFiles = YES;
 }
 
 //Check if it is QuickTime protected file
@@ -267,9 +263,6 @@
     cancelAddingFiles = NO;
     currentDropRow = -1;
     
-    //Stop being the observer
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"cancelAdding" object:nil];
-
     [[KWProgressManager sharedManager] endSheetWithCompletion:^
     {
         [self showAlert];

@@ -130,18 +130,16 @@
     if (selrow == 0)
     {
         [self stop:sender];
-
+        
+        NSIndexSet *indexSet = [tableView selectedRowIndexes];
+        
 	    NSMutableArray *trackDictionaries = [NSMutableArray arrayWithArray:[cdtext trackDictionaries]];
-        NSDictionary *discDictionary = [NSDictionary dictionaryWithDictionary:[trackDictionaries objectAtIndex:0]];
-        [trackDictionaries removeObjectAtIndex:0];
-    
-        NSArray *selectedDictionaries = [KWCommonMethods allSelectedItemsInTableView:tableView fromArray:trackDictionaries];
-        [trackDictionaries removeObjectsInArray:selectedDictionaries];
-        [trackDictionaries insertObject:discDictionary atIndex:0];
+        NSMutableIndexSet *removeIndexSet = [indexSet mutableCopy];
+        [removeIndexSet shiftIndexesStartingAtIndex:0 by:1];
+        [trackDictionaries removeObjectsAtIndexes:removeIndexSet];
         [cdtext setTrackDictionaries:trackDictionaries];
-	    
-	    NSArray *selectedObjects = [KWCommonMethods allSelectedItemsInTableView:tableView fromArray:tracks];
-	    [tracks removeObjectsInArray:selectedObjects];
+        
+        [tracks removeObjectsAtIndexes:indexSet];
     }
     
     [super deleteFiles:sender];
@@ -276,6 +274,9 @@
     	    	    cdtext = [DRCDTextBlock cdTextBlockWithLanguage:@"" encoding:DRCDTextEncodingISOLatin1Modified];
     	    	    [cdtext setObject:NSLocalizedString(@"Untitled", nil) forKey:DRCDTextTitleKey ofTrack:0];
 	    	    }
+          
+                NSInteger lastTrack = [tracks count];
+                [cdtext setObject:@"" forKey:DRCDTextTitleKey ofTrack:lastTrack];
     	    }
 	    }
     	    

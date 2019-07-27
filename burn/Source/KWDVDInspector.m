@@ -121,7 +121,6 @@
     [tempDict setObject:[NSArray arrayWithArray:tableData] forKey:@"Chapters"];
     [controller replaceObjectAtIndex:[currentTableView selectedRow] withObject:[tempDict copy]];
     
-    [currentTableView reloadData];
     currentObject = [controller objectAtIndex:[currentTableView selectedRow]];
 
     [tableView reloadData];
@@ -136,8 +135,8 @@
 
 - (IBAction)remove:(id)sender
 {
-    NSArray *selectedObjects = [KWCommonMethods allSelectedItemsInTableView:tableView fromArray:tableData];
-    [tableData removeObjectsInArray:selectedObjects];
+    NSIndexSet *selectedRowIndexes = [tableView selectedRowIndexes];
+    [tableData removeObjectsAtIndexes:selectedRowIndexes];
     
     NSMutableDictionary *tempDict = [NSMutableDictionary dictionaryWithDictionary:currentObject];
     NSMutableArray *controller = [(KWVideoController *)[currentTableView dataSource] myDataSource];
