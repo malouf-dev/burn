@@ -507,7 +507,6 @@
 //Save a image
 - (void)saveImage:(id)sender
 {
-    NSLog(@"Save image %@ %@", [self discName], currentFileSystem);
     [myDiscCreationController saveImageWithName:[self discName] withType:currentType withFileSystem:currentFileSystem];
 }
 

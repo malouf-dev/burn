@@ -208,10 +208,18 @@
         else
             [alert setInformativeText:NSLocalizedString(@"There was a problem copying the disc", nil)];
         
-        if ([[self errorString] rangeOfString:@"KWConsole:"].length > 0)
-            [alert setDetails:[self errorString]];
-        else
-            [alert setInformativeText:[self errorString]];
+        NSString *errorString = [self errorString];
+        if (errorString != nil)
+        {
+            if ([errorString rangeOfString:@"KWConsole:"].length > 0)
+            {
+                [alert setDetails:[self errorString]];
+            }
+            else
+            {
+                [alert setInformativeText:[self errorString]];
+            }
+        }
         
         [alert setAlertStyle:NSWarningAlertStyle];
         

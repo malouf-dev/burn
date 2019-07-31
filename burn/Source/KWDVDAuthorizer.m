@@ -928,7 +928,9 @@
     NSPipe *pipe =[ [NSPipe alloc] init];
     NSFileHandle *handle;
     NSTask *dvdaAuthor = [[NSTask alloc] init];
-    [dvdaAuthor setLaunchPath:[[NSBundle mainBundle] pathForResource:@"dvda-author-dev" ofType:@""]];
+    NSBundle *mainBundle = [NSBundle mainBundle];
+    [dvdaAuthor setLaunchPath:[mainBundle pathForResource:@"dvda-author-dev" ofType:@""]];
+    [dvdaAuthor setCurrentDirectoryPath:[mainBundle resourcePath]];
     NSMutableArray *options = [NSMutableArray arrayWithObjects:@"-p", @"278", @"-o", path, @"-g", nil];
     [options addObjectsFromArray:files];
     [options addObject:@"-P0"];
