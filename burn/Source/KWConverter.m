@@ -352,8 +352,6 @@
     	    [args addObject:@"-b"];
     	    [args addObject:[NSString stringWithFormat:@"%i", [[defaults objectForKey:@"KWDefaultDVDVideoBitrate"] intValue] * 1000]];
 	    }
-    	    	    
-	    
     }
     else if (convertKind == 5)
     {
@@ -364,7 +362,13 @@
 	    [args addObject:@"-ar"];
 	    [args addObject:@"44100"];
     }
-	    
+    // TODO: enable when using a newer ffmpeg
+//    else if (convertKind == 6 && [self isTwentyFourBitsAudio:path])
+//    {
+//        [args addObject:@"-acodec"];
+//        [args addObject:@"pcm_s24le"];
+//    }
+
     [args addObject:outFileWithExtension];
 
     //Fix for DV to mpeg2 conversion
@@ -943,6 +947,17 @@
     
     if (string)
 	    return ([string rangeOfString:@"pcm_s16le"].length > 0 && [string rangeOfString:@"44100"].length > 0 && [string rangeOfString:@"s16"].length > 0 && [string rangeOfString:@"1411 kb/s"].length > 0);
+
+    return NO;
+}
+
+// TODO: combine test methods, if possible
+- (NSInteger)isTwentyFourBitsAudio:(NSString *)path
+{
+    NSString *string = [self ffmpegOutputForPath:path];
+    
+    if (string)
+        return ([string rangeOfString:@"(24 bit)"].length > 0);
 
     return NO;
 }

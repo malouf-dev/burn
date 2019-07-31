@@ -446,7 +446,7 @@ CA
                                             <rect key="frame" x="0.0" y="32" width="433" height="252"/>
                                             <clipView key="contentView" id="tYI-3E-xn0">
                                                 <rect key="frame" x="1" y="0.0" width="431" height="251"/>
-                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
                                                     <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Data" headerView="982" id="481" customClass="KWOutlineView">
                                                         <rect key="frame" x="0.0" y="0.0" width="431" height="226"/>

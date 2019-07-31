@@ -77,7 +77,7 @@
 	    [[NSBundle mainBundle] loadNibNamed:@"KWPreferences" owner:self topLevelObjects:nil];
     }
 
-return self;
+    return self;
 }
 
 - (void)dealloc
@@ -143,7 +143,7 @@ return self;
 	    
     NSMutableArray *mightBeThemes = [NSMutableArray array];
     NSArray *defaultThemes = [defaultManager contentsOfDirectoryAtPath:[mainBundle pathForResource:@"Themes" ofType:@""] error:nil];
-    NSString *userThemefolder = [@"~/Library/Application Support/Burn/Themes" stringByExpandingTildeInPath];
+//    NSString *userThemefolder = [@"~/Library/Application Support/Burn/Themes" stringByExpandingTildeInPath];
 //    NSArray *userThemes = [defaultManager contentsOfDirectoryAtPath:userThemefolder error:nil];
     
     [mightBeThemes addObjectsFromArray:defaultThemes];
@@ -226,22 +226,6 @@ return self;
 
 - (void)showPreferences
 {
-    if ([KWCommonMethods isVoiceOverEnabled])
-    {
-        NSToolbar *toolbar = [self toolbar];
-        NSToolbarItemIdentifier selectedItemIdentifier = [toolbar selectedItemIdentifier];
-        for (NSToolbarItem *item in [toolbar items])
-        {
-            //if ([[item itemIdentifier] isEqualToString:@"General"])
-            if ([[item itemIdentifier] isEqualTo:selectedItemIdentifier])
-            {
-                // It's kind of sad that this the only way, since the variable is private, but it's needed for VoiceOver users
-                // This will set the focus on the selected toolbar item when opening preferences
-                [[self window] makeFirstResponder:[item valueForKey:@"_view"]];
-            }
-        }
-    }
-
     [[self window] makeKeyAndOrderFront:self];
 }
 

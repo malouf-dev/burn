@@ -123,7 +123,7 @@
     KWPreferences *preferences = [self preferences];
     if (preferences == nil)
     {
-	    preferences = [[KWPreferences alloc] init];
+        preferences = [[KWPreferences alloc] init];
         [self setPreferences:preferences];
     }
     

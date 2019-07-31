@@ -26,6 +26,7 @@
     float inputAspect;
     //inputFormat: 0 = normal; 1 = dv; 2 = mpeg2
     NSInteger inputFormat;
+    NSInteger inputAudioBits;
 
     NSDictionary *convertOptions;
     NSString *errorString;

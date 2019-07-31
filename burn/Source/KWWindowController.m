@@ -8,7 +8,6 @@
 
 #import "KWWindowController.h"
 #import "KWCommonMethods.h"
-#import "KWToolbarKiller.h"
 #import "KWTabViewItem.h"
 #import <Carbon/Carbon.h>
 #import <LetsMove/LetsMove.h>
