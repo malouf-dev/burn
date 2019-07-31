@@ -637,3 +637,6 @@
 
 /* Class = "NSMenuItem"; title = "Check for Updates…"; ObjectID = "1kv-m8-eYk"; */
 "1kv-m8-eYk.title" = "アップデートを確認...";
+
+/* Class = "NSMenuItem"; title = "DVD-Audio"; ObjectID = "VUg-vk-FWS"; */
+"VUg-vk-FWS.title" = "DVDオーディオ";
