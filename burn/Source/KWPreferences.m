@@ -161,10 +161,14 @@ return self;
     	    {
 	    	    NSString *themePath;
 	    	    
-	    	    if (y <= [defaultThemes count])
+//                if (y <= [defaultThemes count])
+//                {
     	    	    themePath = [mainBundle pathForResource:@"Themes" ofType:@""];
-	    	    else
-    	    	    themePath = userThemefolder;
+//                }
+//                else
+//                {
+//                    themePath = userThemefolder;
+//                }
 
 	    	    NSBundle *themeBundle = [NSBundle bundleWithPath:[themePath stringByAppendingPathComponent:currentFile]];
 	    	    NSDictionary *theme = [[NSArray arrayWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]] objectAtIndex:[[standardDefaults objectForKey:@"KWDVDThemeFormat"] intValue]];
@@ -224,12 +228,15 @@ return self;
 {
     if ([KWCommonMethods isVoiceOverEnabled])
     {
-        for (NSToolbarItem *item in [[self toolbar] items])
+        NSToolbar *toolbar = [self toolbar];
+        NSToolbarItemIdentifier selectedItemIdentifier = [toolbar selectedItemIdentifier];
+        for (NSToolbarItem *item in [toolbar items])
         {
-            if ([[item itemIdentifier] isEqualToString:@"General"])
+            //if ([[item itemIdentifier] isEqualToString:@"General"])
+            if ([[item itemIdentifier] isEqualTo:selectedItemIdentifier])
             {
                 // It's kind of sad that this the only way, since the variable is private, but it's needed for VoiceOver users
-                // This will set the focus on the General toolbar item when opening preferences
+                // This will set the focus on the selected toolbar item when opening preferences
                 [[self window] makeFirstResponder:[item valueForKey:@"_view"]];
             }
         }

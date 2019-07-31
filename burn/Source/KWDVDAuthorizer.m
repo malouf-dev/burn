@@ -900,6 +900,107 @@
     return returnCode;
 }
 
+///////////////
+// DVD-Audio //
+///////////////
+
+#pragma mark -
+#pragma mark •• DVD-Audio
+
+- (NSInteger)createStandardDVDAudioFolderAtPath:(NSString *)path withFiles:(NSArray *)files errorString:(NSString **)error
+{
+    NSFileManager *defaultManager = [NSFileManager defaultManager];
+    
+    NSInteger fileSize = 0;
+    
+    for (NSString *filePath in files)
+    {
+        NSDictionary *attributes = [defaultManager attributesOfItemAtPath:filePath error:nil];
+        float fileFileSize = (NSInteger)[attributes[NSFileSize] floatValue];
+    
+        fileSize += fileFileSize / 2048;
+    }
+
+    [self setFileSize:fileSize];
+    
+    [[KWProgressManager sharedManager] setMaximumValue:fileSize];
+    
+    NSPipe *pipe =[ [NSPipe alloc] init];
+    NSFileHandle *handle;
+    NSTask *dvdaAuthor = [[NSTask alloc] init];
+    [dvdaAuthor setLaunchPath:[[NSBundle mainBundle] pathForResource:@"dvda-author-dev" ofType:@""]];
+    NSMutableArray *options = [NSMutableArray arrayWithObjects:@"-p", @"278", @"-o", path, @"-g", nil];
+    [options addObjectsFromArray:files];
+    [options addObject:@"-P0"];
+    [dvdaAuthor setArguments:options];
+    [dvdaAuthor setStandardOutput:pipe];
+    handle = [pipe fileHandleForReading];
+
+    [self performSelectorOnMainThread:@selector(startTimer:) withObject:[path stringByAppendingPathComponent:@"AUDIO_TS/ATS_01_1.AOB"] waitUntilDone:NO];
+
+    if ([defaultManager fileExistsAtPath:path])
+    {
+        [KWCommonMethods removeItemAtPath:path];
+    }
+    
+    [KWCommonMethods logCommandIfNeeded:dvdaAuthor];
+    [dvdaAuthor launch];
+    NSString *string = [[NSString alloc] initWithData:[handle readDataToEndOfFile] encoding:NSUTF8StringEncoding];
+    
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWDebug"])
+    {
+        NSLog(@"%@", string);
+    }
+    
+    [dvdaAuthor waitUntilExit];
+    [[self timer] invalidate];
+
+    NSInteger taskStatus = [dvdaAuthor terminationStatus];
+
+    if (taskStatus == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        [KWCommonMethods removeItemAtPath:path];
+    
+        if ([self didUserCancel])
+        {
+            return 2;
+        }
+        else
+        {
+            if (![string isEqualTo:@""])
+            {
+                *error = string;
+            }
+            
+            return 1;
+        }
+    }
+}
+
+- (void)startTimer:(NSString *)path
+{
+    [self setTimer:[NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(imageProgress:) userInfo:path repeats:YES]];
+}
+
+- (void)imageProgress:(NSTimer *)theTimer
+{
+    NSString *filePath = [theTimer userInfo];
+    NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:nil];
+    float currentSize = [attributes[NSFileSize] floatValue] / 2048.0f;
+    float percent = currentSize / [self fileSize] * 100;
+    
+    if (percent < 101)
+    {
+        [[KWProgressManager sharedManager] setStatusByAddingPercent:[NSString stringWithFormat:@" (%.0f%@)", percent, @"%"]];
+    }
+    
+    [[KWProgressManager sharedManager] setValue:currentSize];
+}
+
 ///////////////////
 // Theme actions //
 ///////////////////

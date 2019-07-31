@@ -35,6 +35,15 @@
 - (NSInteger)createDVDMenuFiles:(NSString *)path withTheme:(NSDictionary *)theme withFileArray:(NSArray *)fileArray withMaxProgressSize:(CGFloat)maxProgressSize withName:(NSString *)name errorString:(NSString **)error;
 
 /**
+ *  Create a standard DVD-Audio folder
+ *
+ *  @param path A path to create the folder
+ *  @param files Wave files
+ *  @param error An error string
+ */
+- (NSInteger)createStandardDVDAudioFolderAtPath:(NSString *)path withFiles:(NSArray *)files errorString:(NSString **)error;
+
+/**
  *  Get a preview image from a theme
  *
  *  @param theme The theme

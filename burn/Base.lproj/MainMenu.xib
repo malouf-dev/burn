@@ -392,11 +392,11 @@ CA
             <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1417"/>
             <value key="minSize" type="size" width="430" height="380"/>
             <view key="contentView" autoresizesSubviews="NO" id="389">
-                <rect key="frame" x="0.0" y="0.0" width="430" height="399"/>
+                <rect key="frame" x="0.0" y="0.0" width="430" height="173"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
                     <tabView type="noTabsBezelBorder" translatesAutoresizingMaskIntoConstraints="NO" id="390">
-                        <rect key="frame" x="-12" y="51" width="458" height="350"/>
+                        <rect key="frame" x="-12" y="51" width="458" height="124"/>
                         <font key="font" metaFont="system"/>
                         <tabViewItems>
                             <tabViewItem label="Data" identifier="Data" id="475" customClass="KWTabViewItem">
@@ -782,7 +782,7 @@ CA
                                             </connections>
                                         </button>
                                         <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="457">
-                                            <rect key="frame" x="335" y="70" width="86" height="22"/>
+                                            <rect key="frame" x="326" y="70" width="95" height="22"/>
                                             <popUpButtonCell key="cell" type="push" title="Audio CD" bezelStyle="rounded" alignment="left" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" arrowPosition="arrowAtCenter" preferredEdge="maxY" selectedItem="460" id="937">
                                                 <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="smallSystem"/>
@@ -790,6 +790,9 @@ CA
                                                     <items>
                                                         <menuItem title="Audio CD" state="on" id="460"/>
                                                         <menuItem title="MP3 Disc" id="461"/>
+                                                        <menuItem title="DVD-Audio" id="VUg-vk-FWS">
+                                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                                        </menuItem>
                                                     </items>
                                                 </menu>
                                             </popUpButtonCell>
@@ -806,7 +809,7 @@ CA
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <tableView focusRingType="exterior" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Audio TableView" rowSizeStyle="automatic" headerView="979" viewBased="YES" id="450" customClass="KWTableView">
-                                                        <rect key="frame" x="0.0" y="0.0" width="432" height="1"/>
+                                                        <rect key="frame" x="0.0" y="0.0" width="432" height="19"/>
                                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                         <size key="intercellSpacing" width="3" height="2"/>
                                                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -999,7 +1002,7 @@ CA
                                             </connections>
                                         </button>
                                         <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="824" customClass="KWTextField">
-                                            <rect key="frame" x="60" y="71" width="270" height="22"/>
+                                            <rect key="frame" x="60" y="71" width="261" height="22"/>
                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="Untitled" bezelStyle="round" id="944">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>

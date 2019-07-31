@@ -99,16 +99,13 @@
 
     //Double clicking will start a song
     [tableView setDoubleAction:@selector(play:)];
-	    
-	    
-    //Needs to be set in Tiger (Took me a while to figure out since it worked since Jaguar without target)
     [tableView setTarget:self];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(movieEnded:) name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
     
     //Set save popup title
     selectedTypeIndex = [[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultAudioType"] intValue];
-    [tableViewPopup selectItemAtIndex:selectedTypeIndex < 2 ? selectedTypeIndex : 0];
+    [tableViewPopup selectItemAtIndex:selectedTypeIndex];
     [self tableViewPopup:self];
 
     //Set the Inspector window to empty
@@ -165,6 +162,13 @@
 	    [rowData setObject:path forKey:@"Path"];
 	    [incompatibleFiles addObject:rowData];
     }
+    else if (selectedTypeIndex == 2 && ![[[path pathExtension] lowercaseString] isEqualTo:@"wav"] && ![fileType isEqualTo:@"'WAVE'"] && ![fileType isEqualTo:@"'.WAV'"])
+    {
+        NSMutableDictionary *rowData = [NSMutableDictionary dictionary];
+        [rowData setObject:[[NSFileManager defaultManager] displayNameAtPath:path] forKey:@"Name"];
+        [rowData setObject:path forKey:@"Path"];
+        [incompatibleFiles addObject:rowData];
+    }
     else
     {
 	    NSMutableDictionary *rowData = [NSMutableDictionary dictionary];
@@ -189,6 +193,17 @@
 	    [rowData setObject:sizeObject forKey:@"Size"];
 	    [rowData setObject:[[NSNumber numberWithInt:time] stringValue] forKey:@"RealTime"];
 	    [rowData setObject:[[NSWorkspace sharedWorkspace] iconForFile:path] forKey:@"Icon"];
+     
+        if ([tableData count] > 0 && [[[[tableData objectAtIndex:0] objectForKey:@"Name"] lowercaseString] isEqualTo:@"audio_ts"] && selectedTypeIndex == 2)
+        {
+            [previousButton setEnabled:YES];
+            [playButton setEnabled:YES];
+            [nextButton setEnabled:YES];
+            [stopButton setEnabled:YES];
+        
+            [tableData removeAllObjects];
+            currentDropRow = -1;
+        }
 	    
 	    if (selectedTypeIndex == 1)
 	    {
@@ -325,7 +340,31 @@
 - (id)myTrackWithBurner:(KWBurner *)burner errorString:(NSString **)error
 {
     //Stop the music before burning
-   [self stop:self];
+    [self stop:self];
+   
+    if (selectedTypeIndex == 2)
+    {
+        NSString *discName = [self discName];
+        NSString *outputFolder = [NSTemporaryDirectory() stringByAppendingPathComponent:discName];
+        
+        if (outputFolder)
+        {
+            [temporaryFiles addObject:outputFolder];
+    
+            NSInteger succes = [self authorizeFolderAtPathIfNeededAtPath:outputFolder errorString:&*error];
+    
+            if (succes == 0)
+            {
+                return [[KWTrackProducer alloc] getTrackForFolder:outputFolder ofType:7 withDiscName:discName];
+            }
+            else
+                return @(succes);
+        }
+        else
+        {
+            return @(2);
+        }
+    }
 	    
     if (selectedTypeIndex == 1)
     {
@@ -399,6 +438,40 @@
     return nil;
 }
 
+- (NSInteger)authorizeFolderAtPathIfNeededAtPath:(NSString *)path errorString:(NSString **)error;
+{
+    NSInteger succes;
+    NSDictionary *currentData = [tableData objectAtIndex:0];
+    
+    if ([tableData count] > 0 && [[[currentData objectForKey:@"Name"] lowercaseString] isEqualTo:@"audio_ts"])
+    {
+        succes = [KWCommonMethods createDVDFolderAtPath:path ofType:0 fromTableData:tableData errorString:&*error];
+    }
+    else
+    {
+        float maximumSize = [[self totalSize] floatValue];
+        
+        KWProgressManager *progressManager = [KWProgressManager sharedManager];
+        [progressManager setMaximumValue:maximumSize];
+    
+        NSMutableArray *files = [NSMutableArray array];
+
+        NSInteger i;
+        for (i=0;i<[tableData count];i++)
+        {
+            [files addObject:[[tableData objectAtIndex:i] objectForKey:@"Path"]];
+        }
+        
+        [progressManager setTask:NSLocalizedString(@"Authoring DVD...",nil)];
+        [progressManager setStatus:NSLocalizedString(@"Generating DVD folder",nil)];
+    
+        DVDAuthorizer = [[KWDVDAuthorizer alloc] init];
+        succes = [DVDAuthorizer createStandardDVDAudioFolderAtPath:path withFiles:files errorString:&*error];
+    }
+    
+    return succes;
+}
+
 ///////////////////////
 // Tableview actions //
 ///////////////////////
@@ -444,9 +517,16 @@
 
 	    allowedFileTypes = [KWCommonMethods quicktimeTypes];
     }
-    else if (selrow == 1)
+    else
     {
-        tableData = mp3TableData;
+        if (selrow == 1)
+        {
+            tableData = mp3TableData;
+        }
+        else
+        {
+            tableData = dvdTableData;
+        }
 
 	    allowedFileTypes = [KWCommonMethods mediaTypes];
     }
@@ -491,6 +571,14 @@
     
 	    [accessOptions setEnabled:YES];
     }
+    else if (selectedTypeIndex == 2)
+    {
+        convertExtension = @"wav";
+        convertKind = 6;
+        isDVD = YES;
+        
+        [accessOptions setEnabled:NO];
+    }
     
     //get the tableview and set the total time
     [self setDisplay:self];
@@ -512,9 +600,17 @@
 	    NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
     
 	    if (selectedTypeIndex == 0)
-    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioDisc",@"Type", nil]];
+        {
+    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioDisc", @"Type", nil]];
+        }
 	    else if (selectedTypeIndex == 1)
-    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioMP3Disc",@"Type", nil]];
+        {
+    	    [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWAudioMP3Disc", @"Type", nil]];
+        }
+        else
+        {
+            [defaultCenter postNotificationName:@"KWChangeInspector" object:tableView userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"KWEmpty", @"Type", nil]];
+        }
     }
 }
 

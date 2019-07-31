@@ -82,6 +82,7 @@
 		FEC9BBE422C7F3C300A17077 /* Cross@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BBE222C7F3C200A17077 /* Cross@2x.png */; };
 		FEC9BBE722C7F5FF00A17077 /* Eject@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BBE522C7F5FE00A17077 /* Eject@3x.png */; };
 		FEC9BBE822C7F5FF00A17077 /* Eject@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BBE622C7F5FF00A17077 /* Eject@2x.png */; };
+		FEE6368622F1B4A20064DD92 /* dvda-author-dev in Resources */ = {isa = PBXBuildFile; fileRef = FEE6368522F1B4A20064DD92 /* dvda-author-dev */; };
 		FEF8A80912D9D2BF00FE302C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165FFE840EACC02AAC07 /* InfoPlist.strings */; };
 		FEF8A80C12D9D2BF00FE302C /* Back.png in Resources */ = {isa = PBXBuildFile; fileRef = FEEF6F180B92E8BB00ED64A9 /* Back.png */; };
 		FEF8A80D12D9D2BF00FE302C /* Cross.png in Resources */ = {isa = PBXBuildFile; fileRef = FEEF6F1A0B92E8BB00ED64A9 /* Cross.png */; };
@@ -534,6 +535,7 @@
 		FEE12CDE0BAC583D001D474B /* KWEjecter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWEjecter.m; path = Source/KWEjecter.m; sourceTree = "<group>"; };
 		FEE5CDDE0BA583C900FAD174 /* KWPreferences.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWPreferences.m; path = Source/KWPreferences.m; sourceTree = "<group>"; };
 		FEE5CDE00BA583DB00FAD174 /* KWPreferences.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWPreferences.h; path = Source/KWPreferences.h; sourceTree = "<group>"; };
+		FEE6368522F1B4A20064DD92 /* dvda-author-dev */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = "dvda-author-dev"; path = "Binaries/dvda-author-dev"; sourceTree = "<group>"; };
 		FEE64C240BE4A5C300106E3B /* KWTextField.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWTextField.m; path = Source/KWTextField.m; sourceTree = "<group>"; };
 		FEE64C250BE4A5C300106E3B /* KWTextField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWTextField.h; path = Source/KWTextField.h; sourceTree = "<group>"; };
 		FEE64D0C0BE4B6E100106E3B /* KWOutlineView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWOutlineView.h; path = Source/KWOutlineView.h; sourceTree = "<group>"; };
@@ -1019,6 +1021,7 @@
 				FE89095F22C391CA007E793B /* mkisofs */,
 				FE89096022C391CB007E793B /* spumux */,
 				FE89096122C391CB007E793B /* vcdimager */,
+				FEE6368522F1B4A20064DD92 /* dvda-author-dev */,
 			);
 			name = Binaries;
 			sourceTree = "<group>";
@@ -1319,6 +1322,7 @@
 				FE4A013522CD2ACD0033759B /* Back (dark).png in Resources */,
 				FEF8A81512D9D2BF00FE302C /* Credits.html in Resources */,
 				FEF8A81612D9D2BF00FE302C /* Localizable.strings in Resources */,
+				FEE6368622F1B4A20064DD92 /* dvda-author-dev in Resources */,
 				FEF8A81712D9D2BF00FE302C /* Burn.icns in Resources */,
 				FEC9BB0622C78BC000A17077 /* MainMenu.xib in Resources */,
 				FE4A012A22CD2ACD0033759B /* Stop (dark)@2x.png in Resources */,
