@@ -240,6 +240,8 @@
 
     ffmpeg = [[NSTask alloc] init];
     
+    // Test
+//     inputOptions = [NSArray arrayWithObjects:@"-t", @"1", @"-i", path, nil];
     inputOptions = [NSArray arrayWithObjects:@"-i", path, nil];
 
     NSPipe *pipe=[[NSPipe alloc] init];
@@ -317,7 +319,7 @@
 	    if ([defaults boolForKey:@"KWCustomFPS"])
 	    {
     	    [args addObject:@"-r"];
-    	    [args addObject:[defaults objectForKey:@"KWDefaultFPS"]];
+    	    [args addObject:[NSString stringWithFormat:@"%.2f", [[defaults objectForKey:@"KWDefaultFPS"] floatValue]]];
 	    }
     }
     else if (convertKind == 3)
@@ -362,14 +364,11 @@
 	    [args addObject:@"-ar"];
 	    [args addObject:@"44100"];
     }
-    // TODO: enable when using a newer ffmpeg
-//    else if (convertKind == 6 && [self isTwentyFourBitsAudio:path])
-//    {
-//        [args addObject:@"-acodec"];
-//        [args addObject:@"pcm_s24le"];
-//    }
-
-    [args addObject:outFileWithExtension];
+    else if (convertKind == 6 && [self isTwentyFourBitsAudio:path])
+    {
+        [args addObject:@"-acodec"];
+        [args addObject:@"pcm_s24le"];
+    }
 
     //Fix for DV to mpeg2 conversion
     if (inputFormat == 1)
@@ -413,6 +412,11 @@
 	    	    
 	    }
     }
+    
+    [args addObject:@"-max_muxing_queue_size"];
+    [args addObject:@"99999"];
+
+    [args addObject:outFileWithExtension];
 
     // TODO: update ffmpeg so we can force the aspect ratio, aspect seems to be ignored for some input files
 //    [args addObject:@"-vf"];
@@ -443,7 +447,8 @@
 	    if ([string rangeOfString:@"time="].length > 0)
 	    {
     	    NSString *currentTimeString = [[[[string componentsSeparatedByString:@"time="] objectAtIndex:1] componentsSeparatedByString:@" "] objectAtIndex:0];
-    	    float percent = [currentTimeString floatValue] / inputTotalTime * 100;
+            CGFloat currentTime = [self ffmpegCurrentTimeToSeconds:currentTimeString];
+    	    float percent = currentTime / inputTotalTime * 100;
 	    
     	    if (inputTotalTime > 0)
     	    {
@@ -690,14 +695,14 @@
 
 - (BOOL)streamWorksOfKind:(NSString *)kind inOutput:(NSString *)output
 {
-    NSString *one = [[[[[[output componentsSeparatedByString:@"Output #0"] objectAtIndex:0] componentsSeparatedByString:@"Stream #0.0"] objectAtIndex:1] componentsSeparatedByString:@": "] objectAtIndex:1];
+    NSString *one = [[[[[[output componentsSeparatedByString:@"Output #0"] objectAtIndex:0] componentsSeparatedByString:@"Stream #0:0"] objectAtIndex:1] componentsSeparatedByString:@": "] objectAtIndex:1];
     NSString *two = @"";
     
-    if ([output rangeOfString:@"Stream #0.1"].length > 0)
-	    two = [[[[[[output componentsSeparatedByString:@"Output #0"] objectAtIndex:0] componentsSeparatedByString:@"Stream #0.1"] objectAtIndex:1] componentsSeparatedByString:@": "] objectAtIndex:1];
+    if ([output rangeOfString:@"Stream #0:1"].length > 0)
+	    two = [[[[[[output componentsSeparatedByString:@"Output #0"] objectAtIndex:0] componentsSeparatedByString:@"Stream #0:1"] objectAtIndex:1] componentsSeparatedByString:@": "] objectAtIndex:1];
 
     //Is stream 0.0 audio or video
-    if ([output rangeOfString:@"for input stream #0.0"].length > 0 || [output rangeOfString:@"Error while decoding stream #0.0"].length > 0)
+    if ([output rangeOfString:@"for input stream #0.0"].length > 0 || [output rangeOfString:@"Error while decoding stream #0:0"].length > 0)
     {
 	    if ([one isEqualTo:kind])
 	    {
@@ -706,7 +711,7 @@
     }
     	    
     //Is stream 0.1 audio or video
-    if ([output rangeOfString:@"for input stream #0.1"].length > 0| [output rangeOfString:@"Error while decoding stream #0.1"].length > 0)
+    if ([output rangeOfString:@"for input stream #0:1"].length > 0| [output rangeOfString:@"Error while decoding stream #0:1"].length > 0)
     {
 	    if ([two isEqualTo:kind])
 	    {
@@ -725,7 +730,7 @@
 
 - (BOOL)setTimeAndAspectFromOutputString:(NSString *)output fromFile:(NSString *)file
 {    
-    NSString *inputString = [[output componentsSeparatedByString:@"Input"] objectAtIndex:1];
+    NSString *inputString = [[output componentsSeparatedByString:@"Input #0"] objectAtIndex:1];
 
     inputWidth = 0;
     inputHeight = 0;
@@ -737,16 +742,47 @@
     //Calculate the aspect ratio width / height    
     if ([[[inputString componentsSeparatedByString:@"Output"] objectAtIndex:0] rangeOfString:@"Video:"].length > 0)
     {
+        // TODO: make this stuff a lot saver!!!!!!
 	    //NSString *resolution;
-	    NSArray *resolutionArray = [[[[[[[inputString componentsSeparatedByString:@"Output"] objectAtIndex:0] componentsSeparatedByString:@"Video:"] objectAtIndex:1] componentsSeparatedByString:@"\n"] objectAtIndex:0] componentsSeparatedByString:@"x"];
-	    NSArray *fpsArray = [[[[[inputString componentsSeparatedByString:@"Output"] objectAtIndex:0] componentsSeparatedByString:@" tbc"] objectAtIndex:0] componentsSeparatedByString:@","];
+        NSString *videoInfo = [[[inputString componentsSeparatedByString:@"Output"][0] componentsSeparatedByString:@"Video:"][1] componentsSeparatedByString:@"\n"][0];
+        NSArray *videoComponents = [videoInfo componentsSeparatedByString:@","];
+        NSString *resolutionString;
+        NSString *fpsString;
+
+        for (NSString *videoComponent in videoComponents)
+        {
+            NSString *strippedVideoComponent = [[videoComponent componentsSeparatedByString:@"("][0] componentsSeparatedByString:@"["][0];
+            NSLog(@"strippedVideoComponent: %@", strippedVideoComponent);
+            NSCharacterSet *resolutionCharacterSet = [NSCharacterSet characterSetWithCharactersInString:@"0123456789x "];
+            
+            NSLog(@"Location: %lu %lu", (unsigned long)[strippedVideoComponent rangeOfCharacterFromSet:[resolutionCharacterSet invertedSet]].location, (unsigned long)[strippedVideoComponent rangeOfCharacterFromSet:[resolutionCharacterSet invertedSet]].length);
+            if ([strippedVideoComponent rangeOfCharacterFromSet:[resolutionCharacterSet invertedSet]].location == NSNotFound)
+            {
+                resolutionString = strippedVideoComponent;
+                continue;
+            }
+            
+            NSCharacterSet *fpsCharacterSet = [NSCharacterSet characterSetWithCharactersInString:@"0123456789.fps "];
+            if ([strippedVideoComponent rangeOfCharacterFromSet:[fpsCharacterSet invertedSet]].location == NSNotFound)
+            {
+                fpsString = strippedVideoComponent;
+                continue;
+            }
+        }
+
+//        NSArray *resolutionPreArray = [[videoInfo componentsSeparatedByString:@"[SAR"][0] componentsSeparatedByString:@","];
+//        NSString *resolutionInfo = resolutionPreArray[[resolutionPreArray count] - 1];
+//        NSArray *fpsPreArray = [[videoInfo componentsSeparatedByString:@" fps"][0] componentsSeparatedByString:@","];
+//        NSString *fpsInfo = fpsPreArray[[fpsPreArray count] - 1];
+//        NSArray *fpsArray = [[[[[inputString componentsSeparatedByString:@"Output"] objectAtIndex:0] componentsSeparatedByString:@" tbc"] objectAtIndex:0] componentsSeparatedByString:@","];
+//
+//        NSArray *beforeX = [[resolutionArray objectAtIndex:0] componentsSeparatedByString:@" "];
+//        NSArray *afterX = [[resolutionArray objectAtIndex:1] componentsSeparatedByString:@" "];
 	    
-	    NSArray *beforeX = [[resolutionArray objectAtIndex:0] componentsSeparatedByString:@" "];
-	    NSArray *afterX = [[resolutionArray objectAtIndex:1] componentsSeparatedByString:@" "];
-	    
-	    inputWidth = [[beforeX objectAtIndex:[beforeX count] - 1] intValue];
-	    inputHeight = [[afterX objectAtIndex:0] intValue];
-	    inputFps = [[fpsArray objectAtIndex:[fpsArray count] - 1] intValue];
+        NSArray *resolutionComponents = [resolutionString componentsSeparatedByString:@"x"];
+	    inputWidth = [resolutionComponents[0] intValue];
+	    inputHeight = [resolutionComponents[1] intValue];
+	    inputFps = [fpsString floatValue];
     
 	    if (inputFps == 25 && [inputString rangeOfString:@"Video: dvvideo"].length > 0)
 	    {
@@ -1089,6 +1125,20 @@
     {
 	    return NO;
     }
+}
+
+- (CGFloat)ffmpegCurrentTimeToSeconds:(NSString *)currentTime
+{
+    NSArray *parts = [currentTime componentsSeparatedByString:@":"];
+    if ([parts count] == 3)
+    {
+        CGFloat hour = [parts[0] doubleValue];
+        CGFloat minutes = [parts[1] doubleValue];
+        CGFloat seconds = [parts[2] doubleValue];
+        return hour * 60 * 60 + minutes * 60 + seconds;
+    }
+    
+    return 0.0;
 }
 
 - (NSInteger)totalTimeInSeconds:(NSString *)path

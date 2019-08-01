@@ -14,26 +14,19 @@ Commands:
 bash#: ./configure
 bash#: make
 
-* ffmpeg-mt (yasm):
-
-ffmpeg-mt version: git-2bbb64d, libswscale version: git-svn-r32676
-ffmpeg version: SVN-r26116
+* ffmpeg-4.1.4 (yasm 1.3.0):
 
 Commands:
-bash#: ./configure --disable-muxers --disable-encoders --enable-muxer=avi --enable-muxer=mpeg1vcd --enable-muxer=mpeg2dvd --enable-muxer=mpeg2svcd --enable-muxer=wav --enable-muxer=mp3 --enable-muxer=flac --enable-encoder=ac3 --enable-encoder=mp2 --enable-encoder=libmp3lame --enable-encoder=flac --enable-encoder=wav --disable-protocols --enable-protocol=file --enable-protocol=pipe --disable-bsfs --enable-libmp3lame --disable-shared --enable-gpl --enable-encoder=mpeg4 --enable-encoder=mpeg1video --enable-encoder=mpeg2video --enable-muxer=image2 --enable-encoder=mjpeg --disable-bzlib --disable-network --enable-encoder=pcm_s16le --enable-pthreads --disable-filters --enable-filter=pad --enable-filter=scale --enable-filter=crop --enable-muxer=pcm_s16le --target-os=darwin
+bash#: ./configure --disable-muxers --disable-encoders --enable-muxer=avi --enable-muxer=mpeg1vcd --enable-muxer=mpeg2dvd --enable-muxer=mpeg2svcd --enable-muxer=wav --enable-muxer=mp3 --enable-muxer=flac --enable-encoder=ac3 --enable-encoder=mp2 --enable-encoder=libmp3lame --enable-encoder=flac --enable-encoder=wav --disable-protocols --enable-protocol=file --enable-protocol=pipe --disable-bsfs --enable-libmp3lame --disable-shared --enable-gpl --enable-encoder=mpeg4 --enable-encoder=mpeg1video --enable-encoder=mpeg2video --enable-muxer=image2 --enable-encoder=mjpeg --disable-bzlib --disable-network --enable-encoder=pcm_s16le --enable-pthreads --disable-filters --enable-filter=pad --enable-filter=scale --enable-filter=crop --enable-muxer=pcm_s16le --target-os=darwin --enable-filter=aresample -enable-encoder=pcm_s24le
 bash#: make
 bash#: sudo make install
 
-* lame-3.98.4:
-Lame is compiled staticly and linked into ffmpeg(-mt). 
+* lame-3.100:
+Lame is compiled staticly and linked into ffmpeg. 
 
 Commands:
-Intel:
 bash#: ./configure --disable-shared --disable-frontend
 bash#: make
-PowerPC:
-bash#: HOST_CC=gcc CC="gcc-4.0 -arch ppc -isysroot /Developer/SDKs/MacOSX10.3.9.sdk -mmacosx-version-min=10.3.9" CXX="g++-4.0 -arch ppc -isysroot /Developer/SDKs/MacOSX10.3.9.sdk -mmacosx-version-min=10.3.9" ./configure --disable-shared --disable-frontend
-bash#: HOST_CC=gcc CC="gcc-4.0 -arch ppc -isysroot /Developer/SDKs/MacOSX10.3.9.sdk -mmacosx-version-min=10.3.9" CXX="g++-4.0 -arch ppc -isysroot /Developer/SDKs/MacOSX10.3.9.sdk -mmacosx-version-min=10.3.9" make
 
 * vcdimager-0.7.23:
 Since Burn 2.0u we're using the command line frontend (was the xml frontend).
