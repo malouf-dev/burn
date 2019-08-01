@@ -752,18 +752,16 @@
         for (NSString *videoComponent in videoComponents)
         {
             NSString *strippedVideoComponent = [[videoComponent componentsSeparatedByString:@"("][0] componentsSeparatedByString:@"["][0];
-            NSLog(@"strippedVideoComponent: %@", strippedVideoComponent);
             NSCharacterSet *resolutionCharacterSet = [NSCharacterSet characterSetWithCharactersInString:@"0123456789x "];
             
-            NSLog(@"Location: %lu %lu", (unsigned long)[strippedVideoComponent rangeOfCharacterFromSet:[resolutionCharacterSet invertedSet]].location, (unsigned long)[strippedVideoComponent rangeOfCharacterFromSet:[resolutionCharacterSet invertedSet]].length);
-            if ([strippedVideoComponent rangeOfCharacterFromSet:[resolutionCharacterSet invertedSet]].location == NSNotFound)
+            if ([strippedVideoComponent rangeOfCharacterFromSet:[resolutionCharacterSet invertedSet]].location == NSNotFound && [strippedVideoComponent containsString:@"x"])
             {
                 resolutionString = strippedVideoComponent;
                 continue;
             }
             
             NSCharacterSet *fpsCharacterSet = [NSCharacterSet characterSetWithCharactersInString:@"0123456789.fps "];
-            if ([strippedVideoComponent rangeOfCharacterFromSet:[fpsCharacterSet invertedSet]].location == NSNotFound)
+            if ([strippedVideoComponent rangeOfCharacterFromSet:[fpsCharacterSet invertedSet]].location == NSNotFound && [strippedVideoComponent containsString:@" fps"])
             {
                 fpsString = strippedVideoComponent;
                 continue;
