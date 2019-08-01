@@ -828,12 +828,21 @@ return YES;
     else
     {
 	    DRFolder *discRoot = [DRFolder virtualFolderWithName:@"Untitled"];
+        NSFileManager *defaultManager = [NSFileManager defaultManager];
     
 	    NSInteger i;
 	    DRFSObject *fsObj;
 	    for (i=0;i<[tableData count];i++)
 	    {
-    	    fsObj = [DRFile fileWithPath:[[tableData objectAtIndex:i] valueForKey: @"Path"]];
+            NSString *path = [[tableData objectAtIndex:i] valueForKey:@"Path"];
+            if ([defaultManager fileExistsAtPath:path])
+            {
+    	        fsObj = [DRFile fileWithPath:path];
+            }
+            else
+            {
+                fsObj = [DRFile virtualFileWithName:[path lastPathComponent] data:[NSData data]];
+            }
     	    [discRoot addChild:fsObj];
 	    }
         
