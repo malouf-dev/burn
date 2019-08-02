@@ -666,7 +666,7 @@
     {
 	    path = audioDiscPath;
     }
-    NSLog(@"Path: %@", path);
+    
     NSArray *arguments = [NSArray arrayWithObjects:@"mount",path, nil];
     
     NSString *errorsString;
