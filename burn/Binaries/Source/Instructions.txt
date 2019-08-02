@@ -10,6 +10,8 @@ bash#: make
 
 * dvdauthor-0.6.11 (libdvdread):
 
+Requirements
+
 Commands:
 bash#: ./configure
 bash#: make
@@ -30,6 +32,11 @@ bash#: make
 
 * vcdimager-0.7.23:
 Since Burn 2.0u we're using the command line frontend (was the xml frontend).
+
+Library: libpopt (needed for command line frontend)
+bash#: ./configure --without-cd-drive --without-cd-info --without-cd-paranoia --without-cdda-player --without-cd-read --without-iso-info --without-iso-read --disable-shared
+bash#: make
+bash#: make install
 
 Commands:
 bash#: ./configure --disable-shared --without-xml-frontend

@@ -263,8 +263,8 @@
     [arguments addObject:@"--update-scan-offsets"];
     [arguments addObject:@"-l"];
     [arguments addObject:[self discName]];
-    [arguments addObject:[@"--cue-_file=" stringByAppendingString:@"/dev/fd/1"]];
-    [arguments addObject:[@"--bin-_file=" stringByAppendingString:@"/dev/fd/2"]];
+    [arguments addObject:[@"--cue-file=" stringByAppendingString:@"/dev/fd/1"]];
+    [arguments addObject:[@"--bin-file=" stringByAppendingString:@"/dev/fd/2"]];
     
     for (NSString *path in [self mpegFiles])
     {
@@ -439,7 +439,7 @@
     else if (type == 5)
 	    [arguments addObject:@"svcd"];
     
-    [arguments addObjectsFromArray:[NSArray arrayWithObjects:@"--update-scan-offsets", @"-l", [self discName], [@"--cue-_file=" stringByAppendingString:@"/dev/fd/1"], [@"--bin-_file=" stringByAppendingString:@"/dev/fd/2"], nil]];
+    [arguments addObjectsFromArray:[NSArray arrayWithObjects:@"--update-scan-offsets", @"-l", [self discName], [@"--cue-file=" stringByAppendingString:@"/dev/fd/1"], [@"--bin-file=" stringByAppendingString:@"/dev/fd/2"], nil]];
     [arguments addObjectsFromArray:[self mpegFiles]];
 
     NSTask *trackCreator = [[NSTask alloc] init];

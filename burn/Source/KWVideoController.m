@@ -279,16 +279,16 @@
     }
     else if (selectedTypeIndex == 0)
     {
-	    return [[KWTrackProducer alloc] getTrackForVCDMPEGFiles:[self files] withDiscName:[nameTextField stringValue] ofType:4];
+	    return [[KWTrackProducer alloc] getTrackForVCDMPEGFiles:[self files] withDiscName:[self discName] ofType:4];
     }
     else if (selectedTypeIndex == 1)
     {
-	    return [[KWTrackProducer alloc] getTrackForVCDMPEGFiles:[self files] withDiscName:[nameTextField stringValue] ofType:5];
+	    return [[KWTrackProducer alloc] getTrackForVCDMPEGFiles:[self files] withDiscName:[self discName] ofType:5];
     }
 
     if (selectedTypeIndex == 3)
     {
-	    DRFolder *rootFolder = [DRFolder virtualFolderWithName:[nameTextField stringValue]];
+	    DRFolder *rootFolder = [DRFolder virtualFolderWithName:[self discName]];
 	    
 	    NSInteger i;
 	    DRFSObject *fsObj;
