@@ -10,8 +10,6 @@ bash#: make
 
 * dvdauthor-0.6.11 (libdvdread):
 
-Requirements
-
 Commands:
 bash#: ./configure
 bash#: make
