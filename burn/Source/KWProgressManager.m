@@ -132,7 +132,7 @@
         {
             [progressIndicator setIndeterminate:NO];
             [progressIndicator setDoubleValue:0.0];
-            [progressIndicator setMaxValue:_maximumValue];
+            [progressIndicator setMaxValue:self->_maximumValue];
         }
         else
         {
@@ -161,7 +161,7 @@
 
         NSRect progressRect = NSMakeRect(9.0, 10.0, 111.0, 16.0);
 
-        if (_value == -1)
+        if (self->_value == -1)
         {
             [progressIndicator setIndeterminate:YES];
             [progressIndicator startAnimation:nil];
@@ -181,11 +181,11 @@
             [progressIndicator setIndeterminate:NO];
         }
 
-        if (_value > [progressIndicator doubleValue])
+        if (self->_value > [progressIndicator doubleValue])
         {
-            [progressIndicator setDoubleValue:_value];
+            [progressIndicator setDoubleValue:self->_value];
             
-            double percent = _value / [progressIndicator maxValue] * 100;
+            double percent = self->_value / [progressIndicator maxValue] * 100;
         
             if (percent > 0 && percent < 10)
             {
@@ -339,7 +339,7 @@
         NSWindow *window = [self window];
         NSRect frame = [window frame];
     
-        if (_allowCanceling == NO)
+        if (self->_allowCanceling == NO)
         {
             NSRect newFrame = NSMakeRect(frame.origin.x, frame.origin.y, frame.size.width, 124.0);
             [window setFrame:newFrame display:YES];

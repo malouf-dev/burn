@@ -79,6 +79,6 @@
 /**
  *  Cancel handler
  */
-@property (nonatomic, strong) void(^ _Nullable cancelHandler)();
+@property (nonatomic, strong) void(^ _Nullable cancelHandler)(void);
 
 @end
