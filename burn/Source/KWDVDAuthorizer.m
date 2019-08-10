@@ -481,10 +481,10 @@
     if (success)
     {
 	    NSUserDefaults *standardUserDefaults = [NSUserDefaults standardUserDefaults];
-	    NSPipe *pipe=[[NSPipe alloc] init];
-	    NSPipe *pipe2=[[NSPipe alloc] init];
-	    NSFileHandle *myHandle = [pipe fileHandleForWriting];
-	    NSFileHandle *myHandle2 = [pipe2 fileHandleForReading];
+//        NSPipe *pipe = [[NSPipe alloc] init];
+//        NSPipe *pipe2 = [[NSPipe alloc] init];
+//        NSFileHandle *myHandle = [pipe fileHandleForWriting];
+//        NSFileHandle *myHandle2 = [pipe2 fileHandleForReading];
 	    NSTask *ffmpeg = [[NSTask alloc] init];
 	    NSString *format;
     
@@ -498,76 +498,95 @@
         }
         
 	    [ffmpeg setLaunchPath:[KWCommonMethods ffmpegPath]];
+     
+        // macOS 10.14.6 seems to break piping stuff, so do it manually (create files instead of pipes) :(
+        NSData *tiffData = [image TIFFRepresentation];
+        NSBitmapImageRep *bitmap = [NSBitmapImageRep imageRepWithData:tiffData];
+        NSData *jpgData = [bitmap representationUsingType:NSJPEGFileType properties:[NSDictionary dictionaryWithObject:[NSNumber numberWithFloat:1.0] forKey:NSImageCompressionFactor]];
+        NSString *pipeImagePath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"pipeImage.jpg"];
+        [jpgData writeToFile:pipeImagePath atomically:YES];
 	    
+        NSString *pipeVideoPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"pipeVideo.mpg"];
 	    NSArray *arguments;
 	    if ([[standardUserDefaults objectForKey:@"KWDVDThemeFormat"] intValue] == 0)
-    	    arguments = [NSArray arrayWithObjects: @"-shortest", @"-f",@"image2pipe",@"-threads",[[NSNumber numberWithInt:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWEncodingThreads"] intValue]] stringValue], @"-i",@"pipe:.jpg",@"-f", @"s16le", @"-ac", @"2", @"-i", @"/dev/zero",@"-target",format,@"-",@"-an", nil];
-	    else
-    	    arguments = [NSArray arrayWithObjects: @"-shortest", @"-f",@"image2pipe",@"-threads",[[NSNumber numberWithInt:[[[NSUserDefaults standardUserDefaults] objectForKey:@"KWEncodingThreads"] intValue]] stringValue], @"-i",@"pipe:.jpg",@"-f", @"s16le", @"-ac", @"2", @"-i", @"/dev/zero", @"-target",format,@"-",@"-an",@"-aspect",@"16:9", nil];
+        {
+            arguments = @[@"-threads",[[NSNumber numberWithInt:[[standardUserDefaults objectForKey:@"KWEncodingThreads"] intValue]] stringValue], @"-loop", @"1", @"-i", pipeImagePath, @"-t", @"1", @"-target", format, @"-an", pipeVideoPath];
+//           arguments = [NSArray arrayWithObjects: @"-threads",[[NSNumber numberWithInt:[[standardUserDefaults objectForKey:@"KWEncodingThreads"] intValue]] stringValue], @"-i", pipeImagePath,@"-f", @"s16le", @"-ac", @"2", @"-shortest", @"-i", @"-",@"-target",format,@"-an", @"-shortest", @"-", nil];
+        }
+        else
+        {
+            arguments = @[@"-threads",[[NSNumber numberWithInt:[[standardUserDefaults objectForKey:@"KWEncodingThreads"] intValue]] stringValue], @"-loop", @"1", @"-i", pipeImagePath, @"-t", @"1", @"-target", format, @"-an", @"-aspect", @"16:9", pipeVideoPath];
+//            arguments = [NSArray arrayWithObjects: @"-threads",[[NSNumber numberWithInt:[[standardUserDefaults objectForKey:@"KWEncodingThreads"] intValue]] stringValue], @"-i", pipeImagePath,@"-f", @"s16le", @"-ac", @"2", @"-i", @"-", @"-target",format,@"-an",@"-aspect",@"16:9", @"-shortest", @"-", nil];
+        }
     
 	    [ffmpeg setArguments:arguments];
-	    [ffmpeg setStandardInput:pipe];
-	    [ffmpeg setStandardOutput:pipe2];
-	    [ffmpeg setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+//        [ffmpeg setStandardInput:pipe];
+//        [ffmpeg setStandardOutput:pipe2];
+//        [ffmpeg setStandardError:[ffmpeg standardOutput]];
 
 	    NSTask *spumux = [[NSTask alloc] init];
 	    
 	    if (![KWCommonMethods createFileAtPath:path attributes:nil errorString:&*error])
+        {
     	    return NO;
-	    
-	    [spumux setStandardOutput:[NSFileHandle fileHandleForWritingAtPath:path]];
-	    [spumux setStandardInput:myHandle2];
-	    [spumux setLaunchPath:[[NSBundle mainBundle] pathForResource:@"spumux" ofType:@""]];
-	    [spumux setCurrentDirectoryPath:[path stringByDeletingLastPathComponent]];
-	    [spumux setArguments:[NSArray arrayWithObject:[[path stringByDeletingPathExtension] stringByAppendingPathExtension:@"xml"]]];
-	    NSPipe *errorPipe=[[NSPipe alloc] init];
-	    NSFileHandle *handle;
-	    [spumux setStandardError:errorPipe];
-	    handle=[errorPipe fileHandleForReading];
-	    [KWCommonMethods logCommandIfNeeded:spumux];
-	    [spumux launch];
+        }
+        
+        [spumux setStandardOutput:[NSFileHandle fileHandleForWritingAtPath:path]];
+//        [spumux setStandardInput:myHandle2];
+        [spumux setLaunchPath:[[NSBundle mainBundle] pathForResource:@"spumux" ofType:@""]];
+        [spumux setCurrentDirectoryPath:[path stringByDeletingLastPathComponent]];
+        [spumux setArguments:[NSArray arrayWithObject:[[path stringByDeletingPathExtension] stringByAppendingPathExtension:@"xml"]]];
+        BOOL pal = ([[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultRegion"] intValue] == 0);
+        [spumux setEnvironment:@{@"VIDEO_FORMAT": pal ? @"PAL" : @"NTSC"}];
+        NSPipe *errorPipe = [[NSPipe alloc] init];
+        NSFileHandle *handle;
+        [spumux setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+        handle = [errorPipe fileHandleForReading];
+        [KWCommonMethods logCommandIfNeeded:spumux];
+//        [spumux launch];
         [self setSpumux:spumux];
      
 	    [KWCommonMethods logCommandIfNeeded:ffmpeg];
 	    [ffmpeg launch];
         [self setFfmpeg:ffmpeg];
     
-	    NSData *tiffData = [image TIFFRepresentation];
-	    NSBitmapImageRep *bitmap = [NSBitmapImageRep imageRepWithData:tiffData];
-	    
-	    NSData *jpgData = [bitmap representationUsingType:NSJPEGFileType properties:[NSDictionary dictionaryWithObject:[NSNumber numberWithFloat:1.0] forKey:NSImageCompressionFactor]];
-	    
-	    NSInteger q = 0;
-	    while (q < 25)
-	    {
-    	    q = q + 1;
-    	    [myHandle writeData:jpgData];
-	    }
-	    
-	    [myHandle closeFile];
+        // Re-enable in the future when image2pipe is fixed!!!
+//        NSData *tiffData = [image TIFFRepresentation];
+//        NSBitmapImageRep *bitmap = [NSBitmapImageRep imageRepWithData:tiffData];
+//
+//        NSData *jpgData = [bitmap representationUsingType:NSJPEGFileType properties:[NSDictionary dictionaryWithObject:[NSNumber numberWithFloat:1.0] forKey:NSImageCompressionFactor]];
+//        [myHandle writeData:jpgData];
+//        [myHandle closeFile];
 
 	    [ffmpeg waitUntilExit];
 	    ffmpeg = nil;
 
-	    NSString *string = [[NSString alloc] initWithData:[handle readDataToEndOfFile] encoding:NSUTF8StringEncoding];
-    
-	    if ([standardUserDefaults boolForKey:@"KWDebug"])
-    	    NSLog(@"%@", string);
+//        NSString *string = [[NSString alloc] initWithData:[myHandle2 readDataToEndOfFile] encoding:NSUTF8StringEncoding];
+//
+//        if ([standardUserDefaults boolForKey:@"KWDebug"])
+//            NSLog(@"%@", string);
 
-	    [spumux waitUntilExit];
-
-	    success = ([spumux terminationStatus] == 0);
-
-	    spumux = nil;
+//        [spumux waitUntilExit];
+//
+//        success = ([spumux terminationStatus] == 0);
+//
+//        spumux = nil;
 	    
 	    if (!success)
 	    {
             [KWCommonMethods removeItemAtPath:path];
-    	    *error = string;
+//            *error = string;
 	    }
+        
+        [spumux setStandardInput:[NSFileHandle fileHandleForReadingAtPath:pipeVideoPath]];
+        [spumux launch];
+        [spumux waitUntilExit];
+        success = ([spumux terminationStatus] == 0);
 
         [KWCommonMethods removeItemAtPath:maskFile];
         [KWCommonMethods removeItemAtPath:[[path stringByDeletingPathExtension] stringByAppendingPathExtension:@"xml"]];
+        [KWCommonMethods removeItemAtPath:pipeImagePath];
+        [KWCommonMethods removeItemAtPath:pipeVideoPath];
     }
     
     return success;
