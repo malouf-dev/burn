@@ -546,6 +546,7 @@
 		FEEA90420BECB9A9006397D0 /* KWDVDInspector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWDVDInspector.h; path = Source/KWDVDInspector.h; sourceTree = "<group>"; };
 		FEEA90430BECB9A9006397D0 /* KWDVDInspector.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWDVDInspector.m; path = Source/KWDVDInspector.m; sourceTree = "<group>"; };
 		FEEB40CA0BEDE0A90015842C /* Multiple.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Multiple.png; path = Images/Multiple.png; sourceTree = "<group>"; };
+		FEEB9BED2302E81C007FE11F /* Base */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Base; path = Base.lproj/BurnHelp; sourceTree = "<group>"; };
 		FEEDE01F0BDF53A300D50314 /* KWInspector.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWInspector.m; path = Source/KWInspector.m; sourceTree = "<group>"; };
 		FEEDE0200BDF53A300D50314 /* KWInspector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWInspector.h; path = Source/KWInspector.h; sourceTree = "<group>"; };
 		FEEF6F180B92E8BB00ED64A9 /* Back.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Back.png; path = Images/Back.png; sourceTree = "<group>"; };
@@ -1544,6 +1545,7 @@
 				FED7356522C0132700397ABF /* nl */,
 				FE31515C22CBE13F00692452 /* zh-Hant */,
 				FE31515D22CBE14300692452 /* pt-BR */,
+				FEEB9BED2302E81C007FE11F /* Base */,
 			);
 			name = BurnHelp;
 			sourceTree = "<group>";
@@ -1853,6 +1855,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.kiwifruitware.Burn;
 				PRODUCT_NAME = Burn;
 				SDKROOT = macosx;
+				STRIP_INSTALLED_PRODUCT = NO;
 				WRAPPER_EXTENSION = app;
 				ZERO_LINK = YES;
 			};
@@ -1864,6 +1867,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1)",
 					"$(PROJECT_DIR)/Frameworks",
@@ -1883,6 +1887,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.kiwifruitware.Burn;
 				PRODUCT_NAME = Burn;
 				SDKROOT = macosx;
+				STRIP_INSTALLED_PRODUCT = NO;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

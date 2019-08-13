@@ -392,11 +392,11 @@ CA
             <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1417"/>
             <value key="minSize" type="size" width="430" height="380"/>
             <view key="contentView" autoresizesSubviews="NO" id="389">
-                <rect key="frame" x="0.0" y="0.0" width="430" height="173"/>
+                <rect key="frame" x="0.0" y="0.0" width="430" height="399"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
                     <tabView type="noTabsBezelBorder" translatesAutoresizingMaskIntoConstraints="NO" id="390">
-                        <rect key="frame" x="-12" y="51" width="458" height="124"/>
+                        <rect key="frame" x="-12" y="51" width="458" height="350"/>
                         <font key="font" metaFont="system"/>
                         <tabViewItems>
                             <tabViewItem label="Data" identifier="Data" id="475" customClass="KWTabViewItem">
@@ -446,7 +446,7 @@ CA
                                             <rect key="frame" x="0.0" y="32" width="433" height="252"/>
                                             <clipView key="contentView" id="tYI-3E-xn0">
                                                 <rect key="frame" x="1" y="0.0" width="431" height="251"/>
-                                                <autoresizingMask key="autoresizingMask"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Data" headerView="982" id="481" customClass="KWOutlineView">
                                                         <rect key="frame" x="0.0" y="0.0" width="431" height="226"/>
@@ -806,10 +806,10 @@ CA
                                             <rect key="frame" x="0.0" y="32" width="433" height="26"/>
                                             <clipView key="contentView" id="axL-lh-3qG">
                                                 <rect key="frame" x="1" y="0.0" width="431" height="25"/>
-                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
                                                     <tableView focusRingType="exterior" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Audio TableView" rowSizeStyle="automatic" headerView="979" viewBased="YES" id="450" customClass="KWTableView">
-                                                        <rect key="frame" x="0.0" y="0.0" width="432" height="19"/>
+                                                        <rect key="frame" x="0.0" y="0.0" width="432" height="1"/>
                                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                         <size key="intercellSpacing" width="3" height="2"/>
                                                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>

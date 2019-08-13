@@ -710,11 +710,15 @@
             [alert beginSheetModalForWindow:[self mainWindow] modalDelegate:self didEndSelector:nil contextInfo:nil];
         }];
     }
+    else
+    {
+        [[KWProgressManager sharedManager] endSheet];
+    }
     
     // TODO: Since it's always yes, just delete files when needed
     [[self dataController] deleteTemporayFiles:YES];
-//    [audioControllerOutlet deleteTemporayFiles:YES];
-//    [videoControllerOutlet deleteTemporayFiles:YES];
+    [[self audioController] deleteTemporayFiles:YES];
+    [[self videoController] deleteTemporayFiles:YES];
     [[self discCopyController] deleteTemporayFiles:YES];
 }
 

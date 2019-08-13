@@ -126,4 +126,6 @@
 
 @property (nonatomic, strong) NSString *discName;
 
+- (void)deleteTemporayFiles:(BOOL)needed;
+
 @end

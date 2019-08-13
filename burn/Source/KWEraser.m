@@ -63,57 +63,65 @@
 {
     [self setModalWindow:modalWindow];
     [self setCompletion:completion];
-
-    [self setupWindow];
     
-    [modalWindow beginSheet:[self window] completionHandler:^(NSModalResponse returnCode)
+    [[NSOperationQueue mainQueue] addOperationWithBlock:^
     {
-        [[DRNotificationCenter currentRunLoopCenter] removeObserver:self name:DRDeviceStatusChangedNotification object:nil];
-        if (returnCode == NSModalResponseOK)
+        [self setupWindow];
+        
+        NSWindow *window = [self window];
+        [modalWindow beginSheet:window completionHandler:^(NSModalResponse returnCode)
         {
-            [self erase];
-        }
-        else
-        {
-            if (completion != nil)
+            [[DRNotificationCenter currentRunLoopCenter] removeObserver:self name:DRDeviceStatusChangedNotification object:nil];
+            if (returnCode == NSModalResponseOK)
             {
-                completion(@{@"ReturnCode": @"KWCanceled"});
+                [window orderOut:nil];
+                [self erase];
             }
-        }
+            else
+            {
+                if (completion != nil)
+                {
+                    completion(@{@"ReturnCode": @"KWCanceled"});
+                }
+            }
+        }];
     }];
 }
 
 - (void)erase
 {
-    KWProgressManager *progressManager = [KWProgressManager sharedManager];
-    [progressManager setIconImage:[NSImage imageNamed:@"Burn"]];
-    [progressManager setTask:NSLocalizedString(@"Erasing disc", nil)];
-    [progressManager setStatus:NSLocalizedString(@"Preparing...", nil)];
-    [progressManager setMaximumValue:0.0];
-    [progressManager setAllowCanceling:NO];
-    [progressManager beginSheetForWindow:[self modalWindow]];
+    [[NSOperationQueue mainQueue] addOperationWithBlock:^
+    {
+        KWProgressManager *progressManager = [KWProgressManager sharedManager];
+        [progressManager setIconImage:[NSImage imageNamed:@"Burn"]];
+        [progressManager setTask:NSLocalizedString(@"Erasing disc", nil)];
+        [progressManager setStatus:NSLocalizedString(@"Preparing...", nil)];
+        [progressManager setMaximumValue:0.0];
+        [progressManager setAllowCanceling:NO];
+        [progressManager beginSheetForWindow:[self modalWindow]];
 
-    DRErase *erase = [[DRErase alloc] initWithDevice:[self currentDevice]];
+        DRErase *erase = [[DRErase alloc] initWithDevice:[self currentDevice]];
 
-    if ([[self completelyErase] state] == NSOnState)
-	    [erase setEraseType:DREraseTypeComplete];
-    else
-	    [erase setEraseType:DREraseTypeQuick];    
-	    
-    //Save burner
-    NSMutableDictionary *burnDict = [[NSMutableDictionary alloc] init];
+        if ([[self completelyErase] state] == NSOnState)
+            [erase setEraseType:DREraseTypeComplete];
+        else
+            [erase setEraseType:DREraseTypeQuick];
+        
+        //Save burner
+        NSMutableDictionary *burnDict = [[NSMutableDictionary alloc] init];
 
-    [burnDict setObject:[[[self currentDevice] info] objectForKey:@"DRDeviceProductNameKey"] forKey:@"Product"];
-    [burnDict setObject:[[[self currentDevice] info] objectForKey:@"DRDeviceVendorNameKey"] forKey:@"Vendor"];
-    [burnDict setObject:@"" forKey:@"SerialNumber"];
+        [burnDict setObject:[[[self currentDevice] info] objectForKey:@"DRDeviceProductNameKey"] forKey:@"Product"];
+        [burnDict setObject:[[[self currentDevice] info] objectForKey:@"DRDeviceVendorNameKey"] forKey:@"Vendor"];
+        [burnDict setObject:@"" forKey:@"SerialNumber"];
 
-    [[NSUserDefaults standardUserDefaults] setObject:burnDict forKey:@"KWDefaultDeviceIdentifier"];
+        [[NSUserDefaults standardUserDefaults] setObject:burnDict forKey:@"KWDefaultDeviceIdentifier"];
 
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"KWMediaChanged" object:nil];
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"KWMediaChanged" object:nil];
 
-    [[DRNotificationCenter currentRunLoopCenter] addObserver:self selector:@selector(eraseNotification:) name:DREraseStatusChangedNotification object:erase];    
+        [[DRNotificationCenter currentRunLoopCenter] addObserver:self selector:@selector(eraseNotification:) name:DREraseStatusChangedNotification object:erase];
 
-    [erase start];
+        [erase start];
+    }];
 }
 
 - (void)updateDevice:(DRDevice *)device
