@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com//DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>UDSP</key>
@@ -363,10 +363,6 @@ Note: il y a un fichier mp4 protégé qui ne sera pas converti)</string>
 	<string>Il y a eu un problème durant la création de l&apos;image</string>
 	<key>No</key>
 	<string>Non</string>
-	<key>
-(Note: there are a few protected mp4 files which can&apos;t be converted)</key>
-	<string>
-(Note: certains fichiers mp4 protégés ne pourront pas être convertis)</string>
 	<key>Processing: %@ (%i of %i)</key>
 	<string>En cours: %@ (%i de %i)</string>
 	<key>Unsupported Image</key>

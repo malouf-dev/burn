@@ -98,7 +98,7 @@
 	    [combineCheckBox setHidden:YES];
     }
     
-    [myWindow setContentSize:NSMakeSize([myWindow frame].size.width,height)];
+    [myWindow setContentSize:NSMakeSize([myWindow frame].size.width, height)];
     
     DRNotificationCenter *currentCenter = [DRNotificationCenter currentRunLoopCenter];
     [currentCenter addObserver:self selector:@selector(statusChanged:) name:DRDeviceStatusChangedNotification object:nil];

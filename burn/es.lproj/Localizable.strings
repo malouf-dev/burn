@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com//DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>UDSP</key>
@@ -372,10 +372,6 @@ Monta la imagen y arrástrala sobre la ventana de Burn.</string>
 	<string>Hay un problema creando la imagen</string>
 	<key>No</key>
 	<string>No</string>
-	<key>
-(Note: there are a few protected mp4 files which can&apos;t be converted)</key>
-	<string>
-(Note: there are a few protected mp4 files which can&apos;t be converted)</string>
 	<key>Processing: %@ (%i of %i)</key>
 	<string>En curso: %@ (%i de %i)</string>
 	<key>Unsupported Image</key>

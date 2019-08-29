@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com//DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>UDSP</key>
@@ -356,10 +356,6 @@ Mount the image and drop the mounted image in the window.</string>
 	<string>There was a problem creating the image</string>
 	<key>No</key>
 	<string>No</string>
-	<key>
-(Note: there are a few protected mp4 files which can&apos;t be converted)</key>
-	<string>
-(Note: there are a few protected mp4 files which can&apos;t be converted)</string>
 	<key>Processing: %@ (%i of %i)</key>
 	<string>Processing: %1$@ (%2$i of %3$i)</string>
 	<key>Unsupported Image</key>
@@ -390,5 +386,7 @@ Mount the image and drop the mounted image in the window.</string>
 	<string>Choose a location to save the burn file</string>
 	<key>Failed to install theme in the &apos;Application Support&apos; folder</key>
 	<string>Failed to install theme in the &apos;Application Support&apos; folder</string>
+	<key>menu-help-mail-link</key>
+	<string>mailto:support@kiwifruitware.org?subject=Burn%20Support&amp;body=Burn%20version:%0DmacOS%20version:%0DSteps%20to%20reproduce:%0DScreenshots%20/%20Movies:</string>
 </dict>
 </plist>

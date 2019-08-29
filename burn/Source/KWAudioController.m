@@ -1028,7 +1028,6 @@
     return [KWCommonMethods formatTime:[[self totalSize] floatValue] / 75];
 }
 
-//Get movie duration using NSMovie so it works in Panther too
 - (NSInteger)getMovieDuration:(NSString *)path
 {
     NSURL *fileURL = [NSURL fileURLWithPath:path];

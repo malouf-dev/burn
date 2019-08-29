@@ -93,11 +93,17 @@
     
     NSInteger totalSize;
     if ([layout rangeOfString:@"2048"].length > 0)
+    {
 	    totalSize = size / 2048;
+    }
     else if ([layout rangeOfString:@"2336"].length > 0)
+    {
 	    totalSize = size / 2336;
+    }
     else if ([layout rangeOfString:@"2352"].length > 0)
-	    totalSize = size / 2336;
+    {
+	    totalSize = size / 2352;
+    }
     
     if (![scanner skipPastString:@"BINARY"])
     {
@@ -123,8 +129,10 @@
 	    NSInteger blockSize = 0;
 	    
 	    if (![scanner skipPastString:@"TRACK"])
+        {
     	    break;
-	    
+        }
+        
 	    if (![scanner scanInteger:&trackID])
 	    {
     	    //NSLog(@"Could not parse track number.");
@@ -254,12 +262,18 @@
 - (NSArray *)getTracksOfVcd
 {
     NSMutableArray *arguments = [NSMutableArray array];
+    
     [arguments addObject:@"-t"];
     NSInteger type = [self type];
     if (type == 4)
+    {
 	    [arguments addObject:@"vcd2"];
+    }
     else if (type == 5)
+    {
 	    [arguments addObject:@"svcd"];
+    }
+    
     [arguments addObject:@"--update-scan-offsets"];
     [arguments addObject:@"-l"];
     [arguments addObject:[self discName]];
@@ -306,36 +320,41 @@
     NSArray *sessions = [toc objectForKey:@"Sessions"];
     NSMutableArray *mySessions = [NSMutableArray array];
     NSMutableArray *myTracks = [NSMutableArray array];
-
-    NSInteger i = 0;
-    for (i=0;i<[sessions count];i++)
+    
+    for (NSDictionary *session in sessions)
     {
-	    NSDictionary *session = [sessions objectAtIndex:i];
-	    
-	    NSNumber *leadout = [session objectForKey:@"Leadout Block"]; 
+	    NSNumber *leadout = [session objectForKey:@"Leadout Block"];
 	    NSArray *tracks = [session objectForKey:@"Track Array"];
     
 	    NSInteger x = 0;
-	    for (x=0;x<[tracks count];x++)
+	    for (x = 0; x < [tracks count]; x ++)
 	    {
     	    NSDictionary *currentTrack = [tracks objectAtIndex:x];
 	    
     	    NSInteger size;
 	    
     	    if (x + 1 < [tracks count])
+            {
 	    	    size = [[[tracks objectAtIndex:x + 1] objectForKey:@"Start Block"] intValue] - [[currentTrack objectForKey:@"Start Block"] intValue];
+            }
     	    else
+            {
 	    	    size = [leadout intValue] - [[currentTrack objectForKey:@"Start Block"] intValue];
+            }
 	    
     	    DRTrack *track = [[DRTrack alloc] initWithProducer:self];
     	    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
     	    
     	    [dict setObject:[NSNumber numberWithBool:YES] forKey:@"KWFirstTrack"];
     	    
-//            if (x == 0)
-//                [dict setObject:[DRMSF msfWithFrames:150] forKey:DRPreGapLengthKey];
-//            else
-//                [dict setObject:[DRMSF msfWithFrames:0] forKey:DRPreGapLengthKey];
+            if (x == 0)
+            {
+                [dict setObject:[DRMSF msfWithFrames:150] forKey:DRPreGapLengthKey];
+            }
+            else
+            {
+                [dict setObject:[DRMSF msfWithFrames:0] forKey:DRPreGapLengthKey];
+            }
 	    
     	    [dict setObject:[DRMSF msfWithFrames:size] forKey:DRTrackLengthKey];
     	    [dict setObject:[NSNumber numberWithInt:2352] forKey:DRBlockSizeKey];
@@ -365,8 +384,9 @@
     //Create our audio track
     DRTrack *track = [[DRTrack alloc] initWithProducer:self];
     NSMutableDictionary *properties = [NSMutableDictionary dictionary];
-	    
-    [properties setObject:[NSNumber numberWithFloat:[self audioTrackSizeAtPath:path]] forKey:DRTrackLengthKey];
+    
+    NSUInteger frames = [self audioTrackSizeAtPath:path];
+    [properties setObject:[DRMSF msfWithFrames:frames] forKey:DRTrackLengthKey];
     [properties setObject:[NSNumber numberWithInt:2352] forKey:DRBlockSizeKey];
     [properties setObject:[NSNumber numberWithInt:0] forKey:DRBlockTypeKey];
     [properties setObject:[NSNumber numberWithInt:0] forKey:DRDataFormKey];
@@ -374,7 +394,6 @@
     [properties setObject:[NSNumber numberWithInt:0] forKey:DRTrackModeKey];
     [properties setObject:path forKey:@"KWAudioPath"];
     [properties setObject:[NSNumber numberWithBool:YES] forKey:@"KWFirstTrack"];
-    //[properties setObject:DRVerificationTypeProduceAgain forKey:DRVerificationTypeKey];
 	    
     [track setProperties:properties];
 
@@ -400,15 +419,25 @@
     
     NSInteger type = [self type];
     if (type == 1)
+    {
 	    [options addObjectsFromArray:[NSArray arrayWithObjects:@"-hfs", @"--osx-hfs", @"-r", @"-joliet", @"-input-hfs-charset", [[NSBundle mainBundle] pathForResource:@"iso8859-1" ofType:@""], nil]];
+    }
     else if (type == 2)
+    {
 	    [options addObject:@"-udf"];
+    }
     else if (type == 3)
+    {
 	    [options addObject:@"-dvd-video"];
+    }
     else if (type == 7)
+    {
 	    [options addObject:@"-dvd-audio"];
+    }
     else if (type == 8)
-	    [options addObjectsFromArray:[NSArray arrayWithObjects:@"-r", @"-joliet", @"-joliet-long", nil]];
+    {
+	    [options addObjectsFromArray:@[@"-r", @"-joliet", @"-joliet-long"]];
+    }
 	    
     [options addObject:[self folderPath]];
     
@@ -435,9 +464,13 @@
     
     NSInteger type = [self type];
     if (type == 4)
+    {
 	    [arguments addObject:@"vcd2"];
+    }
     else if (type == 5)
+    {
 	    [arguments addObject:@"svcd"];
+    }
     
     [arguments addObjectsFromArray:[NSArray arrayWithObjects:@"--update-scan-offsets", @"-l", [self discName], [@"--cue-file=" stringByAppendingString:@"/dev/fd/1"], [@"--bin-file=" stringByAppendingString:@"/dev/fd/2"], nil]];
     [arguments addObjectsFromArray:[self mpegFiles]];
@@ -462,7 +495,7 @@
     }];
 }
 
-- (void)createAudioTrack:(NSString *)path
+- (void)createAudioTrack:(NSString *)path track:(DRTrack *)track
 {
     NSTask *trackCreator = [[NSTask alloc] init];
 
@@ -475,39 +508,54 @@
 
     [trackCreator setLaunchPath:[KWCommonMethods ffmpegPath]];
     
-    NSArray *arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-ac", @"2", @"-", nil];
+    NSInteger trackLength = [[track properties][DRTrackLengthKey] integerValue];
+    NSString *padString = [NSString stringWithFormat:@"apad=whole_len=%li", ((trackLength * 2352) / 4)];
+    NSArray *arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-ac", @"2", @"-af", padString, @"-", nil];
     
     if ([[KWConverter alloc] isAudioCDFile:path])
-	    arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-acodec", @"copy", @"-", nil];
+    {
+	    arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-acodec", @"copy", @"-af", padString, @"-", nil];
+    }
     
     [trackCreator setArguments:arguments];
     [trackCreator setStandardOutput:calcPipe];
     
     if (![[NSUserDefaults standardUserDefaults] boolForKey:@"KWDebug"])
     {
-	    [trackCreator setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+        [trackCreator setStandardError:[NSFileHandle fileHandleWithNullDevice]];
     }
     
     [KWCommonMethods logCommandIfNeeded:trackCreator];
-
-    _file = fdopen([readHandle fileDescriptor], "r");
     
-    [[[NSOperationQueue alloc] init] addOperationWithBlock:^
-    {
+    // Disabled since macOS 10.14.6 seems to not like NSPipe's
+    // TODO: re-enable when possible
+//    _file = fdopen([readHandle fileDescriptor], "rb");
+//
+//    [[[NSOperationQueue alloc] init] addOperationWithBlock:^
+//    {
         [trackCreator launch];
 
         NSData *data;
+        NSMutableData *audioData = [[NSMutableData alloc] init];
         while([data = [calcHandle availableData] length])
         {
-            [writeHandle writeData:data];
+//                [writeHandle writeData:data];
+                [audioData appendData:data];
         }
-        
-        [trackCreator waitUntilExit];
+    
+        NSString *temporaryPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"audio.raw"];
+        [audioData writeToFile:temporaryPath atomically:YES];
+        _file = fopen([temporaryPath fileSystemRepresentation], "r");
+    
+        NSMutableDictionary *properties = [[track properties] mutableCopy];
+        properties[@"KWTemporaryFilePath"] = temporaryPath;
+        [track setProperties:properties];
 
+        [trackCreator waitUntilExit];
         [writeHandle closeFile];
         [readHandle closeFile];
         [calcHandle closeFile];
-    }];
+//    }];
 }
 
 ///////////////////
@@ -575,47 +623,46 @@
     return track;
 }
 
-- (float)audioTrackSizeAtPath:(NSString *)path
+- (NSUInteger)audioTrackSizeAtPath:(NSString *)path
 {
     NSTask *ffmpeg = [[NSTask alloc] init];
     NSPipe *outPipe = [[NSPipe alloc] init];
     NSFileHandle *outHandle = [outPipe fileHandleForReading];
     [ffmpeg setLaunchPath:[KWCommonMethods ffmpegPath]];
-    
+
     NSArray *arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-ac", @"2", @"-", nil];
-    
+
     if ([[KWConverter alloc] isAudioCDFile:path])
     {
-	    arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-acodec", @"copy", @"-", nil];
+        arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-acodec", @"copy", @"-", nil];
     }
-    
+
     [ffmpeg setArguments:arguments];
     [ffmpeg setStandardOutput:outPipe];
-    
+
     if (![[NSUserDefaults standardUserDefaults] boolForKey:@"KWDebug"])
-	    [ffmpeg setStandardError:[NSFileHandle fileHandleWithNullDevice]];
-    
+        [ffmpeg setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+
     [KWCommonMethods logCommandIfNeeded:ffmpeg];
     [ffmpeg launch];
-    float size = 0;
-    
-    NSData *data;
+    NSInteger size = 0;
 
-    while([data=[outHandle availableData] length])
+    NSData *data;
+    while([data = [outHandle availableData] length])
     {
         size = size + [data length];
     }
-    
-    [ffmpeg waitUntilExit];
 
-    return size /  2352;
+    [ffmpeg waitUntilExit];
+    
+    return (size + 2351) / 2352;
 }
 
 @end
 
 @interface KWTrackProducer (DiscRecording)
 
-- (BOOL) prepareTrack:(DRTrack*)track forBurn:(DRBurn*)burn toMedia:(NSDictionary*)mediaInfo;
+- (BOOL) prepareTrack:(DRTrack *)track forBurn:(DRBurn *)burn toMedia:(NSDictionary *)mediaInfo;
 - (uint32_t)producePreGapForTrack:(DRTrack *)track intoBuffer:(char *)buffer length:(uint32_t)bufferLength atAddress:(uint64_t)address blockSize:(uint32_t)blockSize ioFlags:(uint32_t *)flags;
 - (uint32_t)produceDataForTrack:(DRTrack *)track intoBuffer:(char *)buffer length:(uint32_t)bufferLength atAddress:(uint64_t)address blockSize:(uint32_t)blockSize ioFlags:(uint32_t *)flags;
 
@@ -638,7 +685,7 @@
     }
     else if (type == 6)
     {
-        [self createAudioTrack:[[track properties] objectForKey:@"KWAudioPath"]];
+        [self createAudioTrack:[[track properties] objectForKey:@"KWAudioPath"] track:track];
     }
 
     return YES;
@@ -656,7 +703,6 @@
     if (_file)
     {
         uint32_t i;
-    
         for (i = 0; i < bufferLength; i+= blockSize)
         {
             fread(buffer, 1, blockSize, _file);
@@ -670,6 +716,9 @@
 - (void)cleanupTrackAfterBurn:(DRTrack *)track;
 {
     fclose(_file);
+    
+    NSString *temporaryPath = [track properties][@"KWTemporaryFilePath"];
+    [[NSFileManager defaultManager] removeItemAtPath:temporaryPath error:nil];
 }
 
 @end

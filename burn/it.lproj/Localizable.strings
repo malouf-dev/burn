@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com//DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>UDSP</key>
@@ -362,10 +362,6 @@ Montare l&apos;immagine e rilasciare l&apos;immagine montata nella finestra.</st
 	<string>C&apos;è stato un problema nel creare il file immagine</string>
 	<key>No</key>
 	<string>No</string>
-	<key>
-(Note: there are a few protected mp4 files which can&apos;t be converted)</key>
-	<string>
-(Nota: alcuni files MP4 protetti non possono essere convertiti)</string>
 	<key>Processing: %@ (%i of %i)</key>
 	<string>In corso: %@ (%i di %i)</string>
 	<key>Unsupported Image</key>
@@ -405,6 +401,6 @@ Montare l&apos;immagine e rilasciare l&apos;immagine montata nella finestra.</st
 	<key>Select to create a video disc</key>
 	<string>Scegliere per creare un disco video</string>
 	<key>Select to copy a disc or disk image</key>
-	<string>Scegliere per copiare un disco o un'immagine disco</string>
+	<string>Scegliere per copiare un disco o un&apos;immagine disco</string>
 </dict>
 </plist>

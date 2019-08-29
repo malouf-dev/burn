@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com//DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>UDSP</key>
@@ -356,10 +356,6 @@ Připojit obraz disku a vhoďte připojený obraz disku do okna.</string>
 	<string>Vyskytl se problém při vytváření obrazu disku</string>
 	<key>No</key>
 	<string>Ne</string>
-	<key>
-(Note: there are a few protected mp4 files which can&apos;t be converted)</key>
-	<string>
-(Pozn.: Některé soubory jsou chráněné mp4 a tyto nelze převést)</string>
 	<key>Processing: %@ (%i of %i)</key>
 	<string>Zpracovává se: %@ (%i z %i)</string>
 	<key>Unsupported Image</key>

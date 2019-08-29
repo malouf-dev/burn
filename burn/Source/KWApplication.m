@@ -171,6 +171,11 @@
     [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"https://burn-osx.sourceforge.io"]];
 }
 
+- (IBAction)contactSupport:(id)sender
+{
+    [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:NSLocalizedString(@"menu-help-mail-link", nil)]];
+}
+
 #pragma mark - Notification Methods
 
 - (void)openPreferencesAndAddTheme:(NSNotification *)notif

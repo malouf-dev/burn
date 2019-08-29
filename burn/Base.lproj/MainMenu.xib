@@ -378,11 +378,17 @@ CA
                                     <action selector="openBurnSite:" target="719" id="724"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Contact Support" id="qur-i9-1dj">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="contactSupport:" target="719" id="DzM-ZW-83T"/>
+                                </connections>
+                            </menuItem>
                         </items>
                     </menu>
                 </menuItem>
             </items>
-            <point key="canvasLocation" x="-96" y="348"/>
+            <point key="canvasLocation" x="-460" y="-772"/>
         </menu>
         <window title="Burn" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" frameAutosaveName="Burn" animationBehavior="default" tabbingMode="disallowed" id="388" userLabel="mainWindow" customClass="KWWindow">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
@@ -1705,7 +1711,7 @@ CA
             <connections>
                 <outlet property="mainTabView" destination="390" id="735"/>
             </connections>
-            <point key="canvasLocation" x="-470" y="-479.5"/>
+            <point key="canvasLocation" x="-454" y="-444"/>
         </window>
         <customObject id="540" userLabel="KWDataController" customClass="KWDataController">
             <connections>

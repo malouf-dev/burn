@@ -893,7 +893,7 @@
 #pragma mark -
 #pragma mark •• Compilant actions
 
-- (NSString *)ffmpegOutputForPath:(NSString *)path
++ (NSString *)ffmpegOutputForPath:(NSString *)path
 {
     NSString *string;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -913,7 +913,7 @@
 //Check if the file is a valid VCD file (return YES if it is valid)
 - (BOOL)isVCD:(NSString *)path
 {
-    NSString *string = [self ffmpegOutputForPath:path];
+    NSString *string = [KWConverter ffmpegOutputForPath:path];
     
     if (string != nil)
     {
@@ -929,7 +929,7 @@
 //Check if the file is a valid SVCD file (return YES if it is valid)
 - (BOOL)isSVCD:(NSString *)path
 {
-    NSString *string = [self ffmpegOutputForPath:path];
+    NSString *string = [KWConverter ffmpegOutputForPath:path];
     
     if (string != nil)
     {
@@ -950,7 +950,7 @@
         return NO;
     }
     
-    NSString *string = [self ffmpegOutputForPath:path];
+    NSString *string = [KWConverter ffmpegOutputForPath:path];
     
     if (string != nil)
     {
@@ -966,7 +966,7 @@
 //Check if the file is a valid MPEG4 file (return YES if it is valid)
 - (BOOL)isMPEG4:(NSString *)path
 {
-    NSString *string = [self ffmpegOutputForPath:path];
+    NSString *string = [KWConverter ffmpegOutputForPath:path];
     
     if (string)
 	    return ([[[path pathExtension] lowercaseString] isEqualTo:@"avi"] && ([string rangeOfString:@"Video: mpeg4"].length > 0 || ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWAllowMSMPEG4"] == YES && [string rangeOfString:@"Video: msmpeg4"].length > 0)));
@@ -977,7 +977,7 @@
 //Check if the file is allready an Audio-CD compatible file (2 or 5.1 channels)
 - (BOOL)isAudioCDFile:(NSString *)path
 {
-    NSString *string = [self ffmpegOutputForPath:path];
+    NSString *string = [KWConverter ffmpegOutputForPath:path];
     
     if (string)
 	    return ([string rangeOfString:@"pcm_s16le"].length > 0 && [string rangeOfString:@"44100"].length > 0 && [string rangeOfString:@"s16"].length > 0 && [string rangeOfString:@"1411 kb/s"].length > 0);
@@ -988,7 +988,7 @@
 // TODO: combine test methods, if possible
 - (NSInteger)isTwentyFourBitsAudio:(NSString *)path
 {
-    NSString *string = [self ffmpegOutputForPath:path];
+    NSString *string = [KWConverter ffmpegOutputForPath:path];
     
     if (string)
         return ([string rangeOfString:@"(24 bit)"].length > 0);
@@ -999,7 +999,7 @@
 //Check for ac3 audio
 - (BOOL)containsAC3:(NSString *)path
 {
-    NSString *string = [self ffmpegOutputForPath:path];
+    NSString *string = [KWConverter ffmpegOutputForPath:path];
     
     if (string)
 	    return ([string rangeOfString:@"Audio: ac3"].length > 0);
@@ -1141,7 +1141,7 @@
 
 - (NSInteger)totalTimeInSeconds:(NSString *)path
 {
-    NSString *string = [self ffmpegOutputForPath:path];
+    NSString *string = [KWConverter ffmpegOutputForPath:path];
     NSString *durationsString = [[[[string componentsSeparatedByString:@"Duration: "] objectAtIndex:1] componentsSeparatedByString:@"."] objectAtIndex:0];
 
     NSInteger hours = [[[durationsString componentsSeparatedByString:@":"] objectAtIndex:0] intValue];
@@ -1151,9 +1151,16 @@
     return seconds + (minutes * 60) + (hours * 60 * 60);
 }
 
++ (NSString *)totalTimeString:(NSString *)path
+{
+    NSString *string = [KWConverter ffmpegOutputForPath:path];
+    NSString *durationsString = [[[[string componentsSeparatedByString:@"Duration: "] objectAtIndex:1] componentsSeparatedByString:@","] objectAtIndex:0];
+    return durationsString;
+}
+
 - (NSString *)mediaTimeString:(NSString *)path
 {
-    NSString *string = [self ffmpegOutputForPath:path];
+    NSString *string = [KWConverter ffmpegOutputForPath:path];
     return [[[[[[[string componentsSeparatedByString:@"Duration: "] objectAtIndex:1] componentsSeparatedByString:@","] objectAtIndex:0] componentsSeparatedByString:@":"] objectAtIndex:1] stringByAppendingString:[@":" stringByAppendingString:[[[[[[string componentsSeparatedByString:@"Duration: "] objectAtIndex:1] componentsSeparatedByString:@","] objectAtIndex:0] componentsSeparatedByString:@":"] objectAtIndex:2]]];
 }
 

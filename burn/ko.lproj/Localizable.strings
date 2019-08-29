@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com//DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>UDSP</key>
@@ -358,10 +358,6 @@ Mount the image and drop the mounted image in the window.</key>
 	<string>디스크 이미지를 만들 때 문제가 발생하였습니다.</string>
 	<key>No</key>
 	<string>아니오</string>
-	<key>
-(Note: there are a few protected mp4 files which can&apos;t be converted)</key>
-	<string>
-(주의:변환할 수 없는 몇몇 보호된 mp4 파일들이 존재합니다.)</string>
 	<key>Processing: %@ (%i of %i)</key>
 	<string>처리 중: %@ (%2$i 중 %1$i)</string>
 	<key>Unsupported Image</key>

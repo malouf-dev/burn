@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com//DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>UDSP</key>
@@ -356,10 +356,6 @@ Mounte das Image und wirf das gemountete Image auf dieses Fenster.</string>
 	<string>Es gab ein Problem beim erstellen des Image</string>
 	<key>No</key>
 	<string>Nein</string>
-	<key>
-(Note: there are a few protected mp4 files which can&apos;t be converted)</key>
-	<string>
-(Hinweis: Es existieren ein paar mp4-Dateien die nicht konvertiert werden konnten)</string>
 	<key>Processing: %@ (%i of %i)</key>
 	<string>Fortschritt: %@ (%i von %i)</string>
 	<key>Unsupported Image</key>

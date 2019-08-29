@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com//DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>UDSP</key>
@@ -356,10 +356,6 @@ Activeer het schijfkopie bestand en sleep de schijf in het venster.</string>
 	<string>Er was een probleem bij het maken van het schijfkopie bestand</string>
 	<key>No</key>
 	<string>Nee</string>
-	<key>
-(Note: there are a few protected mp4 files which can&apos;t be converted)</key>
-	<string>
-(Opmerking: een aantal van de bestanden zijn beveiligde mp4 bestanden die niet kunnen worden geconverteerd)</string>
 	<key>Processing: %@ (%i of %i)</key>
 	<string>Verwerkt: %@ (%i van %i)</string>
 	<key>Unsupported Image</key>
@@ -398,5 +394,7 @@ Activeer het schijfkopie bestand en sleep de schijf in het venster.</string>
 	<string>Selecteer om een videoschijf te aan te maken</string>
 	<key>Select to copy a disc or disk image</key>
 	<string>Selecteer om een schijf of schijfkopie te kopieëren</string>
+	<key>menu-help-mail-link</key>
+	<string>mailto:support@kiwifruitware.org?subject=Brand%20ondersteuning&amp;body=Brand%20versie:%0DmacOS%20versie:%0DStappen:%0DSchermafbeeldingen%20/%20video&apos;s:</string>
 </dict>
 </plist>

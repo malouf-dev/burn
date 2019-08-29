@@ -57,7 +57,7 @@
 
 //Compilant actions
 //Generic command to get info on the input file
-- (NSString *)ffmpegOutputForPath:(NSString *)path;
++ (NSString *)ffmpegOutputForPath:(NSString *)path;
 //Check if the file is a valid VCD file (return YES if it is valid)
 - (BOOL)isVCD:(NSString *)path;
 //Check if the file is a valid SVCD file (return YES if it is valid)
@@ -81,6 +81,7 @@
 - (BOOL)canCombineStreams:(NSString *)path;
 - (BOOL)combineStreams:(NSString *)path atOutputPath:(NSString *)outputPath;
 - (NSInteger)totalTimeInSeconds:(NSString *)path;
++ (NSString *)totalTimeString:(NSString *)path;
 - (NSString *)mediaTimeString:(NSString *)path;
 - (NSImage *)getImageAtPath:(NSString *)path atTime:(NSInteger)time isWideScreen:(BOOL)wide;
 - (void)setErrorStringWithString:(NSString *)string;
