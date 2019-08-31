@@ -388,5 +388,7 @@ Mount the image and drop the mounted image in the window.</key>
 	<string>Burn 파일을 저장할 위치를 선택해 주세요.</string>
 	<key>Failed to install theme in the &apos;Application Support&apos; folder</key>
 	<string>&apos;Application Support&apos; 폴더에 테마를 설치하지 못하였습니다.</string>
+	<key>menu-help-mail-link</key>
+	<string>mailto:support@kiwifruitware.org?subject=Burn%20Support&amp;body=Burn%20version:%0DmacOS%20version:%0DSteps%20to%20reproduce:%0DScreenshots%20/%20Movies:</string>
 </dict>
 </plist>

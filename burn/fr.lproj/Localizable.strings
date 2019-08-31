@@ -395,5 +395,7 @@ Note: il y a un fichier mp4 protégé qui ne sera pas converti)</string>
 	<string>Choisissez un emplacement pour sauver le fichier à graver</string>
 	<key>Failed to install theme in the &apos;Application Support&apos; folder</key>
 	<string>Impossible d&apos;installer le thme dans le dossier &apos;Application Support&apos;</string>
+	<key>menu-help-mail-link</key>
+	<string>mailto:support@kiwifruitware.org?subject=Burn%20Support&amp;body=Burn%20version:%0DmacOS%20version:%0DSteps%20to%20reproduce:%0DScreenshots%20/%20Movies:</string>
 </dict>
 </plist>

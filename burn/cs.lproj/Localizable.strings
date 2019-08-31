@@ -386,5 +386,7 @@ Připojit obraz disku a vhoďte připojený obraz disku do okna.</string>
 	<string>Vyberte umístění pro uložení souborů k vypalování</string>
 	<key>Failed to install theme in the &apos;Application Support&apos; folder</key>
 	<string>Instalace Témat do složky &apos;Podpora aplikací&apos; selhala</string>
+	<key>menu-help-mail-link</key>
+	<string>mailto:support@kiwifruitware.org?subject=Burn%20Support&amp;body=Burn%20version:%0DmacOS%20version:%0DSteps%20to%20reproduce:%0DScreenshots%20/%20Movies:</string>
 </dict>
 </plist>

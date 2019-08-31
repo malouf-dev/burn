@@ -271,6 +271,7 @@
                                 <string key="keyEquivalent" base64-UTF8="YES">
 CA
 </string>
+                                <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="deleteFiles:" target="-1" id="737"/>
                                 </connections>

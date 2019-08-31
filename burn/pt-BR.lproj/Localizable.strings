@@ -386,5 +386,7 @@ Monte a imagem e jogue a imagem montada na janela.</string>
 	<string>Selecione um caminho para salvar o arquivo burn</string>
 	<key>Failed to install theme in the &apos;Application Support&apos; folder</key>
 	<string>Falhou ao instalar tema na pasta &apos;Application Support&apos;</string>
+	<key>menu-help-mail-link</key>
+	<string>mailto:support@kiwifruitware.org?subject=Burn%20Support&amp;body=Burn%20version:%0DmacOS%20version:%0DSteps%20to%20reproduce:%0DScreenshots%20/%20Movies:</string>
 </dict>
 </plist>

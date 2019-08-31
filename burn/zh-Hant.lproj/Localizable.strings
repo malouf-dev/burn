@@ -250,10 +250,6 @@ Mount the image and drop the mounted image in the window.</key>
 
 如果要繼續使用他:
 載入影像檔並拖曳載入的影像到視窗。</string>
-	<key>
-(Note: there is a protected mp4 file which can&apos;t be converted)</key>
-	<string>
-註解: 有一個受保護的 mp4 檔案無法被轉換</string>
 	<key>&apos;%@&apos; was burned succesfully</key>
 	<string>&apos;%@&apos; 已被燒錄成功</string>
 	<key>This file can&apos;t be converted</key>
@@ -386,5 +382,7 @@ Mount the image and drop the mounted image in the window.</key>
 	<string>選擇一個位置以儲存燒錄檔案</string>
 	<key>Eject Disc</key>
 	<string>退出磁碟</string>
+	<key>menu-help-mail-link</key>
+	<string>mailto:support@kiwifruitware.org?subject=Burn%20Support&amp;body=Burn%20version:%0DmacOS%20version:%0DSteps%20to%20reproduce:%0DScreenshots%20/%20Movies:</string>
 </dict>
 </plist>

@@ -402,5 +402,7 @@ Montare l&apos;immagine e rilasciare l&apos;immagine montata nella finestra.</st
 	<string>Scegliere per creare un disco video</string>
 	<key>Select to copy a disc or disk image</key>
 	<string>Scegliere per copiare un disco o un&apos;immagine disco</string>
+	<key>menu-help-mail-link</key>
+	<string>mailto:support@kiwifruitware.org?subject=Burn%20Support&amp;body=Burn%20version:%0DmacOS%20version:%0DSteps%20to%20reproduce:%0DScreenshots%20/%20Movies:</string>
 </dict>
 </plist>
