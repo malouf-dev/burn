@@ -402,7 +402,7 @@
 "1960.title" = "使用固定 ffmpeg";
 
 /* Class = "NSTextFieldCell"; title = "This may not work, because of syntax differences"; ObjectID = "1961"; */
-"1961.title" = "這個也許無法工作，因為 syntax 不同";
+"1961.title" = "「這個也許無法使用，因為語法不同";
 
 /* Class = "NSButtonCell"; title = "Choose…"; ObjectID = "1963"; */
 "1963.title" = "選擇..";

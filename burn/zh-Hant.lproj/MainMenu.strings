@@ -630,7 +630,7 @@
 "965.title" = "接合其他區段";
 
 /* Class = "NSTextFieldCell"; title = "Drag discs and images here"; ObjectID = "966"; */
-"966.title" = "拖曳磁碟或映像擋到這裡";
+"966.title" = "拖曳磁碟或映像檔到這裡";
 
 /* Class = "NSButtonCell"; title = "HFS Standard / Joliet (only)"; ObjectID = "968"; */
 "968.title" = "HFS Standard / Joliet";
