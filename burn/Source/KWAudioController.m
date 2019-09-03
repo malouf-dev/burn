@@ -50,8 +50,9 @@
     mp3TableData = [[NSMutableArray alloc] init];
     dvdTableData = [[NSMutableArray alloc] init];
     
+    trackDictionary = [[NSMutableDictionary alloc] init];
+    
     //Our tracks to burn
-    tracks = [[NSMutableArray alloc] init];
     
     display = 0;
     pause = NO;
@@ -136,7 +137,11 @@
         [trackDictionaries removeObjectsAtIndexes:removeIndexSet];
         [cdtext setTrackDictionaries:trackDictionaries];
         
-        [tracks removeObjectsAtIndexes:indexSet];
+        for (NSDictionary *dictionary in [audioTableData objectsAtIndexes:indexSet])
+        {
+            NSString *trackID = dictionary[@"TrackID"];
+            trackDictionary[trackID] = nil;
+        }
     }
     
     [super deleteFiles:sender];
@@ -223,7 +228,9 @@
     	    NSMutableDictionary *trackProperties = [NSMutableDictionary dictionaryWithDictionary:[track properties]];
     	    [trackProperties setObject:[NSNumber numberWithUnsignedInt:preGapLengthInFrames] forKey:DRPreGapLengthKey];
     	    [track setProperties:trackProperties];
-    	    [tracks addObject:track];
+            NSString *trackKey = [[NSUUID UUID] UUIDString];
+            trackDictionary[trackKey] = track;
+            rowData[@"TrackID"] = trackKey;
     	    
     	    if ([[[path pathExtension] lowercaseString] isEqualTo:@"mp3"] || [[[path pathExtension] lowercaseString] isEqualTo:@"m4a"])
     	    {
@@ -274,7 +281,7 @@
     	    	    }
 	    	    }
     	    
-	    	    NSInteger lastTrack = [tracks count];
+	    	    NSInteger lastTrack = [tableData count] + 1;
 
 	    	    [cdtext setObject:[soundTag getTagTitle] forKey:DRCDTextTitleKey ofTrack:lastTrack];
 	    	    [cdtext setObject:[soundTag getTagArtist] forKey:DRCDTextPerformerKey ofTrack:lastTrack];
@@ -290,7 +297,7 @@
     	    	    [cdtext setObject:NSLocalizedString(@"Untitled", nil) forKey:DRCDTextTitleKey ofTrack:0];
 	    	    }
           
-                NSInteger lastTrack = [tracks count];
+                NSInteger lastTrack = [tableData count] + 1;
                 [cdtext setObject:@"" forKey:DRCDTextTitleKey ofTrack:lastTrack];
     	    }
 	    }
@@ -430,6 +437,12 @@
             }
         
             [burner setExtraBurnProperties:burnProperties];
+        }
+        
+        NSMutableArray *tracks = [[NSMutableArray alloc] init];
+        for (NSDictionary *dictionary in audioTableData)
+        {
+            [tracks addObject:trackDictionary[dictionary[@"TrackID"]]];
         }
 	    
 	    return tracks;
@@ -1010,9 +1023,9 @@
     {
 	    NSInteger i;
 	    NSInteger size = 0;
-	    for (i=0;i<[tracks count];i++)
+	    for (i=0;i<[audioTableData count];i++)
 	    {
-    	    DRTrack *currentTrack = [tracks objectAtIndex:i];
+    	    DRTrack *currentTrack = trackDictionary[audioTableData[i][@"TrackID"]];
     	    NSDictionary *properties = [currentTrack properties];
     	    size = size + [[properties objectForKey:DRTrackLengthKey] intValue];
     	    size = size + [[properties objectForKey:DRPreGapLengthKey] intValue];
@@ -1104,7 +1117,7 @@
 	    
     NSInteger x;
     NSInteger size = 0;
-    for (x=0;x<[tracks count];x++)
+    for (x=0;x<[audioTableData count];x++)
     {
 	    NSInteger trackNumber = x + 1;
 	    cueFile = [NSString stringWithFormat:@"%@\n  TRACK %2li AUDIO", cueFile, trackNumber];
@@ -1145,7 +1158,7 @@
 	    	    cueFile = [NSString stringWithFormat:@"%@\n    FLAGS PRE", cueFile];
 	    }
 	    
-	    DRTrack *currentTrack = [tracks objectAtIndex:x];
+	    DRTrack *currentTrack = trackDictionary[audioTableData[x][@"TrackID"]];
 	    NSDictionary *trackProperties = [currentTrack properties];
 	    NSInteger pregap = [[trackProperties objectForKey:DRPreGapLengthKey] intValue];
     	    
@@ -1181,6 +1194,12 @@
 
 - (NSMutableArray *)myTracks
 {
+    NSMutableArray *tracks = [[NSMutableArray alloc] init];
+    for (NSDictionary *dictionary in audioTableData)
+    {
+        [tracks addObject:trackDictionary[dictionary[@"TrackID"]]];
+    }
+
     return tracks;
 }
 

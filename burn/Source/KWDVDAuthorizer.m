@@ -994,7 +994,7 @@
         {
             if (![string isEqualTo:@""])
             {
-                *error = string;
+                *error = [NSString stringWithFormat:@"KWConsole:\nTask: dvdauthor\n%@", string];
             }
             
             return 1;

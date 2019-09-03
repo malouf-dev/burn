@@ -43,7 +43,7 @@
     NSArray *mp3OptionsMappings;
     NSDictionary *cueMappings;
     
-    NSMutableArray *tracks;
+    NSMutableDictionary *trackDictionary;
     #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
     DRCDTextBlock *cdtext;
     #endif
