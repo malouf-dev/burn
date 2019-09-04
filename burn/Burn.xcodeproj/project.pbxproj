@@ -202,6 +202,9 @@
 		FE04130C0E62D3D3007FD22B /* cs */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = cs; path = "cs.lproj/Theme document.icns"; sourceTree = "<group>"; };
 		FE0413130E62D415007FD22B /* ru */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ru; path = "ru.lproj/Copy document.icns"; sourceTree = "<group>"; };
 		FE0413140E62D415007FD22B /* ru */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = ru; path = "ru.lproj/Theme document.icns"; sourceTree = "<group>"; };
+		FE05CF52231F91C200D8C1E7 /* Base */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = Base; path = "Base.lproj/Burn document.icns"; sourceTree = "<group>"; };
+		FE05CF53231F91C700D8C1E7 /* Base */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = Base; path = "Base.lproj/Copy document.icns"; sourceTree = "<group>"; };
+		FE05CF54231F91CE00D8C1E7 /* Base */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = Base; path = "Base.lproj/Theme document.icns"; sourceTree = "<group>"; };
 		FE0F3C5E22E59E5F007856A8 /* KWConstants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = KWConstants.h; path = Source/KWConstants.h; sourceTree = "<group>"; };
 		FE0F83F622E8F3E2003122C8 /* LetsMove.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = LetsMove.framework; path = Frameworks/LetsMove.framework; sourceTree = "<group>"; };
 		FE1396C90F88D82F0056809A /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -1512,6 +1515,7 @@
 			children = (
 				FED7350422C0130A00397ABF /* en */,
 				FED7357322C0132700397ABF /* nl */,
+				FE05CF52231F91C200D8C1E7 /* Base */,
 			);
 			name = "Burn document.icns";
 			sourceTree = "<group>";
@@ -1532,6 +1536,7 @@
 				FED7357422C0132700397ABF /* nl */,
 				FE31511B22CB848200692452 /* pt-BR */,
 				FE31511E22CB84D500692452 /* zh-Hant */,
+				FE05CF53231F91C700D8C1E7 /* Base */,
 			);
 			name = "Copy document.icns";
 			sourceTree = "<group>";
@@ -1552,6 +1557,7 @@
 				FED7357522C0132700397ABF /* nl */,
 				FE31511C22CB848600692452 /* pt-BR */,
 				FE31511F22CB84D800692452 /* zh-Hant */,
+				FE05CF54231F91CE00D8C1E7 /* Base */,
 			);
 			name = "Theme document.icns";
 			sourceTree = "<group>";

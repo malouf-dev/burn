@@ -734,11 +734,12 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
     NSArray *rowSelection = [outlineView allSelectedItems];
     [rowSelection makeObjectsPerformSelector: @selector(removeFromParent)];
     [outlineView deselectAll:nil];
-    [outlineView reloadData];
 
     NSDictionary *properties = [[savedDictionary objectForKey:@"Properties"] objectForKey:@"Disc Properties"];
     if (properties)
+    {
 	    [(KWDRFolder *)[(FSNodeData*)[treeData nodeData] fsObject] setDiscProperties:properties];
+    }
 
     [self setPropertiesFor:[(FSNodeData*)[treeData nodeData] fsObject] fromDictionary:[savedDictionary objectForKey:@"Properties"]];
 
@@ -752,6 +753,8 @@ static NSString*    EDBCurrentSelection    	    	    	    = @"EDBCurrentSelectio
     loadingBurnFile = NO;
     
     [self setTotalSize];
+    [outlineView reloadData];
+    [outlineView scrollToBeginningOfDocument:nil];
 }
 
 - (void)loadOutlineItems:(NSArray *)ar originalArray:(NSArray *)orAr
