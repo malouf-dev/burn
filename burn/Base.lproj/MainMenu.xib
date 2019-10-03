@@ -133,7 +133,7 @@
                 <menuItem title="Edit" id="163">
                     <menu key="submenu" title="Edit" id="169">
                         <items>
-                            <menuItem title="Undo" keyEquivalent="z" id="158">
+                            <menuItem title="Undo" state="on" keyEquivalent="z" id="158">
                                 <connections>
                                     <action selector="undo:" target="-1" id="180"/>
                                 </connections>

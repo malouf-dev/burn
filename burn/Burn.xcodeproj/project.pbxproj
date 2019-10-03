@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 42;
+	objectVersion = 45;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -462,7 +462,7 @@
 		FEC9BB7F22C78CBF00A17077 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/KWRecorderInfo.xib; sourceTree = "<group>"; };
 		FEC9BB8022C78CBF00A17077 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		FEC9BB8122C78CBF00A17077 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/KWEjecter.xib; sourceTree = "<group>"; };
-		FEC9BB8222C7B83800A17077 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk/System/Library/Frameworks/AVFoundation.framework; sourceTree = SYSTEM_DEVELOPER_DIR; };
+		FEC9BB8222C7B83800A17077 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk/System/Library/Frameworks/AVFoundation.framework; sourceTree = DEVELOPER_DIR; };
 		FEC9BB8522C7D1B700A17077 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/KWProgress.strings; sourceTree = "<group>"; };
 		FEC9BB8B22C7D1C300A17077 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/KWProgress.strings; sourceTree = "<group>"; };
 		FEC9BB8D22C7D1C900A17077 /* cs */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = cs; path = cs.lproj/KWProgress.strings; sourceTree = "<group>"; };
@@ -1252,6 +1252,7 @@
 				FEF8A83F12D9D2BF00FE302C /* Sources */,
 				FEF8A87512D9D2BF00FE302C /* Frameworks */,
 				FEF8A87D12D9D2BF00FE302C /* Copy Frameworks */,
+				FE85D7162340D9630002E338 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -1269,7 +1270,7 @@
 		2A37F4A9FDCFA73011CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1020;
+				LastUpgradeCheck = 1100;
 			};
 			buildConfigurationList = C05733CB08A9546B00998B17 /* Build configuration list for PBXProject "Burn" */;
 			compatibilityVersion = "Xcode 2.4";
@@ -1403,6 +1404,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		FE85D7162340D9630002E338 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "FRAMEWORKS_FOLDER=\"${BUILT_PRODUCTS_DIR}\"/\"${FRAMEWORKS_FOLDER_PATH}\"\nRESOURCES_FOLDER=\"${BUILT_PRODUCTS_DIR}\"/\"${PRODUCT_NAME}.app/Contents/Resources\"\n\n# By default, use the configured code signing identity for the project/target\nIDENTITY=\"${CODE_SIGN_IDENTITY}\"\nif [ \"$IDENTITY\" == \"\" ]\nthen\n  # If a code signing identity is not specified, use ad hoc signing\n  IDENTITY=\"-\"\nfi\ncodesign --verbose --force --deep -o runtime --sign \"$IDENTITY\" \"$FRAMEWORKS_FOLDER/Sparkle.framework/Versions/A/Resources/AutoUpdate.app\"\ncodesign --verbose --force -o runtime --sign \"$IDENTITY\" \"$FRAMEWORKS_FOLDER/Sparkle.framework/Versions/A\"\ncodesign --verbose --force -o runtime --sign \"$IDENTITY\" \"$RESOURCES_FOLDER/dvdauthor\"\ncodesign --verbose --force -o runtime --sign \"$IDENTITY\" \"$RESOURCES_FOLDER/ffmpeg\"\ncodesign --verbose --force -o runtime --sign \"$IDENTITY\" \"$RESOURCES_FOLDER/mkisofs\"\ncodesign --verbose --force -o runtime --sign \"$IDENTITY\" \"$RESOURCES_FOLDER/spumux\"\ncodesign --verbose --force -o runtime --sign \"$IDENTITY\" \"$RESOURCES_FOLDER/vcdimager\"\ncodesign --verbose --force -o runtime --sign \"$IDENTITY\" \"$RESOURCES_FOLDER/dvda-author-dev\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		FEF8A83F12D9D2BF00FE302C /* Sources */ = {
@@ -1848,7 +1869,11 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
+				DEVELOPMENT_TEAM = 5M4D5N9TXW;
+				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1)",
 					"$(PROJECT_DIR)/Frameworks",
@@ -1868,6 +1893,7 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kiwifruitware.Burn;
 				PRODUCT_NAME = Burn;
+				PROVISIONING_PROFILE_SPECIFIER = "Burn Distribution";
 				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 				WRAPPER_EXTENSION = app;
@@ -1881,7 +1907,11 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
+				DEVELOPMENT_TEAM = 5M4D5N9TXW;
+				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1)",
 					"$(PROJECT_DIR)/Frameworks",
@@ -1900,6 +1930,7 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kiwifruitware.Burn;
 				PRODUCT_NAME = Burn;
+				PROVISIONING_PROFILE_SPECIFIER = "Burn Distribution";
 				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 				WRAPPER_EXTENSION = app;
