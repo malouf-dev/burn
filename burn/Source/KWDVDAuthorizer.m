@@ -138,7 +138,7 @@
 
 - (void)createStandardDVDXMLAtPath:(NSString *)path withFileArray:(NSArray *)fileArray errorString:(NSString **)error
 {
-    NSString *xmlFile = [NSString stringWithFormat:@"<dvdauthor dest=\"%@\">\n<titleset>\n<titles>", path];
+    NSString *xmlFile = [NSString stringWithFormat:@"<dvdauthor dest=\"%@\">\n<titleset>\n<titles>", [self convertEntities:path]];
     
     NSInteger x;
     for (x=0;x<[fileArray count];x++)
@@ -146,7 +146,7 @@
 	    NSDictionary *fileDictionary = [fileArray objectAtIndex:x];
 	    NSString *path = [fileDictionary objectForKey:@"Path"];
 	    
-	    xmlFile = [NSString stringWithFormat:@"%@\n<pgc>\n<vob file=\"%@\"", xmlFile, path];
+	    xmlFile = [NSString stringWithFormat:@"%@\n<pgc>\n<vob file=\"%@\"", xmlFile, [self convertEntities:path]];
 	    
 	    NSArray *chapters = [fileDictionary objectForKey:@"Chapters"];
 	    if ([chapters count] > 0)
@@ -748,7 +748,7 @@
 	    NSArray *chapters = [[fileArray objectAtIndex:i] objectForKey:@"Chapters"];
         
         //xmlContent = [NSString stringWithFormat:@"%@<video aspect=\"16:9\" /><pgc>\n<vob file=\"%@\"", xmlContent, [fileDictionary objectForKey:@"Path"]];
-	    xmlContent = [NSString stringWithFormat:@"%@<pgc>\n<vob file=\"%@\"", xmlContent, [fileDictionary objectForKey:@"Path"]];
+	    xmlContent = [NSString stringWithFormat:@"%@<pgc>\n<vob file=\"%@\"", xmlContent, [self convertEntities:[fileDictionary objectForKey:@"Path"]]];
     
 	    if ([chapters count] > 0)
 	    {
@@ -816,7 +816,7 @@
     BOOL pal = ([[[NSUserDefaults standardUserDefaults] objectForKey:@"KWDefaultRegion"] intValue] == 0);
     [dvdauthor setEnvironment:@{@"VIDEO_FORMAT": pal ? @"PAL" : @"NTSC"}];
 
-    [dvdauthor setArguments:[NSArray arrayWithObjects:@"-x",xmlFile, nil]];
+    [dvdauthor setArguments:[NSArray arrayWithObjects:@"-x", xmlFile, nil]];
     [dvdauthor setStandardError:pipe];
     [dvdauthor setStandardOutput:pipe2];
     
@@ -849,7 +849,7 @@
     NSString *errorString = @"";
     NSString *string = nil;
 
-    while([data=[handle availableData] length])
+    while([data = [handle availableData] length])
     {
 	    if (string)
 	    {
@@ -879,7 +879,7 @@
     	    currentProcces = 2;
 	    }
 
-	    if ([string rangeOfString:@"MB"].length > 0 && [string rangeOfString:@"at "].length > 0)
+	    if ([string rangeOfString:@"MB"].length > 0 && [[[string componentsSeparatedByString:@"MB"] objectAtIndex:0] rangeOfString:@"at "].length > 0)
 	    {
     	    float progressValue;
 
@@ -1685,6 +1685,18 @@
     }
     
     return [NSColor whiteColor];
+}
+
+- (nonnull NSString *)convertEntities:(nonnull NSString *)string
+{
+    NSMutableString *convertedString = [string mutableCopy];
+    NSRange replaceRange = NSMakeRange(0, [convertedString length]);
+    [convertedString replaceOccurrencesOfString:@"&" withString:@"&amp;" options:NSLiteralSearch range:replaceRange];
+    [convertedString replaceOccurrencesOfString:@"\"" withString:@"&quot;" options:NSLiteralSearch range:replaceRange];
+    [convertedString replaceOccurrencesOfString:@"'" withString:@"&#x27;" options:NSLiteralSearch range:replaceRange];
+    [convertedString replaceOccurrencesOfString:@">" withString:@"&gt;" options:NSLiteralSearch range:replaceRange];
+    [convertedString replaceOccurrencesOfString:@"<" withString:@"&lt;" options:NSLiteralSearch range:replaceRange];
+    return [convertedString copy];
 }
 
 @end

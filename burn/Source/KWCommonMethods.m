@@ -643,16 +643,25 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
     return success;
 }
 
+// TODO: attributes isn't used anymore
 + (BOOL)createFileAtPath:(NSString *)path attributes:(NSDictionary *)attributes errorString:(NSString **)error
 {
     NSFileManager *defaultManager = [NSFileManager defaultManager];
     BOOL fileExists = [defaultManager fileExistsAtPath:path];
-    BOOL success = [defaultManager createFileAtPath:path contents:[NSData data] attributes:attributes];
-	    
-	    if (!success && fileExists)
-    	    *error = [NSString stringWithFormat:NSLocalizedString(@"Can't overwrite '%@' in '%@'", nil), [defaultManager displayNameAtPath:path], [defaultManager displayNameAtPath:[path stringByDeletingLastPathComponent]]];
-	    else
-    	    *error = [NSString stringWithFormat:NSLocalizedString(@"Can't create '%@' in '%@'", nil), [defaultManager displayNameAtPath:path], [defaultManager displayNameAtPath:[path stringByDeletingLastPathComponent]]];
+    NSError *dataError;
+    BOOL success = [[NSData data] writeToFile:path options:nil error:&dataError];
+        
+    if (!success)
+    {
+        if (fileExists)
+        {
+            *error = [NSString stringWithFormat:NSLocalizedString(@"Can't overwrite '%@' in '%@' [%@]", nil), [defaultManager displayNameAtPath:path], [defaultManager displayNameAtPath:[path stringByDeletingLastPathComponent]], [dataError localizedDescription]];
+        }
+        else
+        {
+            *error = [NSString stringWithFormat:NSLocalizedString(@"Can't create '%@' in '%@' [%@]", nil), [defaultManager displayNameAtPath:path], [defaultManager displayNameAtPath:[path stringByDeletingLastPathComponent]], [dataError localizedDescription]];
+        }
+    }
     
     return success;
 }
