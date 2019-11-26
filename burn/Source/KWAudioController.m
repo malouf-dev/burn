@@ -167,7 +167,7 @@
 	    [rowData setObject:path forKey:@"Path"];
 	    [incompatibleFiles addObject:rowData];
     }
-    else if (selectedTypeIndex == 2 && ![[[path pathExtension] lowercaseString] isEqualTo:@"wav"] && ![fileType isEqualTo:@"'WAVE'"] && ![fileType isEqualTo:@"'.WAV'"])
+    else if (selectedTypeIndex == 2 && ![[[path pathExtension] lowercaseString] isEqualTo:@"wav"] && ![fileType isEqualTo:@"'WAVE'"] && ![fileType isEqualTo:@"'.WAV'"] && ![[[path pathExtension] lowercaseString] isEqualTo:@"flac"])
     {
         NSMutableDictionary *rowData = [NSMutableDictionary dictionary];
         [rowData setObject:[[NSFileManager defaultManager] displayNameAtPath:path] forKey:@"Name"];

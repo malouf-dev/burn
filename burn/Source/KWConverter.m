@@ -287,13 +287,13 @@
     	    	    
 	    if ([defaults boolForKey:@"KWCustomDivXVideoBitrate"])
 	    {
-    	    [args addObject:@"-b"];
+    	    [args addObject:@"-b:v"];
     	    [args addObject:[NSString stringWithFormat:@"%i", [[defaults objectForKey:@"KWDefaultDivXVideoBitrate"] intValue] * 1000]];
 	    }
     	    	    
 	    if ([defaults boolForKey:@"KWCustomDivXSoundBitrate"])
 	    {
-    	    [args addObject:@"-ab"];
+    	    [args addObject:@"-b:a"];
     	    [args addObject:[NSString stringWithFormat:@"%i", [[defaults objectForKey:@"KWDefaultDivxSoundBitrate"] intValue] * 1000]];
 	    }
     	    	    
@@ -324,7 +324,7 @@
     }
     else if (convertKind == 3)
     {
-	    [args addObjectsFromArray:[NSArray arrayWithObjects:@"-target",ffmpegFormat,@"-ac",@"2", @"-aspect",aspect,@"-acodec", nil]];
+	    [args addObjectsFromArray:[NSArray arrayWithObjects:@"-target", ffmpegFormat,@"-ac",@"2", @"-aspect",aspect,@"-acodec", nil]];
 	    
 	    if (copyAudio == NO)
 	    {
@@ -335,12 +335,12 @@
 	    	    
     	    if ([defaults boolForKey:@"KWCustomDVDSoundBitrate"])
     	    {
-	    	    [args addObject:@"-ab"];
+	    	    [args addObject:@"-b:a"];
 	    	    [args addObject:[NSString stringWithFormat:@"%i", [[defaults objectForKey:@"KWDefaultDVDSoundBitrate"] intValue] * 1000]];
     	    }
     	    else if ([[defaults objectForKey:@"KWDefaultDVDSoundType"] intValue] == 0)
     	    {
-	    	    [args addObject:@"-ab"];
+	    	    [args addObject:@"-b:a"];
 	    	    [args addObject:@"224000"];
     	    }
 	    }
@@ -351,13 +351,41 @@
     	    	    
 	    if ([defaults boolForKey:@"KWCustomDVDVideoBitrate"])
 	    {
-    	    [args addObject:@"-b"];
+    	    [args addObject:@"-b:v"];
     	    [args addObject:[NSString stringWithFormat:@"%i", [[defaults objectForKey:@"KWDefaultDVDVideoBitrate"] intValue] * 1000]];
 	    }
+     
+//        [args addObject:@"-qscale:v"];
+//        [args addObject:@"1"];
+//        [args addObject:@"-trellis"];
+//        [args addObject:@"1"];
+//        
+//        [args addObject:@"-g"];
+//        [args addObject:@"12"];
+//        
+//        [args addObject:@"-bf"];
+//        [args addObject:@"2"];
+//        
+//        [args addObject:@"-lmin"];
+//        [args addObject:@"0.75"];
+//        
+//        [args addObject:@"-mblmin"];
+//        [args addObject:@"150"];
+//        
+//        [args addObject:@"-qmin"];
+//        [args addObject:@"1"];
+//        
+//        [args addObject:@"-qmax"];
+//        [args addObject:@"31"];
+//        
+//        [args addObject:@"-maxrate"];
+//        [args addObject:@"8000000"];
+        
+        //-g 12 -bf 2 -lmin 0.75 -mblmin 50 -qmin 1 -qmax 31 -maxrate 8000k
     }
     else if (convertKind == 5)
     {
-	    [args addObject:@"-ab"];
+	    [args addObject:@"-b:a"];
 	    [args addObject:[NSString stringWithFormat:@"%i", [[defaults objectForKey:@"KWDefaultMP3Bitrate"] intValue] * 1000]];
 	    [args addObject:@"-ac"];
 	    [args addObject:[[defaults objectForKey:@"KWDefaultMP3Mode"] stringValue]];
