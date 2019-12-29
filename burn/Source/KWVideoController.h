@@ -10,8 +10,8 @@
 #import "KWMediaListController.h"
 #import "KWDVDAuthorizer.h"
 
-@interface KWVideoController : KWMediaListController {
-    
+@interface KWVideoController : KWMediaListController
+{    
     //Options menu
     IBOutlet id dvdOptionsPopup;
     IBOutlet id divxOptionsPopup;

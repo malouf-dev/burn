@@ -432,7 +432,9 @@
     
     //Save the popup if needed
     if ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWRememberPopups"] == YES)
+    {
 	    [[NSUserDefaults standardUserDefaults] setObject:[tableViewPopup objectValue] forKey:@"KWDefaultVideoType"];
+    }
 }
 
 ///////////////////

@@ -501,12 +501,18 @@
 //Burn the disc
 - (void)burn:(id)sender
 {
+    // Force to update the name
+    [NSApp sendAction:[nameTextField action] to:[nameTextField target] from:nameTextField];
+    
     [myDiscCreationController burnDiscWithName:[nameTextField stringValue] withType:currentType];
 }
 
 //Save a image
 - (void)saveImage:(id)sender
 {
+    // Force to update the name
+    [NSApp sendAction:[nameTextField action] to:[nameTextField target] from:nameTextField];
+
     [myDiscCreationController saveImageWithName:[self discName] withType:currentType withFileSystem:currentFileSystem];
 }
 

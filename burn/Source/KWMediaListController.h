@@ -14,8 +14,8 @@
 #import "KWTextField.h"
 #import "KWWindowController.h"
 
-@interface KWMediaListController : NSObject <NSTableViewDelegate, NSTableViewDataSource> {
-    
+@interface KWMediaListController : NSObject <NSTableViewDelegate, NSTableViewDataSource>
+{    
     //Main Window
     IBOutlet KWWindowController *windowController;
     IBOutlet id mainWindow;
