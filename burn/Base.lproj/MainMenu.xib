@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="14490.70" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="15702" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14490.70"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="15702"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -395,20 +395,20 @@ CA
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
             <windowCollectionBehavior key="collectionBehavior" fullScreenNone="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="157" y="270" width="430" height="399"/>
+            <rect key="contentRect" x="157" y="270" width="430" height="443"/>
             <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1417"/>
             <value key="minSize" type="size" width="430" height="380"/>
             <view key="contentView" autoresizesSubviews="NO" id="389">
-                <rect key="frame" x="0.0" y="0.0" width="430" height="399"/>
+                <rect key="frame" x="0.0" y="0.0" width="430" height="443"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
                     <tabView type="noTabsBezelBorder" translatesAutoresizingMaskIntoConstraints="NO" id="390">
-                        <rect key="frame" x="-12" y="51" width="458" height="350"/>
+                        <rect key="frame" x="-12" y="51" width="458" height="394"/>
                         <font key="font" metaFont="system"/>
                         <tabViewItems>
                             <tabViewItem label="Data" identifier="Data" id="475" customClass="KWTabViewItem">
                                 <view key="view" autoresizesSubviews="NO" id="476">
-                                    <rect key="frame" x="10" y="7" width="438" height="330"/>
+                                    <rect key="frame" x="10" y="7" width="438" height="374"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <customView autoresizesSubviews="NO" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="477" customClass="KWDataView">
@@ -419,7 +419,7 @@ CA
                                             </connections>
                                         </customView>
                                         <imageView translatesAutoresizingMaskIntoConstraints="NO" id="484">
-                                            <rect key="frame" x="20" y="292" width="32" height="32"/>
+                                            <rect key="frame" x="20" y="336" width="32" height="32"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="32" id="oG2-WP-faP"/>
                                                 <constraint firstAttribute="width" constant="32" id="qgl-ED-Ai3"/>
@@ -436,7 +436,7 @@ CA
                                             <accessibility help="Size of the data disc"/>
                                         </textField>
                                         <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="492" customClass="KWTextField">
-                                            <rect key="frame" x="60" y="297" width="257" height="22"/>
+                                            <rect key="frame" x="60" y="341" width="257" height="22"/>
                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" alignment="left" title="Untitled" bezelStyle="round" id="949">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -450,13 +450,13 @@ CA
                                             </connections>
                                         </textField>
                                         <scrollView autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="480">
-                                            <rect key="frame" x="0.0" y="32" width="433" height="252"/>
+                                            <rect key="frame" x="0.0" y="32" width="433" height="296"/>
                                             <clipView key="contentView" id="tYI-3E-xn0">
-                                                <rect key="frame" x="1" y="0.0" width="431" height="251"/>
+                                                <rect key="frame" x="1" y="0.0" width="431" height="295"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Data" headerView="982" id="481" customClass="KWOutlineView">
-                                                        <rect key="frame" x="0.0" y="0.0" width="431" height="226"/>
+                                                        <rect key="frame" x="0.0" y="0.0" width="431" height="270"/>
                                                         <autoresizingMask key="autoresizingMask"/>
                                                         <size key="intercellSpacing" width="3" height="2"/>
                                                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -526,7 +526,7 @@ CA
                                             </connections>
                                         </button>
                                         <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="485">
-                                            <rect key="frame" x="322" y="296" width="99" height="22"/>
+                                            <rect key="frame" x="322" y="340" width="99" height="22"/>
                                             <popUpButtonCell key="cell" type="push" title="Mac (HFS+)" bezelStyle="rounded" alignment="left" controlSize="small" lineBreakMode="clipping" state="on" borderStyle="borderAndBezel" inset="2" arrowPosition="arrowAtCenter" preferredEdge="maxY" selectedItem="487" id="948">
                                                 <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="smallSystem"/>
@@ -660,8 +660,8 @@ CA
                                 </connections>
                             </tabViewItem>
                             <tabViewItem label="Audio" identifier="Audio" id="442" customClass="KWTabViewItem">
-                                <view key="view" autoresizesSubviews="NO" id="443">
-                                    <rect key="frame" x="10" y="7" width="438" height="104"/>
+                                <view key="view" autoresizesSubviews="NO" misplaced="YES" id="443">
+                                    <rect key="frame" x="10" y="7" width="438" height="304"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <textField horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="469" customClass="KWAutoLayoutTextField">
@@ -673,7 +673,7 @@ CA
                                             </textFieldCell>
                                         </textField>
                                         <imageView translatesAutoresizingMaskIntoConstraints="NO" id="468">
-                                            <rect key="frame" x="20" y="66" width="32" height="32"/>
+                                            <rect key="frame" x="20" y="162" width="32" height="32"/>
                                             <constraints>
                                                 <constraint firstAttribute="width" constant="32" id="0sG-wE-FQw"/>
                                                 <constraint firstAttribute="height" constant="32" id="LTK-eT-zkT"/>
@@ -789,7 +789,7 @@ CA
                                             </connections>
                                         </button>
                                         <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="457">
-                                            <rect key="frame" x="326" y="70" width="95" height="22"/>
+                                            <rect key="frame" x="326" y="166" width="95" height="22"/>
                                             <popUpButtonCell key="cell" type="push" title="Audio CD" bezelStyle="rounded" alignment="left" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" arrowPosition="arrowAtCenter" preferredEdge="maxY" selectedItem="460" id="937">
                                                 <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="smallSystem"/>
@@ -810,16 +810,16 @@ CA
                                             </connections>
                                         </popUpButton>
                                         <scrollView autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="449">
-                                            <rect key="frame" x="0.0" y="32" width="433" height="26"/>
+                                            <rect key="frame" x="0.0" y="32" width="433" height="122"/>
                                             <clipView key="contentView" id="axL-lh-3qG">
-                                                <rect key="frame" x="1" y="0.0" width="431" height="25"/>
-                                                <autoresizingMask key="autoresizingMask"/>
+                                                <rect key="frame" x="1" y="0.0" width="431" height="121"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <tableView focusRingType="exterior" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Audio TableView" rowSizeStyle="automatic" headerView="979" viewBased="YES" id="450" customClass="KWTableView">
-                                                        <rect key="frame" x="0.0" y="0.0" width="432" height="1"/>
+                                                        <rect key="frame" x="0.0" y="0.0" width="432" height="96"/>
                                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                         <size key="intercellSpacing" width="3" height="2"/>
-                                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                                        <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                         <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                                         <tableColumns>
                                                             <tableColumn identifier="Icon" width="16" minWidth="16" maxWidth="16" id="452">
@@ -867,12 +867,12 @@ CA
                                                                 </textFieldCell>
                                                                 <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                                 <prototypeCellViews>
-                                                                    <tableCellView id="ZLd-zf-ogL">
+                                                                    <tableCellView misplaced="YES" id="ZLd-zf-ogL">
                                                                         <rect key="frame" x="20" y="1" width="281" height="17"/>
                                                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                         <subviews>
                                                                             <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="IWU-tp-feg">
-                                                                                <rect key="frame" x="0.0" y="0.0" width="281" height="17"/>
+                                                                                <rect key="frame" x="0.0" y="0.0" width="281" height="16"/>
                                                                                 <textFieldCell key="cell" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" title="Table View Cell" id="paZ-RT-QqB">
                                                                                     <font key="font" metaFont="system"/>
                                                                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -905,12 +905,12 @@ CA
                                                                 </textFieldCell>
                                                                 <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                                 <prototypeCellViews>
-                                                                    <tableCellView id="TZW-VB-bxo">
+                                                                    <tableCellView misplaced="YES" id="TZW-VB-bxo">
                                                                         <rect key="frame" x="304" y="1" width="126" height="17"/>
                                                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                         <subviews>
                                                                             <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="doK-Ez-1P0">
-                                                                                <rect key="frame" x="0.0" y="0.0" width="126" height="17"/>
+                                                                                <rect key="frame" x="0.0" y="0.0" width="126" height="16"/>
                                                                                 <textFieldCell key="cell" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" title="Table View Cell" id="WTZ-uy-QIM">
                                                                                     <font key="font" metaFont="system"/>
                                                                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1009,7 +1009,7 @@ CA
                                             </connections>
                                         </button>
                                         <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="824" customClass="KWTextField">
-                                            <rect key="frame" x="60" y="71" width="261" height="22"/>
+                                            <rect key="frame" x="60" y="167" width="261" height="22"/>
                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="Untitled" bezelStyle="round" id="944">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1060,7 +1060,7 @@ CA
                             </tabViewItem>
                             <tabViewItem label="Video" identifier="Video" id="408" customClass="KWTabViewItem">
                                 <view key="view" autoresizesSubviews="NO" id="409">
-                                    <rect key="frame" x="10" y="7" width="438" height="410"/>
+                                    <rect key="frame" x="10" y="7" width="438" height="374"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <popUpButton hidden="YES" verticalHuggingPriority="750" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="437">
@@ -1158,7 +1158,7 @@ CA
                                             </connections>
                                         </button>
                                         <popUpButton verticalHuggingPriority="750" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="421">
-                                            <rect key="frame" x="326" y="376" width="95" height="22"/>
+                                            <rect key="frame" x="326" y="340" width="95" height="22"/>
                                             <popUpButtonCell key="cell" type="push" title="VCD" bezelStyle="rounded" alignment="left" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" arrowPosition="arrowAtCenter" preferredEdge="maxY" selectedItem="426" id="924">
                                                 <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="smallSystem"/>
@@ -1178,7 +1178,7 @@ CA
                                             </connections>
                                         </popUpButton>
                                         <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="441" customClass="KWTextField">
-                                            <rect key="frame" x="60" y="377" width="261" height="22"/>
+                                            <rect key="frame" x="60" y="341" width="261" height="22"/>
                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="Untitled" bezelStyle="round" id="930">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1194,7 +1194,7 @@ CA
                                             </connections>
                                         </textField>
                                         <imageView translatesAutoresizingMaskIntoConstraints="NO" id="433">
-                                            <rect key="frame" x="20" y="372" width="32" height="32"/>
+                                            <rect key="frame" x="20" y="336" width="32" height="32"/>
                                             <constraints>
                                                 <constraint firstAttribute="width" constant="32" id="UBh-HT-a0T"/>
                                                 <constraint firstAttribute="height" constant="32" id="acv-7z-WIO"/>
@@ -1211,16 +1211,16 @@ CA
                                             <accessibility help="Total size used on the video disc"/>
                                         </textField>
                                         <scrollView autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="427">
-                                            <rect key="frame" x="0.0" y="32" width="433" height="332"/>
+                                            <rect key="frame" x="0.0" y="32" width="433" height="296"/>
                                             <clipView key="contentView" id="Jcw-XI-HEq">
-                                                <rect key="frame" x="1" y="0.0" width="431" height="331"/>
-                                                <autoresizingMask key="autoresizingMask"/>
+                                                <rect key="frame" x="1" y="0.0" width="431" height="295"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" autosaveName="Video TableView" rowSizeStyle="automatic" headerView="976" viewBased="YES" id="428" customClass="KWTableView">
-                                                        <rect key="frame" x="0.0" y="0.0" width="431" height="306"/>
+                                                        <rect key="frame" x="0.0" y="0.0" width="431" height="270"/>
                                                         <autoresizingMask key="autoresizingMask"/>
                                                         <size key="intercellSpacing" width="3" height="2"/>
-                                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                                        <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                         <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                                         <tableColumns>
                                                             <tableColumn identifier="Icon" width="16" minWidth="16" maxWidth="16" id="430">
@@ -1268,12 +1268,12 @@ CA
                                                                 </textFieldCell>
                                                                 <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                                 <prototypeCellViews>
-                                                                    <tableCellView id="4Px-gF-dmm">
+                                                                    <tableCellView misplaced="YES" id="4Px-gF-dmm">
                                                                         <rect key="frame" x="20" y="1" width="281" height="17"/>
                                                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                         <subviews>
                                                                             <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="jIJ-CB-cUb">
-                                                                                <rect key="frame" x="0.0" y="0.0" width="281" height="17"/>
+                                                                                <rect key="frame" x="0.0" y="0.0" width="281" height="16"/>
                                                                                 <textFieldCell key="cell" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" title="Table View Cell" id="cuh-64-7mU">
                                                                                     <font key="font" metaFont="system"/>
                                                                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1306,12 +1306,12 @@ CA
                                                                 </textFieldCell>
                                                                 <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                                 <prototypeCellViews>
-                                                                    <tableCellView id="HTy-gi-tZN">
+                                                                    <tableCellView misplaced="YES" id="HTy-gi-tZN">
                                                                         <rect key="frame" x="304" y="1" width="125" height="17"/>
                                                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                         <subviews>
                                                                             <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="p31-R5-F4S">
-                                                                                <rect key="frame" x="0.0" y="0.0" width="125" height="17"/>
+                                                                                <rect key="frame" x="0.0" y="0.0" width="125" height="16"/>
                                                                                 <textFieldCell key="cell" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" title="Table View Cell" id="6Sd-OL-faq">
                                                                                     <font key="font" metaFont="system"/>
                                                                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1466,7 +1466,7 @@ CA
                                             <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="919"/>
                                         </imageView>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="397" customClass="KWAutoLayoutTextField">
-                                            <rect key="frame" x="59" y="300" width="361" height="17"/>
+                                            <rect key="frame" x="59" y="300" width="361" height="16"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Copy" id="916">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1475,7 +1475,7 @@ CA
                                             <accessibility help="Current disc image"/>
                                         </textField>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="394" customClass="KWAutoLayoutTextField">
-                                            <rect key="frame" x="22" y="265" width="35" height="17"/>
+                                            <rect key="frame" x="22" y="266" width="35" height="16"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Kind:" id="913">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1483,7 +1483,7 @@ CA
                                             </textFieldCell>
                                         </textField>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="395" customClass="KWAutoLayoutTextField">
-                                            <rect key="frame" x="22" y="240" width="34" height="17"/>
+                                            <rect key="frame" x="22" y="242" width="34" height="16"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Size:" id="914">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1491,7 +1491,7 @@ CA
                                             </textFieldCell>
                                         </textField>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="396" customClass="KWAutoLayoutTextField">
-                                            <rect key="frame" x="61" y="265" width="4" height="17"/>
+                                            <rect key="frame" x="61" y="266" width="4" height="16"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" id="915">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1500,7 +1500,7 @@ CA
                                             <accessibility help="Kind of disc openend"/>
                                         </textField>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="393" customClass="KWAutoLayoutTextField">
-                                            <rect key="frame" x="59" y="240" width="4" height="17"/>
+                                            <rect key="frame" x="59" y="242" width="4" height="16"/>
                                             <textFieldCell key="cell" sendsActionOnEndEditing="YES" id="912">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1712,7 +1712,7 @@ CA
             <connections>
                 <outlet property="mainTabView" destination="390" id="735"/>
             </connections>
-            <point key="canvasLocation" x="-454" y="-444"/>
+            <point key="canvasLocation" x="-454" y="-409.5"/>
         </window>
         <customObject id="540" userLabel="KWDataController" customClass="KWDataController">
             <connections>
@@ -1766,12 +1766,12 @@ CA
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="198" y="489" width="358" height="235"/>
             <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1417"/>
-            <view key="contentView" autoresizesSubviews="NO" id="545">
+            <view key="contentView" autoresizesSubviews="NO" misplaced="YES" id="545">
                 <rect key="frame" x="0.0" y="0.0" width="358" height="235"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="551" customClass="KWAutoLayoutTextField">
-                        <rect key="frame" x="84" y="192" width="188" height="17"/>
+                        <rect key="frame" x="84" y="192" width="188" height="16"/>
                         <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Use Filesystems on the disc:" id="960">
                             <font key="font" metaFont="systemBold"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -1779,7 +1779,7 @@ CA
                         </textFieldCell>
                     </textField>
                     <imageView translatesAutoresizingMaskIntoConstraints="NO" id="549">
-                        <rect key="frame" x="17" y="147" width="62" height="62"/>
+                        <rect key="frame" x="17" y="146" width="62" height="62"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="62" id="CJJ-uS-WF9"/>
                             <constraint firstAttribute="width" constant="62" id="JDi-Po-kdz"/>
@@ -1888,10 +1888,10 @@ DQ
                     <rect key="frame" x="0.0" y="0.0" width="263" height="48"/>
                     <subviews>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="HBm-lC-Rv9">
-                            <rect key="frame" x="70" y="14" width="123" height="21"/>
+                            <rect key="frame" x="70" y="14" width="123" height="20"/>
                             <subviews>
                                 <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="568" customClass="KWAutoLayoutTextField">
-                                    <rect key="frame" x="-2" y="2" width="50" height="17"/>
+                                    <rect key="frame" x="-2" y="2" width="50" height="16"/>
                                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="right" title="Region:" id="963">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
