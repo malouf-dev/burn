@@ -463,13 +463,12 @@
     NSString *string = nil;
 
     //Here we go
-    while([data=[handle availableData] length]) 
+    while([data = [handle availableData] length]) 
     {
 	    //The string containing ffmpeg's output
 	    string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     
-	    if ([defaults boolForKey:@"KWDebug"] == YES)
-    	    NSLog(@"%@", string);
+	    KWLog(@"%@", string);
 	    
 	    //Format the time sting ffmpeg outputs and format it to percent
 	    if ([string rangeOfString:@"time="].length > 0)

@@ -11,6 +11,7 @@
 		FE0F83F822E8F454003122C8 /* LetsMove.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = FE0F83F622E8F3E2003122C8 /* LetsMove.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		FE1B8C2E22CD2C290029EA24 /* KWMediaNextButton.m in Sources */ = {isa = PBXBuildFile; fileRef = FE1B8C2D22CD2C290029EA24 /* KWMediaNextButton.m */; };
 		FE1B8C3122CD2C7E0029EA24 /* KWMediaStopButton.m in Sources */ = {isa = PBXBuildFile; fileRef = FE1B8C3022CD2C7E0029EA24 /* KWMediaStopButton.m */; };
+		FE21040623B8BCB200EF2A9F /* KWDebugger.m in Sources */ = {isa = PBXBuildFile; fileRef = FE21040523B8BCB200EF2A9F /* KWDebugger.m */; };
 		FE31516122CCB3B400692452 /* Gear with arrow (dark).png in Resources */ = {isa = PBXBuildFile; fileRef = FE31515E22CCB3B400692452 /* Gear with arrow (dark).png */; };
 		FE31516222CCB3B400692452 /* Gear with arrow (dark)@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FE31515F22CCB3B400692452 /* Gear with arrow (dark)@2x.png */; };
 		FE31516322CCB3B400692452 /* Gear with arrow (dark)@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = FE31516022CCB3B400692452 /* Gear with arrow (dark)@3x.png */; };
@@ -224,6 +225,8 @@
 		FE1B8C2D22CD2C290029EA24 /* KWMediaNextButton.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = KWMediaNextButton.m; path = Source/KWMediaNextButton.m; sourceTree = "<group>"; };
 		FE1B8C2F22CD2C7E0029EA24 /* KWMediaStopButton.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = KWMediaStopButton.h; path = Source/KWMediaStopButton.h; sourceTree = "<group>"; };
 		FE1B8C3022CD2C7E0029EA24 /* KWMediaStopButton.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = KWMediaStopButton.m; path = Source/KWMediaStopButton.m; sourceTree = "<group>"; };
+		FE21040423B8BCB200EF2A9F /* KWDebugger.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = KWDebugger.h; path = Source/KWDebugger.h; sourceTree = "<group>"; };
+		FE21040523B8BCB200EF2A9F /* KWDebugger.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = KWDebugger.m; path = Source/KWDebugger.m; sourceTree = "<group>"; };
 		FE23C04A0EDDCDCB0048B85D /* KWTrackProducer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWTrackProducer.h; path = Source/KWTrackProducer.h; sourceTree = "<group>"; };
 		FE23C04B0EDDCDCB0048B85D /* KWTrackProducer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWTrackProducer.m; path = Source/KWTrackProducer.m; sourceTree = "<group>"; };
 		FE2491680ECEDB6F0028E955 /* KWDiscCreator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWDiscCreator.h; path = Source/KWDiscCreator.h; sourceTree = "<group>"; };
@@ -1130,6 +1133,8 @@
 				FEEA698A0BDBADBE00471BE3 /* KWCommonMethods.h */,
 				FEEA698B0BDBADBE00471BE3 /* KWCommonMethods.m */,
 				FE0F3C5E22E59E5F007856A8 /* KWConstants.h */,
+				FE21040423B8BCB200EF2A9F /* KWDebugger.h */,
+				FE21040523B8BCB200EF2A9F /* KWDebugger.m */,
 			);
 			name = Other;
 			sourceTree = "<group>";
@@ -1415,6 +1420,7 @@
 				FEF8A86912D9D2BF00FE302C /* KWDVDAuthorizer.m in Sources */,
 				FEF8A86A12D9D2BF00FE302C /* KWProgressManager.m in Sources */,
 				FE4A013A22CD2B020033759B /* KWMediaBackButton.m in Sources */,
+				FE21040623B8BCB200EF2A9F /* KWDebugger.m in Sources */,
 				FEF8A86B12D9D2BF00FE302C /* KWSVCDImager.m in Sources */,
 				FEF8A86C12D9D2BF00FE302C /* KWOptionsButton.m in Sources */,
 				FEF8A86E12D9D2BF00FE302C /* KWDiscCreator.m in Sources */,

@@ -858,11 +858,12 @@
     
 	    string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 
-	    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWDebug"])
-    	    NSLog(@"%@", string);
+	    KWLog(@"%@", string);
 	    
-	    if (string)    
+	    if (string)
+        {
     	    errorString = [errorString stringByAppendingString:string];
+        }
 
 	    if ([string rangeOfString:@"Processing /"].length > 0)
 	    {
@@ -968,10 +969,7 @@
     [dvdaAuthor launch];
     NSString *string = [[NSString alloc] initWithData:[handle readDataToEndOfFile] encoding:NSUTF8StringEncoding];
     
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWDebug"])
-    {
-        NSLog(@"%@", string);
-    }
+    KWLog(@"%@", string);
     
     [dvdaAuthor waitUntilExit];
     [[self timer] invalidate];

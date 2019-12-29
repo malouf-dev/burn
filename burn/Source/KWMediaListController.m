@@ -9,6 +9,7 @@
 #import "KWMediaListController.h"
 #import "KWCommonMethods.h"
 #import "KWDiscCreator.h"
+#import "KWAlert.h"
 
 @implementation KWMediaListController
 
@@ -308,6 +309,8 @@
 {
     [[[NSOperationQueue alloc] init] addOperationWithBlock:^
     {
+        [[KWDebugger sharedDebugger] clearLog];
+    
         NSMutableArray *filePaths = [[NSMutableArray alloc] init];
         
         for (NSDictionary *fileDictionary in incompatibleFiles)
@@ -477,16 +480,21 @@
 //Show an alert if some files failed to be converted
 - (void)showConvertFailAlert:(NSString *)errorString
 {
-    NSAlert *alert = [[NSAlert alloc] init];
+    KWAlert *alert = [[KWAlert alloc] init];
     [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
 	    
     if ([errorString rangeOfString:@"\n"].length > 0)
+    {
 	    [alert setMessageText:NSLocalizedString(@"Burn failed to encode some files", nil)];
+    }
     else
+    {
 	    [alert setMessageText:NSLocalizedString(@"Burn failed to encode one file", nil)];
+    }
 
-    [alert setInformativeText:errorString];
+//    [alert setInformativeText:errorString];
     [alert setAlertStyle:NSWarningAlertStyle];
+    [alert setDetails:[[KWDebugger sharedDebugger] logString]];
     
     [alert beginSheetModalForWindow:mainWindow modalDelegate:self didEndSelector:nil contextInfo:nil];
 }

@@ -711,13 +711,12 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
     [du setArguments:[NSArray arrayWithObjects:@"-s",path, nil]];
     [du setStandardOutput:pipe];
     [du setStandardError:[NSFileHandle fileHandleWithNullDevice]];
-    handle=[pipe fileHandleForReading];
+    handle = [pipe fileHandleForReading];
     [KWCommonMethods logCommandIfNeeded:du];
     [du launch];
-    string=[[NSString alloc] initWithData:[handle readDataToEndOfFile] encoding:NSUTF8StringEncoding];
+    string = [[NSString alloc] initWithData:[handle readDataToEndOfFile] encoding:NSUTF8StringEncoding];
     
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWDebug"])
-	    NSLog(@"%@", string);
+    KWLog(@"%@", string);
 
     [du waitUntilExit];
 
@@ -732,7 +731,7 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
     
     NSArray *children = [(DRFolder *)obj children];
     NSInteger i = 0;
-    for (i=0;i<[children count];i++)
+    for (i = 0; i < [children count]; i ++)
     {
 	    DRFSObject *child = [children objectAtIndex:i];
     
@@ -839,10 +838,9 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
     [KWCommonMethods logCommandIfNeeded:df];
     [df launch];
 
-    string=[[NSString alloc] initWithData:[handle readDataToEndOfFile] encoding:NSUTF8StringEncoding];
+    string = [[NSString alloc] initWithData:[handle readDataToEndOfFile] encoding:NSUTF8StringEncoding];
     
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWDebug"] == YES)
-	    NSLog(@"%@", string);
+    KWLog(@"%@", string);
 
     [df waitUntilExit];
 
@@ -856,7 +854,9 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
 	    NSString *object = [objects objectAtIndex:x];
     
 	    if (![object isEqualTo:@""])
+        {
     	    size = [object intValue];
+        }
 	    
 	    x = x + 1;
     }
@@ -1090,19 +1090,16 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
     [environment setObject:@"en_US.UTF-8" forKey:@"LC_ALL"];
     [command setEnvironment:environment];
 
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWDebug"] == YES)
-    {
-	    NSArray *showArgs = [command arguments];
-	    NSString *commandString = [command launchPath];
+    NSArray *showArgs = [command arguments];
+    NSString *commandString = [command launchPath];
 
-	    NSInteger i;
-	    for (i=0;i<[showArgs count];i++)
-	    {
-    	    commandString = [NSString stringWithFormat:@"%@ %@", commandString, [showArgs objectAtIndex:i]];
-	    }
-    
-	    NSLog(@"%@", commandString);
+    NSInteger i;
+    for (i=0;i<[showArgs count];i++)
+    {
+        commandString = [NSString stringWithFormat:@"%@ %@", commandString, [showArgs objectAtIndex:i]];
     }
+    
+    KWLog(@"%@", commandString);
 }
 
 // TODO: Make these two methods easier
@@ -1150,8 +1147,7 @@ BOOL isAppearanceIsDark(NSAppearance * appearance)
 	    if (!error)
     	    errorString = [[NSString alloc] initWithData:[handle readDataToEndOfFile] encoding:NSUTF8StringEncoding];
 
-	    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWDebug"])
-    	    NSLog(@"%@\n%@", output, errorString);
+        KWLog(@"%@\n%@", output, errorString);
     }
 	    
     [task waitUntilExit];

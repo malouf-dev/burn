@@ -293,8 +293,7 @@
     NSString *time = @"";
     NSString *statusString = nil;
     
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWDebug"])
-	    NSLog(@"%@", [status description]);
+    KWLog(@"%@", [status description]);
     
     double percent = [[status objectForKey:DRStatusPercentCompleteKey] doubleValue];
     if (percent > 0)

@@ -618,8 +618,7 @@
     NSString *time = nil;
     NSString *statusString = nil;
     
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"KWDebug"])
-	    NSLog(@"%@", [status description]);
+    KWLog(@"%@", [status description]);
     
     if ([[status objectForKey:DRStatusPercentCompleteKey] floatValue] > 0)
     {

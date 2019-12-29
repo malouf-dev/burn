@@ -109,8 +109,7 @@
 
         string=[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     
-        if ([[NSUserDefaults standardUserDefaults] boolForKey:@"Debug"])
-            NSLog(@"%@", string);
+        KWLog(@"%@", string);
     }
     
     [vcdimager waitUntilExit];
