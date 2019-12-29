@@ -18,7 +18,7 @@
     IBOutlet id burnButton;
     IBOutlet id defaultBurner;
     IBOutlet id mainTabView;
-    IBOutlet id mainWindow;
+    IBOutlet NSWindow *mainWindow;
     IBOutlet id newTabView;
     IBOutlet id itemHelp;
     

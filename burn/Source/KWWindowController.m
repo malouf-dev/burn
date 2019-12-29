@@ -15,6 +15,7 @@
 #import "KWAudioController.h"
 #import "KWVideoController.h"
 #import "KWCopyController.h"
+#import "KWRegionDialog.h"
 
 @interface KWWindowController() <NSToolbarDelegate>
 
@@ -24,6 +25,8 @@
 @property (nonatomic, weak) IBOutlet KWCopyController *discCopyController;
 
 @property (nonatomic, weak) IBOutlet NSButton *changeRecorderButton;
+
+@property (nonatomic, strong) KWRegionDialog *regionDialog;
 
 @end
 
@@ -103,6 +106,22 @@
     {
 	    [self returnToDefaultSizeWindow:self];
 	    [mainWindow setFrameOrigin:NSMakePoint(36,[[NSScreen mainScreen] frame].size.height - [mainWindow frame].size.height - 56)];
+    }
+    
+    BOOL didSetRegion = [[NSUserDefaults standardUserDefaults] objectForKey:KWDefaultRegion] != nil;
+    if (!didSetRegion)
+    {
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^
+        {
+            __weak KWWindowController *weakSelf = self;
+            KWRegionDialog *regionDialog = [[KWRegionDialog alloc] init];
+            [mainWindow beginSheet:[regionDialog window] completionHandler:^(NSModalResponse returnCode)
+            {
+                [[NSUserDefaults standardUserDefaults] setObject:@([regionDialog region]) forKey:KWDefaultRegion];
+                [weakSelf setRegionDialog:nil];
+            }];
+            [self setRegionDialog:regionDialog];
+        }];
     }
 }
 

@@ -12,6 +12,9 @@
 		FE1B8C2E22CD2C290029EA24 /* KWMediaNextButton.m in Sources */ = {isa = PBXBuildFile; fileRef = FE1B8C2D22CD2C290029EA24 /* KWMediaNextButton.m */; };
 		FE1B8C3122CD2C7E0029EA24 /* KWMediaStopButton.m in Sources */ = {isa = PBXBuildFile; fileRef = FE1B8C3022CD2C7E0029EA24 /* KWMediaStopButton.m */; };
 		FE21040623B8BCB200EF2A9F /* KWDebugger.m in Sources */ = {isa = PBXBuildFile; fileRef = FE21040523B8BCB200EF2A9F /* KWDebugger.m */; };
+		FE21040A23B8CF9300EF2A9F /* KWRegionDialog.m in Sources */ = {isa = PBXBuildFile; fileRef = FE21040923B8CF9300EF2A9F /* KWRegionDialog.m */; };
+		FE21040D23B8CFF700EF2A9F /* KWRegionDialog.xib in Resources */ = {isa = PBXBuildFile; fileRef = FE21040B23B8CFF700EF2A9F /* KWRegionDialog.xib */; };
+		FE21040F23B8D04500EF2A9F /* Region.pdf in Resources */ = {isa = PBXBuildFile; fileRef = FE21040E23B8D04500EF2A9F /* Region.pdf */; };
 		FE31516122CCB3B400692452 /* Gear with arrow (dark).png in Resources */ = {isa = PBXBuildFile; fileRef = FE31515E22CCB3B400692452 /* Gear with arrow (dark).png */; };
 		FE31516222CCB3B400692452 /* Gear with arrow (dark)@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FE31515F22CCB3B400692452 /* Gear with arrow (dark)@2x.png */; };
 		FE31516322CCB3B400692452 /* Gear with arrow (dark)@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = FE31516022CCB3B400692452 /* Gear with arrow (dark)@3x.png */; };
@@ -227,6 +230,10 @@
 		FE1B8C3022CD2C7E0029EA24 /* KWMediaStopButton.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = KWMediaStopButton.m; path = Source/KWMediaStopButton.m; sourceTree = "<group>"; };
 		FE21040423B8BCB200EF2A9F /* KWDebugger.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = KWDebugger.h; path = Source/KWDebugger.h; sourceTree = "<group>"; };
 		FE21040523B8BCB200EF2A9F /* KWDebugger.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = KWDebugger.m; path = Source/KWDebugger.m; sourceTree = "<group>"; };
+		FE21040823B8CF9300EF2A9F /* KWRegionDialog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = KWRegionDialog.h; sourceTree = "<group>"; };
+		FE21040923B8CF9300EF2A9F /* KWRegionDialog.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KWRegionDialog.m; sourceTree = "<group>"; };
+		FE21040C23B8CFF700EF2A9F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/KWRegionDialog.xib; sourceTree = "<group>"; };
+		FE21040E23B8D04500EF2A9F /* Region.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; name = Region.pdf; path = Images/Region.pdf; sourceTree = "<group>"; };
 		FE23C04A0EDDCDCB0048B85D /* KWTrackProducer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWTrackProducer.h; path = Source/KWTrackProducer.h; sourceTree = "<group>"; };
 		FE23C04B0EDDCDCB0048B85D /* KWTrackProducer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWTrackProducer.m; path = Source/KWTrackProducer.m; sourceTree = "<group>"; };
 		FE2491680ECEDB6F0028E955 /* KWDiscCreator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWDiscCreator.h; path = Source/KWDiscCreator.h; sourceTree = "<group>"; };
@@ -735,6 +742,7 @@
 			children = (
 				FEE1255B0BAC1339001D474B /* KWApplication.h */,
 				FEE1255A0BAC1339001D474B /* KWApplication.m */,
+				FE21040723B8CF7400EF2A9F /* KWRegionDialog */,
 				FEE5CDDD0BA583AC00FAD174 /* KWPreferences */,
 				FE195ECA0BE2A5DF001558D4 /* KWInspector */,
 				FEE12CD70BAC5821001D474B /* KWEjecter */,
@@ -746,6 +754,16 @@
 				FEF98A2C0D97B43D00BF78E3 /* Other */,
 			);
 			name = Application;
+			sourceTree = "<group>";
+		};
+		FE21040723B8CF7400EF2A9F /* KWRegionDialog */ = {
+			isa = PBXGroup;
+			children = (
+				FE21040823B8CF9300EF2A9F /* KWRegionDialog.h */,
+				FE21040923B8CF9300EF2A9F /* KWRegionDialog.m */,
+				FE21040B23B8CFF700EF2A9F /* KWRegionDialog.xib */,
+			);
+			name = KWRegionDialog;
 			sourceTree = "<group>";
 		};
 		FE2491710ECEDB800028E955 /* Controllers */ = {
@@ -888,6 +906,7 @@
 		FEEF6F130B92E8AF00ED64A9 /* Images */ = {
 			isa = PBXGroup;
 			children = (
+				FE21040E23B8D04500EF2A9F /* Region.pdf */,
 				FE3EFE9E0DBBBFAC003DD5AD /* ProgressIndicator */,
 				FEAB1ED80D11730000629E3E /* Burn document.icns */,
 				FEAB1EDA0D11730000629E3E /* Copy document.icns */,
@@ -1265,6 +1284,7 @@
 				FEF8A81012D9D2BF00FE302C /* Forward.png in Resources */,
 				FE31516222CCB3B400692452 /* Gear with arrow (dark)@2x.png in Resources */,
 				FEC9BB0422C78BC000A17077 /* KWPreferences.xib in Resources */,
+				FE21040D23B8CFF700EF2A9F /* KWRegionDialog.xib in Resources */,
 				FEF8A81212D9D2BF00FE302C /* Pause.png in Resources */,
 				FEF8A81312D9D2BF00FE302C /* Play.png in Resources */,
 				FEF8A81412D9D2BF00FE302C /* Stop.png in Resources */,
@@ -1327,6 +1347,7 @@
 				FEC9BBA722C7EAFD00A17077 /* Empty@3x.png in Resources */,
 				FEF8A83812D9D2BF00FE302C /* Gear with arrow.png in Resources */,
 				FEC9BAFF22C78BC000A17077 /* KWEraser.xib in Resources */,
+				FE21040F23B8D04500EF2A9F /* Region.pdf in Resources */,
 				FEC9BBE422C7F3C300A17077 /* Cross@2x.png in Resources */,
 				FEC9BBCB22C7EE4E00A17077 /* Multiple@3x.png in Resources */,
 				FEC9BBDC22C7F10700A17077 /* Play@2x.png in Resources */,
@@ -1426,6 +1447,7 @@
 				FEF8A86E12D9D2BF00FE302C /* KWDiscCreator.m in Sources */,
 				FEF8A86F12D9D2BF00FE302C /* KWTrackProducer.m in Sources */,
 				FEF8A87012D9D2BF00FE302C /* KWTabViewItem.m in Sources */,
+				FE21040A23B8CF9300EF2A9F /* KWRegionDialog.m in Sources */,
 				FEF8A87112D9D2BF00FE302C /* KWWindow.m in Sources */,
 				FEF8A87212D9D2BF00FE302C /* KWWindowController.m in Sources */,
 				FEF8A87312D9D2BF00FE302C /* KWAlert.m in Sources */,
@@ -1450,6 +1472,14 @@
 				FE31512122CB852D00692452 /* zh-Hant */,
 			);
 			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		FE21040B23B8CFF700EF2A9F /* KWRegionDialog.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				FE21040C23B8CFF700EF2A9F /* Base */,
+			);
+			name = KWRegionDialog.xib;
 			sourceTree = "<group>";
 		};
 		FE84913C2319261A0021E01C /* Credits.rtf */ = {

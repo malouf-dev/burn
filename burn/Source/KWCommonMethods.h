@@ -9,6 +9,7 @@
 #import <Cocoa/Cocoa.h>
 #import <DiscRecording/DiscRecording.h>
 #import "KWDebugger.h"
+#import "KWConstants.h"
 
 BOOL isAppearanceIsDark(NSAppearance * appearance);
 

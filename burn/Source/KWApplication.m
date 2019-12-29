@@ -45,7 +45,6 @@
                                 KWDefaultMP3Mode: @(1),
                                 KWCreateArtistFolders: @(YES),
                                 KWCreateAlbumFolders: @(YES),
-                                KWDefaultRegion: @(0),
                                 KWDefaultVideoType: @(0),
                                 KWDefaultDVDSoundType: @(0),
                                 KWCustomDVDVideoBitrate: @(NO),
