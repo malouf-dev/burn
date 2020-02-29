@@ -17,17 +17,21 @@
 {
     self = [super init];
 
-    //Storage room for files
+    // Storage room for files
     incompatibleFiles = [[NSMutableArray alloc] init];
     protectedFiles =  [[NSMutableArray alloc] init];
     
-    //Known protected files can't be converted
-    knownProtectedFiles = [[[NSArray alloc] initWithObjects:@"m4p",@"m4b",NSFileTypeForHFSTypeCode('M4P '),NSFileTypeForHFSTypeCode('M4B '), nil] mutableCopy];
+    // Known protected files can't be converted
+    knownProtectedFiles = [[[NSArray alloc] initWithObjects:@"m4p",
+                                                            @"m4b",
+                                                            NSFileTypeForHFSTypeCode('M4P '),
+                                                            NSFileTypeForHFSTypeCode('M4B '),
+                                                            nil] mutableCopy];
     
-    //Here we store our temporary files which will be deleting acording to the prefences set for deletion
+    // Here we store our temporary files which will be deleted acording to the preferences set for deletion
     temporaryFiles = [[NSMutableArray alloc] init];
     
-    //Set a starting row for dropping files in the list
+    // Set a starting row for dropping files in the list
     currentDropRow = -1;
     
     return self;
@@ -35,31 +39,43 @@
 
 - (void)dealloc
 {
-    //Stop listening to notifications from the default notification center
+    //  Stop listening to notifications from the default notification center
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)awakeFromNib
 {
     [super awakeFromNib];
-
+ 
     [self setDiscName:NSLocalizedString(@"Untitled", nil)];
-
-    //Notifications
-    //Used to save the popups when the user selects this option in the preferences
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(tableViewPopup:) name:@"KWTogglePopups" object:nil];
-    //Prevent files to be dropped when for example a sheet is open
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(setTableViewState:) name:@"KWSetDropState" object:nil];
-    //Updates the Inspector window with the new item selected in the list
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(tableViewSelectionDidChange:) name:@"KWListSelected" object:tableView];
-    //Updates the Inspector window to show the information about the disc
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(volumeLabelSelected:) name:@"KWDiscNameSelected" object:nameTextField];
-
-    //How should our tableview update its sizes when adding and modifying files
+ 
+    // Notifications
+    // Used to save the popups when the user selects this option in the preferences
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(tableViewPopup:)
+                                                 name:@"KWTogglePopups"
+                                               object:nil];
+    // Prevent files being dropped when, for example, a sheet is open
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(setTableViewState:)
+                                                 name:@"KWSetDropState"
+                                               object:nil];
+    // Updates the Inspector window with the new item selected in the list
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(tableViewSelectionDidChange:)
+                                                 name:@"KWListSelected"
+                                               object:tableView];
+    // Updates the Inspector window to show information about the disc
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(volumeLabelSelected:)
+                                                 name:@"KWDiscNameSelected"
+                                               object:nameTextField];
+    // How should our tableview update its sizes when adding and modifying files?
     [tableView setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
-
-    //The user can drag files into the tableview (including iMovie files)
-    [tableView registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType,@"NSGeneralPboardType",@"CorePasteboardFlavorType 0x6974756E", nil]];
+    // The user can drag files into the tableview (including iMovie files)
+    [tableView registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType,@"NSGeneralPboardType",
+                                                                                       @"CorePasteboardFlavorType 0x6974756E", // "CorePasteboardFlavorType ITUN"
+                                                                                       nil]];
 }
 
 //////////////////
@@ -172,65 +188,9 @@
     else
     {
 	    NSFileManager *defaultManager = [NSFileManager defaultManager];
-	    NSMutableArray *files = [NSMutableArray array];
-	    //Needed for 10.5 and lower (the Finder messes up orders)
-	    NSArray *sortedPaths = [paths sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
-    
-	    NSInteger x = 0;
-	    for (x = 0; x < [sortedPaths count]; x ++)
-	    {
-    	    if (cancelAddingFiles == YES)
-	    	    break;
-    	    
-    	    NSDirectoryEnumerator *enumer;
-    	    NSString* pathName;
-    	    NSString *realPath = [self getRealPath:[sortedPaths objectAtIndex:x]];
-    	    BOOL fileIsFolder = NO;
-    	    
-    	    [defaultManager fileExistsAtPath:realPath isDirectory:&fileIsFolder];
-
-    	    if (fileIsFolder)
-    	    {
-	    	    enumer = [defaultManager enumeratorAtPath:realPath];
-	    	    while (pathName = [enumer nextObject])
-	    	    {
-    	    	    if (cancelAddingFiles == YES)
-                    {
-	    	    	    break;
-                    }
-	    	    	    
-    	    	    NSString *realPathName = [self getRealPath:[realPath stringByAppendingPathComponent:pathName]];
-    	    
-    	    	    if (![self isProtected:realPathName])
-    	    	    {
-                        NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:realPathName error:nil];
-	    	    	    NSString *hfsType = NSFileTypeForHFSTypeCode([attributes[NSFileHFSTypeCode] longValue]);
-    	    	    	    
-	    	    	    if ([allowedFileTypes containsObject:[[realPathName pathExtension] lowercaseString]] || [allowedFileTypes containsObject:hfsType])
-                        {
-    	    	    	    [files addObject:realPathName];
-                        }
-    	    	    }
-	    	    }
-    	    }
-    	    else
-    	    {
-	    	    if (cancelAddingFiles == YES)
-    	    	    break;
-	    	    	    
-	    	    if (![self isProtected:realPath])
-	    	    {
-                    NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:realPath error:nil];
-    	    	    NSString *hfsType = NSFileTypeForHFSTypeCode([attributes[NSFileHFSTypeCode] longValue]);
-    	    	    	    
-    	    	    if ([allowedFileTypes containsObject:[[realPath pathExtension] lowercaseString]] || [allowedFileTypes containsObject:hfsType])
-                    {
-	    	    	    [files addObject:realPath];
-                    }
-	    	    }
-    	    }
-	    }
-	    
+        NSMutableArray *pathList = [self flattenTree:paths];
+        NSMutableArray *files = [[pathList sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] mutableCopy];
+        
 	    NSInteger numberOfFiles = [files count];
 	    BOOL audioCD = [currentFileSystem isEqualTo:@"-audio-cd"];
     	    
@@ -260,14 +220,74 @@
 	    	    [[KWProgressManager sharedManager] setValue:(CGFloat)i + 1];
 	    }
     }
-    
     cancelAddingFiles = NO;
     currentDropRow = -1;
-    
     [[KWProgressManager sharedManager] endSheetWithCompletion:^
     {
         [self showAlert];
     }];
+}
+
+- (NSMutableArray *)flattenTree:(NSArray *)droppedPaths
+{
+    NSMutableArray *returnArray = [NSMutableArray arrayWithCapacity:0];
+    
+    NSFileManager *defaultManager = [NSFileManager defaultManager];
+    NSInteger x = 0;
+    for (x = 0; x < [droppedPaths count]; x ++)
+    {
+        if (cancelAddingFiles == YES)
+            break;
+        
+        NSDirectoryEnumerator *enumer;
+        NSString* pathName;
+        NSString *realPath = [self getRealPath:[droppedPaths objectAtIndex:x]];
+        BOOL fileIsFolder = NO;
+        
+        [defaultManager fileExistsAtPath:realPath isDirectory:&fileIsFolder];
+        
+        if (fileIsFolder)
+        {
+            enumer = [defaultManager enumeratorAtPath:realPath];
+            while (pathName = [enumer nextObject])
+            {
+                if (cancelAddingFiles == YES)
+                {
+                    break;
+                }
+                
+                NSString *realPathName = [self getRealPath:[realPath stringByAppendingPathComponent:pathName]];
+                
+                if (![self isProtected:realPathName])
+                {
+                    NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:realPathName error:nil];
+                    NSString *hfsType = NSFileTypeForHFSTypeCode([attributes[NSFileHFSTypeCode] longValue]);
+                    
+                    if ([allowedFileTypes containsObject:[[realPathName pathExtension] lowercaseString]] || [allowedFileTypes containsObject:hfsType])
+                    {
+                        [returnArray addObject:realPathName];
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (cancelAddingFiles == YES)
+                break;
+            
+            if (![self isProtected:realPath])
+            {
+                NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:realPath error:nil];
+                NSString *hfsType = NSFileTypeForHFSTypeCode([attributes[NSFileHFSTypeCode] longValue]);
+                
+                if ([allowedFileTypes containsObject:[[realPath pathExtension] lowercaseString]] || [allowedFileTypes containsObject:hfsType])
+                {
+                    [returnArray addObject:realPath];
+                }
+            }
+        }
+    }
+    return returnArray;
 }
 
 /////////////////////////
@@ -482,14 +502,14 @@
 {
     KWAlert *alert = [[KWAlert alloc] init];
     [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
-	    
+    
     if ([errorString rangeOfString:@"\n"].length > 0)
     {
-	    [alert setMessageText:NSLocalizedString(@"Burn failed to encode some files", nil)];
+        [alert setMessageText:NSLocalizedString(@"Burn failed to encode some files", nil)];
     }
     else
     {
-	    [alert setMessageText:NSLocalizedString(@"Burn failed to encode one file", nil)];
+        [alert setMessageText:NSLocalizedString(@"Burn failed to encode one file", nil)];
     }
 
 //    [alert setInformativeText:errorString];
@@ -645,7 +665,9 @@
 - (void)setTableViewState:(NSNotification *)notif
 {
     if ([[notif object] boolValue] == YES)
-	    [tableView registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType,@"NSGeneralPboardType",@"CorePasteboardFlavorType 0x6974756E", nil]];
+	    [tableView registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType,@"NSGeneralPboardType",
+                                                                                           @"CorePasteboardFlavorType 0x6974756E",
+                                                                                           nil]];
     else
 	    [tableView unregisterDraggedTypes];
 }

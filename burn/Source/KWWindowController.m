@@ -108,21 +108,21 @@
 	    [mainWindow setFrameOrigin:NSMakePoint(36,[[NSScreen mainScreen] frame].size.height - [mainWindow frame].size.height - 56)];
     }
     
-    BOOL didSetRegion = [[NSUserDefaults standardUserDefaults] objectForKey:KWDefaultRegion] != nil;
-    if (!didSetRegion)
-    {
-        [[NSOperationQueue mainQueue] addOperationWithBlock:^
-        {
-            __weak KWWindowController *weakSelf = self;
-            KWRegionDialog *regionDialog = [[KWRegionDialog alloc] init];
-            [mainWindow beginSheet:[regionDialog window] completionHandler:^(NSModalResponse returnCode)
-            {
-                [[NSUserDefaults standardUserDefaults] setObject:@([regionDialog region]) forKey:KWDefaultRegion];
-                [weakSelf setRegionDialog:nil];
-            }];
-            [self setRegionDialog:regionDialog];
-        }];
-    }
+//    BOOL didSetRegion = [[NSUserDefaults standardUserDefaults] objectForKey:KWDefaultRegion] != nil;
+//    if (!didSetRegion)
+//    {
+//        [[NSOperationQueue mainQueue] addOperationWithBlock:^
+//        {
+//            __weak KWWindowController *weakSelf = self;
+//            KWRegionDialog *regionDialog = [[KWRegionDialog alloc] init];
+//            [mainWindow beginSheet:[regionDialog window] completionHandler:^(NSModalResponse returnCode)
+//            {
+//                [[NSUserDefaults standardUserDefaults] setObject:@([regionDialog region]) forKey:KWDefaultRegion];
+//                [weakSelf setRegionDialog:nil];
+//            }];
+//            [self setRegionDialog:regionDialog];
+//        }];
+//    }
 }
 
 /////////////////////////
@@ -139,16 +139,19 @@
     if ([devices count] > 1)
     {
 	    NSInteger x = 0;
-
-	    NSInteger i;
-	    for (i=0;i< [devices count];i++)
+        
+	    for (NSInteger i = 0; i < [devices count]; i ++)
 	    {
     	    if ([[[devices objectAtIndex:i] displayName] isEqualTo:[[[defaultBurner stringValue] componentsSeparatedByString:@"\n"] objectAtIndex:0]])
+            {
 	    	    x = i + 1;
+            }
 	    }
     	    
-	    if (x > [devices count]-1)
+	    if (x > [devices count] - 1)
+        {
     	    x = 0;
+        }
 
 	    NSMutableDictionary *burnDict = [NSMutableDictionary dictionary];
 	    NSDictionary *deviceInfo = [[devices objectAtIndex:x] info];

@@ -76,7 +76,7 @@
     NSFileHandle *outHandle = [outPipe fileHandleForReading];
     [ffmpeg setLaunchPath:[KWCommonMethods ffmpegPath]];
 
-    NSArray *arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-ac", @"2", @"-", nil];
+    NSArray *arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-ac", @"2", @"-ar", @"44100"," @"-", nil];
 
     if ([[KWConverter alloc] isAudioCDFile:path])
     {
@@ -118,7 +118,7 @@
 
     [trackCreator setLaunchPath:[KWCommonMethods ffmpegPath]];
     
-    NSArray *arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-ac", @"2", @"-", nil];
+    NSArray *arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-ac", @"2", @"-ar", @"44100", @"-", nil];
     
     if ([[KWConverter alloc] isAudioCDFile:path])
         arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-acodec", @"copy", @"-", nil];

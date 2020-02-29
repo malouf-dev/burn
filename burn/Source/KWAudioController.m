@@ -1021,9 +1021,8 @@
     }
     else
     {
-	    NSInteger i;
 	    NSInteger size = 0;
-	    for (i=0;i<[audioTableData count];i++)
+	    for (NSInteger i = 0; i < [audioTableData count]; i ++)
 	    {
     	    DRTrack *currentTrack = trackDictionary[audioTableData[i][@"TrackID"]];
     	    NSDictionary *properties = [currentTrack properties];
@@ -1117,7 +1116,7 @@
 	    
     NSInteger x;
     NSInteger size = 0;
-    for (x=0;x<[audioTableData count];x++)
+    for (x = 0; x < [audioTableData count]; x ++)
     {
 	    NSInteger trackNumber = x + 1;
 	    cueFile = [NSString stringWithFormat:@"%@\n  TRACK %2li AUDIO", cueFile, trackNumber];
