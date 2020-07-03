@@ -6,7 +6,7 @@
 	<string>Sparse-образ</string>
 	<key>Eject Disc</key>
 	<string>Извлечь диск</string>
-	<key>Unsuported Toc file</key>
+	<key>Unsupported Toc file</key>
 	<string>Формат TOC не поддерживается</string>
 	<key>Finishing...</key>
 	<string>Завершаю...</string>

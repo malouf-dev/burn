@@ -6,8 +6,8 @@
 	<string>Sparse image</string>
 	<key>Eject Disc</key>
 	<string>Eject Disc</string>
-	<key>Unsuported Toc file</key>
-	<string>Unsuported Toc file</string>
+	<key>Unsupported Toc file</key>
+	<string>Unsupported Toc file</string>
 	<key>Finishing...</key>
 	<string>Finishing...</string>
 	<key>%@ (Unknown error)</key>

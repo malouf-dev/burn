@@ -263,7 +263,7 @@
     	    }
     	    else
     	    {
-	    	    alertMessage = NSLocalizedString(@"Unsuported Toc file", nil);
+	    	    alertMessage = NSLocalizedString(@"Unsupported Toc file", nil);
 	    	    alertInformation = NSLocalizedString(@"Only Mode1 and Audio tracks are supported", nil);
     	    }
 	    }

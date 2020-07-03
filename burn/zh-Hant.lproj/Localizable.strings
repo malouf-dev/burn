@@ -6,7 +6,7 @@
 	<string>分散映像檔</string>
 	<key>Failed to install theme in the &apos;Application Support&apos; folder</key>
 	<string>安裝在&apos;Application Support&apos; 資料夾的主題失敗</string>
-	<key>Unsuported Toc file</key>
+	<key>Unsupported Toc file</key>
 	<string>未支援的 Toc 檔案</string>
 	<key>Finishing...</key>
 	<string>完成中</string>
