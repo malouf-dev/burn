@@ -10,6 +10,7 @@
 #import "KWWindowController.h"
 #import "KWCommonMethods.h"
 #import "KWTrackProducer.h"
+#import "KWConstants.h"
 
 @implementation KWVideoController
 
@@ -55,6 +56,9 @@
     [self tableViewPopup:self];
     
     [popupIcon setImage:[[NSWorkspace sharedWorkspace] iconForFileType:NSFileTypeForHFSTypeCode(kGenericCDROMIcon)]];
+    
+    [self updateRegionPopUp];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateRegionPopUp) name:KWRegionChanged object:nil];
 }
 
 //////////////////
@@ -437,12 +441,23 @@
     }
 }
 
+- (IBAction)changeRegion:(id)sender
+{
+    [[NSUserDefaults standardUserDefaults] setInteger:[sender indexOfSelectedItem] forKey:KWDefaultRegion];
+}
+
 ///////////////////
 // Other actions //
 ///////////////////
 
 #pragma mark -
 #pragma mark •• Other actions
+
+- (void)updateRegionPopUp
+{
+    NSInteger region = [[NSUserDefaults standardUserDefaults] integerForKey:KWDefaultRegion];
+    [videoRegionPopUp selectItemAtIndex:region];
+}
 
 - (NSNumber *)totalSize
 {

@@ -15,6 +15,9 @@
     //Options menu
     IBOutlet id dvdOptionsPopup;
     IBOutlet id divxOptionsPopup;
+
+    // Region Pop Up
+    IBOutlet NSPopUpButton *videoRegionPopUp;
     
     //Variables
     NSMutableArray *vcdTableData;

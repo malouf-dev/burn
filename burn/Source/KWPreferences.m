@@ -249,6 +249,11 @@
 	    [standardDefaults synchronize];
 	    [defaultCenter postNotificationName:@"KWTogglePopups" object:nil];
     }
+    else if (tag == 23)
+    {
+        [standardDefaults synchronize];
+        [defaultCenter postNotificationName:KWRegionChanged object:nil];
+    }
     
     if (tag == 36)
     {

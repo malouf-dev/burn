@@ -305,6 +305,15 @@
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Quickly set options without opening preferences"; ObjectID = "435"; */
 "435.ibExternalAccessibilityHelp" = "Quickly set options without opening preferences";
 
+/* Class = "NSTextField"; title = "Region"; ObjectID = "T6Y-D5-zBb"; */
+"T6Y-D5-zBb.title" = "Região:";
+
+/* Class = "NSMenuItem"; title = "PAL"; ObjectID = "YxC-aq-R7n"; */
+"YxC-aq-R7n.title" = "PAL";
+
+/* Class = "NSMenuItem"; title = "NTSC"; ObjectID = "nIa-yj-RHn"; */
+"nIa-yj-RHn.title" = "NTSC";
+
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Add"; ObjectID = "436"; */
 "436.ibExternalAccessibilityDescription" = "Add";
 

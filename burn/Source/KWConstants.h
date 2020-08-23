@@ -75,5 +75,6 @@ static NSString *KWFirstRun = @"KWFirstRun";
 static NSString *KWEncodingThreads = @"KWEncodingThreads";
 static NSString *KWSimulateBurn = @"KWSimulateBurn";
 static NSString *KWDVDAspectMode = @"KWDVDAspectMode";
+static NSString *KWRegionChanged = @"KWRegionChanged";
 
 #endif /* KWConstants_h */
