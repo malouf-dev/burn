@@ -104,6 +104,11 @@
 	    [self returnToDefaultSizeWindow:self];
 	    [mainWindow setFrameOrigin:NSMakePoint(36,[[NSScreen mainScreen] frame].size.height - [mainWindow frame].size.height - 56)];
     }
+    
+    if (@available(macOS 11, *))
+    {
+        [mainWindow setTitleVisibility:NSWindowTitleHidden];
+    }
 }
 
 /////////////////////////

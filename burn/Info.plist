@@ -89,23 +89,13 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.7.9</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>48</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSHasLocalizedDisplayName</key>
 	<true/>
-	<key>NSHumanReadableCopyright</key>
-	<string>Kiwi Fruitware 2019</string>
-	<key>NSMainNibFile</key>
-	<string>MainMenu</string>
-	<key>NSPrincipalClass</key>
-	<string>NSApplication</string>
-	<key>SUPublicEDKey</key>
-	<string>iW0hv6Z4Ub+CYH1lef259Oe5S5gkRp/vAmpOmMfeM6g=</string>
-	<key>SUFeedURL</key>
-	<string>https://burn-osx.sourceforge.io/sparkle/updates.xml</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSExceptionDomains</key>
@@ -119,5 +109,15 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSHumanReadableCopyright</key>
+	<string>Kiwi Fruitware 2019</string>
+	<key>NSMainNibFile</key>
+	<string>MainMenu</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>SUFeedURL</key>
+	<string>https://burn-osx.sourceforge.io/sparkle/updates.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>iW0hv6Z4Ub+CYH1lef259Oe5S5gkRp/vAmpOmMfeM6g=</string>
 </dict>
 </plist>

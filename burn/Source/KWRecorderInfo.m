@@ -128,7 +128,7 @@
     [[self vendorTextField] setStringValue:deviceInfo[DRDeviceVendorNameKey]];
     [[self connectionTypeTextField] setStringValue:deviceInfo[DRDevicePhysicalInterconnectKey]];
     
-    NSString *cache = [NSString localizedStringWithFormat:NSLocalizedString(@"%.0f KB", nil), deviceInfo[@"DRDeviceWriteBufferSizeKey"]];
+    NSString *cache = [NSString localizedStringWithFormat:NSLocalizedString(@"%.0f KB", nil), [deviceInfo[@"DRDeviceWriteBufferSizeKey"] doubleValue]];
     [[self cacheTextField] setStringValue:cache];
 
     NSDictionary *writeCapabilities = deviceInfo[DRDeviceWriteCapabilitiesKey];
