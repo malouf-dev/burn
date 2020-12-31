@@ -6,6 +6,9 @@
 #include "libplatform/platform.h"
 #include <mp4v2/mp4v2.h>
 
+#define _MSC_VER 2000
+#define strnicmp(x,y,z) strncasecmp(x,y,z)
+
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace mp4v2 { namespace impl {

@@ -36,8 +36,7 @@
     id controller = [tabViewItem myController];
     SEL aSelector = [anInvocation selector];
     
-    // TODO: just write things out, since it's saver for ARC and us :) (or find another to handle the respond chain
-    // or [NSApp sendAction:aSelector to:controller from:self];
+    // TODO: just write things out, since it's safer for ARC and us :) (or find another to handle the respond chain or [NSApp sendAction:aSelector to:controller from:self];
     [controller performSelector:aSelector withObject:self];
 }
 

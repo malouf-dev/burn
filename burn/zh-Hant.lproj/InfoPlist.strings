@@ -1,5 +1,5 @@
 /* Basic info */
-NSHumanReadableCopyright = "Kiwi Fruitware 2019";
+NSHumanReadableCopyright = "Kiwi Fruitware 2020";
 CFBundleName = "Burn";
 CFBundleDisplayName = "Burn";
 CFBundleHelpBookName = "Burn 輔助說明";

@@ -14,7 +14,6 @@
 #import "KWCommonMethods.h"
 #import "KWTrackProducer.h"
 #import "KWSVCDImager.h"
-#import "KWAlert.h"
 #import <DiscRecording/DiscRecording.h>
 #import "KWBurner.h"
 #import "KWProgressManager.h"
@@ -195,7 +194,7 @@
 {    
     [[KWProgressManager sharedManager] endSheetWithCompletion:^
     {
-        KWAlert *alert = [[KWAlert alloc] init];
+        NSAlert *alert = [[NSAlert alloc] init];
         [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
         
         if (type == 0)
@@ -211,11 +210,7 @@
         NSString *errorString = [self errorString];
         if (errorString != nil)
         {
-            if ([errorString rangeOfString:@"KWConsole:"].length > 0)
-            {
-                [alert setDetails:[self errorString]];
-            }
-            else
+            if ([errorString rangeOfString:@"KWConsole:"].length ==  0)
             {
                 [alert setInformativeText:[self errorString]];
             }
@@ -298,7 +293,7 @@
         
         [[KWProgressManager sharedManager] endSheetWithCompletion:^
         {
-            KWAlert *alert = [[KWAlert alloc] init];
+            NSAlert *alert = [[NSAlert alloc] init];
             [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
             [alert setMessageText:NSLocalizedString(@"Image failed", nil)];
             [alert setAlertStyle:NSWarningAlertStyle];
@@ -314,11 +309,7 @@
             }
         
             NSString *errorString = [self errorString];
-            if ([errorString rangeOfString:@"KWConsole:"].length > 0)
-            {
-                [alert setDetails:errorString];
-            }
-            else
+            if ([errorString rangeOfString:@"KWConsole:"].length == 0)
             {
                 [alert setInformativeText:errorString == nil ? NSLocalizedString(@"There was a problem creating the image", nil) : errorString];
             }
@@ -700,12 +691,11 @@
      
         [[KWProgressManager sharedManager] endSheetWithCompletion:^
         {
-            KWAlert *alert = [[KWAlert alloc] init];
+            NSAlert *alert = [[NSAlert alloc] init];
             [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
             [alert setMessageText:NSLocalizedString(@"Burning failed", nil)];
             [alert setInformativeText:[[notif userInfo] objectForKey:@"Error"]];
             [alert setAlertStyle:NSWarningAlertStyle];
-            [alert setDetails:[self errorString]];
         
             [alert beginSheetModalForWindow:[self mainWindow] modalDelegate:self didEndSelector:nil contextInfo:nil];
         }];

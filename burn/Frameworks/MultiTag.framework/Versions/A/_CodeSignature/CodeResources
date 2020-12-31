@@ -4,15 +4,7 @@
 <dict>
 	<key>files</key>
 	<dict>
-		<key>Resources/Info.plist</key>
-		<data>
-		rauiOuUfVN+DqBRgxfNl+lzM2eE=
-		</data>
-		<key>Resources/data.plist</key>
-		<data>
-		UMmQBwlWvTcLr+8Vz8CsxhABczc=
-		</data>
-		<key>Resources/en.lproj/InfoPlist.strings</key>
+		<key>Resources/English.lproj/InfoPlist.strings</key>
 		<dict>
 			<key>hash</key>
 			<data>
@@ -21,54 +13,46 @@
 			<key>optional</key>
 			<true/>
 		</dict>
+		<key>Resources/Info.plist</key>
+		<data>
+		0fHE11VJmQNijyyAj/q33DqnIRk=
+		</data>
+		<key>Resources/data.plist</key>
+		<data>
+		UMmQBwlWvTcLr+8Vz8CsxhABczc=
+		</data>
 	</dict>
 	<key>files2</key>
 	<dict>
 		<key>Headers/MultiTag.h</key>
 		<dict>
-			<key>hash</key>
-			<data>
-			zZwbtSgNbwEiUz7M0gqgsjRb4ME=
-			</data>
 			<key>hash2</key>
 			<data>
 			gwDyRkuwBNEdaV+6NvcU6w6KoF9mJgzEIF3ZRZLJuz0=
 			</data>
 		</dict>
-		<key>Resources/Info.plist</key>
+		<key>Resources/English.lproj/InfoPlist.strings</key>
 		<dict>
-			<key>hash</key>
-			<data>
-			rauiOuUfVN+DqBRgxfNl+lzM2eE=
-			</data>
-			<key>hash2</key>
-			<data>
-			mBnkP54//3iin+XWiZeccAxddf7ddEYV5/niAbru7JQ=
-			</data>
-		</dict>
-		<key>Resources/data.plist</key>
-		<dict>
-			<key>hash</key>
-			<data>
-			UMmQBwlWvTcLr+8Vz8CsxhABczc=
-			</data>
-			<key>hash2</key>
-			<data>
-			x7TXm538KPhoRAfma5IKDCR8trh70LuvyIpJsRDuJIk=
-			</data>
-		</dict>
-		<key>Resources/en.lproj/InfoPlist.strings</key>
-		<dict>
-			<key>hash</key>
-			<data>
-			XSgY67704ehuuRR5C+v1O+YrtPM=
-			</data>
 			<key>hash2</key>
 			<data>
 			fc7b0GD/w9ZHqzzqRFg9JBcoAPG0tKnmIUt3QMKzc+c=
 			</data>
 			<key>optional</key>
 			<true/>
+		</dict>
+		<key>Resources/Info.plist</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			eTGTrA4ETqNAUi1rQ0lJZk0SxQCgORfWhDR8UM7RKJA=
+			</data>
+		</dict>
+		<key>Resources/data.plist</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			x7TXm538KPhoRAfma5IKDCR8trh70LuvyIpJsRDuJIk=
+			</data>
 		</dict>
 	</dict>
 	<key>rules</key>

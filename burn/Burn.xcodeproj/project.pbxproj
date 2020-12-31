@@ -24,6 +24,7 @@
 		FE31516C22CCB6E200692452 /* Empty (dark)@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = FE31516922CCB6E200692452 /* Empty (dark)@3x.png */; };
 		FE31516F22CCB74700692452 /* KWEmptyImageView.m in Sources */ = {isa = PBXBuildFile; fileRef = FE31516E22CCB74700692452 /* KWEmptyImageView.m */; };
 		FE31517222CCB7B500692452 /* KWEmptyTextField.m in Sources */ = {isa = PBXBuildFile; fileRef = FE31517122CCB7B500692452 /* KWEmptyTextField.m */; };
+		FE386A0C259A1F280036D108 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE386A0B259A1F280036D108 /* AVFoundation.framework */; };
 		FE4A012922CD2ACD0033759B /* Play (dark).png in Resources */ = {isa = PBXBuildFile; fileRef = FE4A011A22CD2ACB0033759B /* Play (dark).png */; };
 		FE4A012A22CD2ACD0033759B /* Stop (dark)@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FE4A011B22CD2ACC0033759B /* Stop (dark)@2x.png */; };
 		FE4A012B22CD2ACD0033759B /* Stop (dark)@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = FE4A011C22CD2ACC0033759B /* Stop (dark)@3x.png */; };
@@ -64,7 +65,6 @@
 		FEC9BB0422C78BC000A17077 /* KWPreferences.xib in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BAF722C78BC000A17077 /* KWPreferences.xib */; };
 		FEC9BB0522C78BC000A17077 /* KWRecorderInfo.xib in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BAF922C78BC000A17077 /* KWRecorderInfo.xib */; };
 		FEC9BB0622C78BC000A17077 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BAFB22C78BC000A17077 /* MainMenu.xib */; };
-		FEC9BB8322C7B83800A17077 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FEC9BB8222C7B83800A17077 /* AVFoundation.framework */; };
 		FEC9BBA122C7E08B00A17077 /* Sound.tiff in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BBA022C7E08B00A17077 /* Sound.tiff */; };
 		FEC9BBA322C7E0A100A17077 /* General.icns in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BBA222C7E0A100A17077 /* General.icns */; };
 		FEC9BBA622C7EAFD00A17077 /* Empty@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FEC9BBA422C7EAFD00A17077 /* Empty@2x.png */; };
@@ -169,7 +169,6 @@
 		FEF8A87012D9D2BF00FE302C /* KWTabViewItem.m in Sources */ = {isa = PBXBuildFile; fileRef = FE6134C91101FF2800C086EA /* KWTabViewItem.m */; };
 		FEF8A87112D9D2BF00FE302C /* KWWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = FE6134CB1101FF2800C086EA /* KWWindow.m */; };
 		FEF8A87212D9D2BF00FE302C /* KWWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = FE6134CD1101FF2800C086EA /* KWWindowController.m */; };
-		FEF8A87312D9D2BF00FE302C /* KWAlert.m in Sources */ = {isa = PBXBuildFile; fileRef = FE6134F31102016400C086EA /* KWAlert.m */; };
 		FEF8A87412D9D2BF00FE302C /* KWMediaListController.m in Sources */ = {isa = PBXBuildFile; fileRef = FE6134F51102016400C086EA /* KWMediaListController.m */; };
 		FEF8A87612D9D2BF00FE302C /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE3CA4F50BAC7D53001FB922 /* Cocoa.framework */; };
 		FEF8A87712D9D2BF00FE302C /* DiscRecording.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FEEF6FFB0B92EC8800ED64A9 /* DiscRecording.framework */; };
@@ -293,6 +292,7 @@
 		FE31518C22CCE28400692452 /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/KWPreferences.strings"; sourceTree = "<group>"; };
 		FE31518E22CCE28500692452 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/KWPreferences.strings"; sourceTree = "<group>"; };
 		FE32CCDA0F2DE7F100C64ABC /* ru */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ru; path = ru.lproj/BurnHelp; sourceTree = "<group>"; };
+		FE386A0B259A1F280036D108 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		FE3CA4E00BAC7D0E001FB922 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
 		FE3CA4F50BAC7D53001FB922 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		FE3EFEA00DBBBFC6003DD5AD /* 0.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = 0.png; path = Images/ProgressIndicator/0.png; sourceTree = "<group>"; };
@@ -334,8 +334,6 @@
 		FE6134CB1101FF2800C086EA /* KWWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWWindow.m; path = Source/KWWindow.m; sourceTree = "<group>"; };
 		FE6134CC1101FF2800C086EA /* KWWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWWindowController.h; path = Source/KWWindowController.h; sourceTree = "<group>"; };
 		FE6134CD1101FF2800C086EA /* KWWindowController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWWindowController.m; path = Source/KWWindowController.m; sourceTree = "<group>"; };
-		FE6134F21102016400C086EA /* KWAlert.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWAlert.h; path = Source/KWAlert.h; sourceTree = "<group>"; };
-		FE6134F31102016400C086EA /* KWAlert.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWAlert.m; path = Source/KWAlert.m; sourceTree = "<group>"; };
 		FE6134F41102016400C086EA /* KWMediaListController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWMediaListController.h; path = Source/KWMediaListController.h; sourceTree = "<group>"; };
 		FE6134F51102016400C086EA /* KWMediaListController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWMediaListController.m; path = Source/KWMediaListController.m; sourceTree = "<group>"; };
 		FE6AE64322E4A1A0005DDE39 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
@@ -424,7 +422,6 @@
 		FEC9BB7F22C78CBF00A17077 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/KWRecorderInfo.xib; sourceTree = "<group>"; };
 		FEC9BB8022C78CBF00A17077 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		FEC9BB8122C78CBF00A17077 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/KWEjecter.xib; sourceTree = "<group>"; };
-		FEC9BB8222C7B83800A17077 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk/System/Library/Frameworks/AVFoundation.framework; sourceTree = DEVELOPER_DIR; };
 		FEC9BB8522C7D1B700A17077 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/KWProgress.strings; sourceTree = "<group>"; };
 		FEC9BB8B22C7D1C300A17077 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/KWProgress.strings; sourceTree = "<group>"; };
 		FEC9BB9522C7D1D400A17077 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/KWProgress.strings; sourceTree = "<group>"; };
@@ -520,7 +517,6 @@
 		FEEF71FF0B92F44100ED64A9 /* KWAudioController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWAudioController.m; path = Source/KWAudioController.m; sourceTree = "<group>"; };
 		FEEF72070B92F44E00ED64A9 /* KWAudioController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWAudioController.h; path = Source/KWAudioController.h; sourceTree = "<group>"; };
 		FEEF72090B92F47700ED64A9 /* QTKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QTKit.framework; path = /System/Library/Frameworks/QTKit.framework; sourceTree = "<absolute>"; };
-		FEEF720A0B92F47700ED64A9 /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = /System/Library/Frameworks/QuickTime.framework; sourceTree = "<absolute>"; };
 		FEEFF1F40BEB3DF80056C1DB /* KWAudioDiscInspector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWAudioDiscInspector.h; path = Source/KWAudioDiscInspector.h; sourceTree = "<group>"; };
 		FEEFF1F50BEB3DF80056C1DB /* KWAudioDiscInspector.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWAudioDiscInspector.m; path = Source/KWAudioDiscInspector.m; sourceTree = "<group>"; };
 		FEEFF56F0BEB67920056C1DB /* KWAudioMP3Inspector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWAudioMP3Inspector.h; path = Source/KWAudioMP3Inspector.h; sourceTree = "<group>"; };
@@ -572,10 +568,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FE386A0C259A1F280036D108 /* AVFoundation.framework in Frameworks */,
 				FE6AE64422E4A1A0005DDE39 /* AVKit.framework in Frameworks */,
 				FE9119A922E458F100CF5171 /* CoreMedia.framework in Frameworks */,
 				FE0F83F722E8F3E2003122C8 /* LetsMove.framework in Frameworks */,
-				FEC9BB8322C7B83800A17077 /* AVFoundation.framework in Frameworks */,
 				FE9EFE6122CB2C36000D97E5 /* MultiTag.framework in Frameworks */,
 				FEF8A87612D9D2BF00FE302C /* Cocoa.framework in Frameworks */,
 				FE9EFE6222CB2C36000D97E5 /* Sparkle.framework in Frameworks */,
@@ -592,7 +588,6 @@
 			children = (
 				FE3CA4E00BAC7D0E001FB922 /* Carbon.framework */,
 				FEEF72090B92F47700ED64A9 /* QTKit.framework */,
-				FEEF720A0B92F47700ED64A9 /* QuickTime.framework */,
 				FEEF6FFB0B92EC8800ED64A9 /* DiscRecording.framework */,
 			);
 			name = "Linked Frameworks";
@@ -652,9 +647,9 @@
 		2A37F4C3FDCFA73011CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				FE386A0B259A1F280036D108 /* AVFoundation.framework */,
 				FE6AE64322E4A1A0005DDE39 /* AVKit.framework */,
 				FE9119A822E458F100CF5171 /* CoreMedia.framework */,
-				FEC9BB8222C7B83800A17077 /* AVFoundation.framework */,
 				1058C7A6FEA54F5311CA2CBB /* Linked Frameworks */,
 				1058C7A8FEA54F5311CA2CBB /* Other Frameworks */,
 				FEA1527012DAEC910073FA9B /* Included Frameworks */,
@@ -769,8 +764,6 @@
 		FE2491710ECEDB800028E955 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
-				FE6134F21102016400C086EA /* KWAlert.h */,
-				FE6134F31102016400C086EA /* KWAlert.m */,
 				FE6134F41102016400C086EA /* KWMediaListController.h */,
 				FE6134F51102016400C086EA /* KWMediaListController.m */,
 				FE2491680ECEDB6F0028E955 /* KWDiscCreator.h */,
@@ -1450,7 +1443,6 @@
 				FE21040A23B8CF9300EF2A9F /* KWRegionDialog.m in Sources */,
 				FEF8A87112D9D2BF00FE302C /* KWWindow.m in Sources */,
 				FEF8A87212D9D2BF00FE302C /* KWWindowController.m in Sources */,
-				FEF8A87312D9D2BF00FE302C /* KWAlert.m in Sources */,
 				FEF8A87412D9D2BF00FE302C /* KWMediaListController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1800,7 +1792,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = "";
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				MARKETING_VERSION = 2.7.10;
+				MARKETING_VERSION = 3.0;
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kiwifruitware.Burn;
 				PRODUCT_NAME = Burn;
@@ -1838,7 +1830,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = "";
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				MARKETING_VERSION = 2.7.10;
+				MARKETING_VERSION = 3.0;
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kiwifruitware.Burn;
 				PRODUCT_NAME = Burn;
