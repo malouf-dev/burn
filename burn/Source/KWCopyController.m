@@ -4,11 +4,10 @@
 #import "KWCommonMethods.h"
 #import "KWDiscCreator.h"
 #import "KWTrackProducer.h"
-#import "KWAlert.h"
 
 @implementation KWCopyController
 
-- (id) init
+- (instancetype)init
 {
     awakeFromNib = NO;
     
@@ -114,11 +113,10 @@
         {
             [progressPanel endSheetWithCompletion:^
             {
-                KWAlert *alert = [[KWAlert alloc] init];
+                NSAlert *alert = [[NSAlert alloc] init];
                 [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
                 [alert setMessageText:NSLocalizedString(@"Mounting image failed", nil)];
                 [alert setInformativeText:NSLocalizedString(@"There was a problem mounting the image", nil)];
-                [alert setDetails:string];
                 [alert setAlertStyle:NSWarningAlertStyle];
                 
                 [alert beginSheetModalForWindow:mainWindow modalDelegate:self didEndSelector:nil contextInfo:nil];
@@ -340,13 +338,11 @@
     }
     else
     {
-	    KWAlert *alert = [[KWAlert alloc] init];
+	    NSAlert *alert = [[NSAlert alloc] init];
 	    [alert addButtonWithTitle:NSLocalizedString(@"OK", nil)];
 	    [alert setMessageText:alertMessage];
 	    [alert setInformativeText:alertInformation];
 	    [alert setAlertStyle:NSWarningAlertStyle];
-	    [alert setDetails:string];
-	    	    
 	    [alert beginSheetModalForWindow:mainWindow modalDelegate:self didEndSelector:nil contextInfo:nil];
     
 	    return NO;

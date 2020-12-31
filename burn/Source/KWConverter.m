@@ -392,10 +392,16 @@
 	    [args addObject:@"-ar"];
 	    [args addObject:@"44100"];
     }
-    else if (convertKind == 6 && [self isTwentyFourBitsAudio:path])
+    else if (convertKind == 6)
     {
-        [args addObject:@"-acodec"];
-        [args addObject:@"pcm_s24le"];
+        if ([self isTwentyFourBitsAudio:path])
+        {
+            [args addObject:@"-acodec"];
+            [args addObject:@"pcm_s24le"];
+        }
+        
+        [args addObject:@"-map_metadata"];
+        [args addObject:@"-1"];
     }
 
     //Fix for DV to mpeg2 conversion
@@ -1081,9 +1087,13 @@
     }
     
     if (topBars)
-	    return [self convertToEven:[[NSNumber numberWithFloat:(size - (size * aspect.width / aspect.height) / ((float)inputWidth / (float)inputHeight)) / 2 + heightBorder] stringValue]];
+    {
+	    return [self convertToEven:[[NSNumber numberWithFloat:(size - (size * (aspect.width / aspect.height)) / inputAspect) / 2 + heightBorder] stringValue]];
+    }   
     else
-	    return [self convertToEven:[[NSNumber numberWithFloat:((size * aspect.width / aspect.height) / ((float)inputWidth / (float)inputHeight) - size) / 2 + widthBorder] stringValue]];
+    {
+	    return [self convertToEven:[[NSNumber numberWithFloat:(((size * (aspect.width / aspect.height)) / inputAspect) - size) / 2 + widthBorder] stringValue]];
+    }
 }
 
 - (BOOL)remuxMPEG2File:(NSString *)path outPath:(NSString *)outFile

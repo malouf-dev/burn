@@ -165,7 +165,6 @@
 		FEF8A87012D9D2BF00FE302C /* KWTabViewItem.m in Sources */ = {isa = PBXBuildFile; fileRef = FE6134C91101FF2800C086EA /* KWTabViewItem.m */; };
 		FEF8A87112D9D2BF00FE302C /* KWWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = FE6134CB1101FF2800C086EA /* KWWindow.m */; };
 		FEF8A87212D9D2BF00FE302C /* KWWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = FE6134CD1101FF2800C086EA /* KWWindowController.m */; };
-		FEF8A87312D9D2BF00FE302C /* KWAlert.m in Sources */ = {isa = PBXBuildFile; fileRef = FE6134F31102016400C086EA /* KWAlert.m */; };
 		FEF8A87412D9D2BF00FE302C /* KWMediaListController.m in Sources */ = {isa = PBXBuildFile; fileRef = FE6134F51102016400C086EA /* KWMediaListController.m */; };
 		FEF8A87612D9D2BF00FE302C /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE3CA4F50BAC7D53001FB922 /* Cocoa.framework */; };
 		FEF8A87712D9D2BF00FE302C /* DiscRecording.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FEEF6FFB0B92EC8800ED64A9 /* DiscRecording.framework */; };
@@ -346,8 +345,6 @@
 		FE6134CB1101FF2800C086EA /* KWWindow.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWWindow.m; path = Source/KWWindow.m; sourceTree = "<group>"; };
 		FE6134CC1101FF2800C086EA /* KWWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWWindowController.h; path = Source/KWWindowController.h; sourceTree = "<group>"; };
 		FE6134CD1101FF2800C086EA /* KWWindowController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWWindowController.m; path = Source/KWWindowController.m; sourceTree = "<group>"; };
-		FE6134F21102016400C086EA /* KWAlert.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWAlert.h; path = Source/KWAlert.h; sourceTree = "<group>"; };
-		FE6134F31102016400C086EA /* KWAlert.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWAlert.m; path = Source/KWAlert.m; sourceTree = "<group>"; };
 		FE6134F41102016400C086EA /* KWMediaListController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KWMediaListController.h; path = Source/KWMediaListController.h; sourceTree = "<group>"; };
 		FE6134F51102016400C086EA /* KWMediaListController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = KWMediaListController.m; path = Source/KWMediaListController.m; sourceTree = "<group>"; };
 		FE6AE64322E4A1A0005DDE39 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
@@ -807,8 +804,6 @@
 		FE2491710ECEDB800028E955 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
-				FE6134F21102016400C086EA /* KWAlert.h */,
-				FE6134F31102016400C086EA /* KWAlert.m */,
 				FE6134F41102016400C086EA /* KWMediaListController.h */,
 				FE6134F51102016400C086EA /* KWMediaListController.m */,
 				FE2491680ECEDB6F0028E955 /* KWDiscCreator.h */,
@@ -1485,7 +1480,6 @@
 				FEF8A87012D9D2BF00FE302C /* KWTabViewItem.m in Sources */,
 				FEF8A87112D9D2BF00FE302C /* KWWindow.m in Sources */,
 				FEF8A87212D9D2BF00FE302C /* KWWindowController.m in Sources */,
-				FEF8A87312D9D2BF00FE302C /* KWAlert.m in Sources */,
 				FEF8A87412D9D2BF00FE302C /* KWMediaListController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
