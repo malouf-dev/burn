@@ -15,7 +15,7 @@
 		</dict>
 		<key>Resources/Info.plist</key>
 		<data>
-		0fHE11VJmQNijyyAj/q33DqnIRk=
+		KjmItja/3sGfr9LXj8Uwq/2pVeY=
 		</data>
 		<key>Resources/data.plist</key>
 		<data>
@@ -26,6 +26,10 @@
 	<dict>
 		<key>Headers/MultiTag.h</key>
 		<dict>
+			<key>hash</key>
+			<data>
+			zZwbtSgNbwEiUz7M0gqgsjRb4ME=
+			</data>
 			<key>hash2</key>
 			<data>
 			gwDyRkuwBNEdaV+6NvcU6w6KoF9mJgzEIF3ZRZLJuz0=
@@ -33,6 +37,10 @@
 		</dict>
 		<key>Resources/English.lproj/InfoPlist.strings</key>
 		<dict>
+			<key>hash</key>
+			<data>
+			XSgY67704ehuuRR5C+v1O+YrtPM=
+			</data>
 			<key>hash2</key>
 			<data>
 			fc7b0GD/w9ZHqzzqRFg9JBcoAPG0tKnmIUt3QMKzc+c=
@@ -42,13 +50,21 @@
 		</dict>
 		<key>Resources/Info.plist</key>
 		<dict>
+			<key>hash</key>
+			<data>
+			KjmItja/3sGfr9LXj8Uwq/2pVeY=
+			</data>
 			<key>hash2</key>
 			<data>
-			eTGTrA4ETqNAUi1rQ0lJZk0SxQCgORfWhDR8UM7RKJA=
+			TFhtVizw8DQGCgAEzx1pp1A6IGskvqJ7MzWqUp0T/Lg=
 			</data>
 		</dict>
 		<key>Resources/data.plist</key>
 		<dict>
+			<key>hash</key>
+			<data>
+			UMmQBwlWvTcLr+8Vz8CsxhABczc=
+			</data>
 			<key>hash2</key>
 			<data>
 			x7TXm538KPhoRAfma5IKDCR8trh70LuvyIpJsRDuJIk=

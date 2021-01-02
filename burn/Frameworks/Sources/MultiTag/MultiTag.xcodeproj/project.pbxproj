@@ -1031,6 +1031,7 @@
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/mp4v2-src/include";
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/mp4v2-src $(SRCROOT)/mp4v2-src/include";
@@ -1052,6 +1053,7 @@
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/mp4v2-src/include";
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/mp4v2-src $(SRCROOT)/mp4v2-src/include";
