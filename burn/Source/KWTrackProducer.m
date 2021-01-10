@@ -512,11 +512,6 @@
     NSString *padString = [NSString stringWithFormat:@"apad=whole_len=%li", ((trackLength * 2352) / 4)];
     NSArray *arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-ac", @"2", @"-ar", @"44100", @"-af", padString, @"-", nil];
     
-    if ([[KWConverter alloc] isAudioCDFile:path])
-    {
-	    arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-acodec", @"copy", @"-af", padString, @"-", nil];
-    }
-    
     [trackCreator setArguments:arguments];
     [trackCreator setStandardOutput:calcPipe];
     
@@ -631,12 +626,6 @@
     [ffmpeg setLaunchPath:[KWCommonMethods ffmpegPath]];
 
     NSArray *arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-ac", @"2", @"-ar", @"44100", @"-", nil];
-
-    if ([[KWConverter alloc] isAudioCDFile:path])
-    {
-        arguments = [NSArray arrayWithObjects:@"-i", path, @"-f", @"s16le", @"-acodec", @"copy", @"-", nil];
-    }
-
     [ffmpeg setArguments:arguments];
     [ffmpeg setStandardOutput:outPipe];
 

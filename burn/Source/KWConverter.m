@@ -1007,17 +1007,6 @@
     return NO;
 }
 
-//Check if the file is allready an Audio-CD compatible file (2 or 5.1 channels)
-- (BOOL)isAudioCDFile:(NSString *)path
-{
-    NSString *string = [KWConverter ffmpegOutputForPath:path];
-    
-    if (string)
-	    return ([string rangeOfString:@"pcm_s16le"].length > 0 && [string rangeOfString:@"44100"].length > 0 && [string rangeOfString:@"s16"].length > 0 && [string rangeOfString:@"1411 kb/s"].length > 0);
-
-    return NO;
-}
-
 // TODO: combine test methods, if possible
 - (NSInteger)isTwentyFourBitsAudio:(NSString *)path
 {
