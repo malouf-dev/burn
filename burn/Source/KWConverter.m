@@ -861,11 +861,6 @@
 	    
     	    inputFormat = 1;
 	    }
-     
-		if ([inputString rangeOfString:@"DAR 4:3"].length > 0)
-		{
-			inputAspect = (float)4 / (float)3;
-		}
 
 	    if ([inputString rangeOfString:@"DAR 16:9"].length > 0)
 	    {
@@ -876,6 +871,33 @@
 	    	    inputWidth = 1024;
 	    	    inputFormat = 2;
     	    }
+	    }
+	    else
+	    {
+			// Try to get the aspect ratio from the DAR
+			NSArray *inputComponents = [inputString componentsSeparatedByString:@"Output"];
+			if ([inputComponents count] > 0)
+			{
+				NSString *input = inputComponents[0];
+				NSArray *darComponents = [input componentsSeparatedByString:@"DAR "];
+				if ([darComponents count] > 1)
+				{
+					NSArray *darSubComponents = [darComponents[1] componentsSeparatedByString:@"]"];
+					if ([darSubComponents count] > 0)
+					{
+						NSArray *darNumberComponents = [darSubComponents[0] componentsSeparatedByString:@":"];
+						if ([darNumberComponents count] > 0)
+						{
+							CGFloat inputAspectWidth = [darNumberComponents[0] doubleValue];
+							CGFloat inputAspectHeight = [darNumberComponents[1] doubleValue];
+							if (inputAspectWidth > 0 && inputAspectHeight > 0)
+							{
+								inputAspect = inputAspectWidth / inputAspectHeight;
+							}
+						}
+					}
+				}
+			}
 	    }
     
 	    //iMovie projects with HDV 1080i are 16:9, ffmpeg guesses 4:3
@@ -889,9 +911,6 @@
     	    //}
 	    }
     }
-    
-    if ([inputString rangeOfString:@"DAR 119:90"].length > 0)
-	    inputAspect = (float)4 / (float)3;
     
     if ([inputString rangeOfString:@"Duration:"].length > 0)    
     {
