@@ -775,7 +775,7 @@
     //Calculate the aspect ratio width / height    
     if ([[[inputString componentsSeparatedByString:@"Output"] objectAtIndex:0] rangeOfString:@"Video:"].length > 0)
     {
-        // TODO: make this stuff a lot saver!!!!!!
+        // TODO: make this stuff a lot safer!!!!!!
 	    //NSString *resolution;
         NSString *videoInfo = [[[inputString componentsSeparatedByString:@"Output"][0] componentsSeparatedByString:@"Video:"][1] componentsSeparatedByString:@"\n"][0];
         NSArray *videoComponents = [videoInfo componentsSeparatedByString:@","];
@@ -825,9 +825,9 @@
 	    
 	    
 	    if (inputWidth == 352 && (inputHeight == 288 || inputHeight == 240))
+        {
     	    inputAspect = (float)4 / (float)3;
-	    else if ((inputWidth == 480 || inputWidth == 720 || inputWidth == 784) && (inputHeight == 576 || inputHeight == 480))
-    	    inputAspect = (float)4 / (float)3;
+        }
 
 	    //Check if the iMovie project is 4:3 or 16:9
 	    if ([inputString rangeOfString:@"Video: dvvideo"].length > 0)
@@ -861,6 +861,11 @@
 	    
     	    inputFormat = 1;
 	    }
+     
+		if ([inputString rangeOfString:@"DAR 4:3"].length > 0)
+		{
+			inputAspect = (float)4 / (float)3;
+		}
 
 	    if ([inputString rangeOfString:@"DAR 16:9"].length > 0)
 	    {
