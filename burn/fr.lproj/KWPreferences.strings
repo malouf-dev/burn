@@ -52,28 +52,28 @@
 "1876.title" = "Petit (8 cm):";
 
 /* Class = "NSMenuItem"; title = "158 MB (18 minutes)"; ObjectID = "1868"; */
-"1868.title" = "158 MB (18 minutes)";
+"1868.title" = "158 Mo (18 minutes)";
 
 /* Class = "NSMenuItem"; title = "185 MB (21 minutes)"; ObjectID = "1871"; */
-"1871.title" = "185 MB (21 minutes)";
+"1871.title" = "185 Mo (21 minutes)";
 
 /* Class = "NSMenuItem"; title = "Normal (12 cm):"; ObjectID = "1870"; */
 "1870.title" = "Normal (12 cm):";
 
 /* Class = "NSMenuItem"; title = "540 MB (63 minutes)"; ObjectID = "1873"; */
-"1873.title" = "540 MB (63 minutes)";
+"1873.title" = "540 Mo (63 minutes)";
 
 /* Class = "NSMenuItem"; title = "640 MB (74 minutes)"; ObjectID = "1872"; */
-"1872.title" = "640 MB (74 minutes)";
+"1872.title" = "640 Mo (74 minutes)";
 
 /* Class = "NSMenuItem"; title = "700 MB (80 minutes)"; ObjectID = "1867"; */
-"1867.title" = "700 MB (80 minutes)";
+"1867.title" = "700 Mo (80 minutes)";
 
 /* Class = "NSMenuItem"; title = "800 MB (90 minutes)"; ObjectID = "1875"; */
-"1875.title" = "800 MB (90 minutes)";
+"1875.title" = "800 Mo (90 minutes)";
 
 /* Class = "NSMenuItem"; title = "900 MB (99 minutes)"; ObjectID = "1869"; */
-"1869.title" = "900 MB (99 minutes)";
+"1869.title" = "900 Mo (99 minutes)";
 
 /* Class = "NSTextFieldCell"; title = "Default DVD media:"; ObjectID = "1970"; */
 "1970.title" = "DVD par défaut:";
@@ -82,19 +82,19 @@
 "1863.title" = "Petit (8 cm):";
 
 /* Class = "NSMenuItem"; title = "DVD R(W) (1.4 GB)"; ObjectID = "1864"; */
-"1864.title" = "DVD R(W) (1,4 GB)";
+"1864.title" = "DVD R(W) (1,4 Go)";
 
 /* Class = "NSMenuItem"; title = "DVD R(W) DL (2.8 GB)"; ObjectID = "1859"; */
-"1859.title" = "DVD R(W) DL (2,8 GB)";
+"1859.title" = "DVD R(W) DL (2,8 Go)";
 
 /* Class = "NSMenuItem"; title = "Normal (12 cm):"; ObjectID = "1861"; */
 "1861.title" = "Normal (12 cm):";
 
 /* Class = "NSMenuItem"; title = "DVD R(W) (4.8 GB)"; ObjectID = "1860"; */
-"1860.title" = "DVD R(W) (4,8 GB)";
+"1860.title" = "DVD R(W) (4,8 Go)";
 
 /* Class = "NSMenuItem"; title = "DVD R(W) DL (9.4 GB)"; ObjectID = "1862"; */
-"1862.title" = "DVD R(W) DL (9,4 GB)";
+"1862.title" = "DVD R(W) DL (9,4 Go)";
 
 /* Class = "NSTextFieldCell"; title = "Media with no disc:"; ObjectID = "1972"; */
 "1972.title" = "Média sans disque:";
@@ -130,19 +130,19 @@
 "1204.title" = "Avancé...";
 
 /* Class = "NSButtonCell"; title = "Show filepackages as folder"; ObjectID = "1904"; */
-"1904.title" = "Afficher les 'Packages' sous forme de dossiers";
+"1904.title" = "Afficher les 'Paquets' sous forme de dossiers";
 
 /* Class = "NSButtonCell"; title = "Calculate filepackage sizes"; ObjectID = "1903"; */
-"1903.title" = "Calculer la taille des 'Packages'";
+"1903.title" = "Calculer la taille des 'Paquets'";
 
 /* Class = "NSButtonCell"; title = "Calculate folder sizes"; ObjectID = "1902"; */
-"1902.title" = "Calculer la taille de l'arborescence du disque";
+"1902.title" = "Calculer la taille des dossiers";
 
 /* Class = "NSButtonCell"; title = "Calculate total size"; ObjectID = "1900"; */
-"1900.title" = "Calcul de la taille totale";
+"1900.title" = "Calculer la taille totale";
 
 /* Class = "NSTextFieldCell"; title = "Turning this off will speed up things on slower computers"; ObjectID = "1901"; */
-"1901.title" = "Décocher cette option accélérera certains ordinateurs";
+"1901.title" = "Décocher cette option accélérera les opérations sur certains ordinateurs";
 
 
 // Audio
@@ -195,13 +195,13 @@
 "970.title" = "Mono";
 
 /* Class = "NSMenuItem"; title = "Stereo"; ObjectID = "969"; */
-"969.title" = "Stereo";
+"969.title" = "Stéréo";
 
 /* Class = "NSButtonCell"; title = "Create folders for artists"; ObjectID = "1910"; */
-"1910.title" = "Créer un dossier -artistes-";
+"1910.title" = "Créer un dossier -Artistes-";
 
 /* Class = "NSButtonCell"; title = "Create folders for albums"; ObjectID = "1911"; */
-"1911.title" = "Créer un dossier -albums-";
+"1911.title" = "Créer un dossier -Albums-";
 
 
 // Video
@@ -274,7 +274,7 @@
 "1931.title" = "Multiplexer des fichiers audio et vidéo séparés";
 
 /* Class = "NSButtonCell"; title = "Re-mux external MPEG2 streams"; ObjectID = "1930"; */
-"1930.title" = "Forcer le multiplexage des flux MPEG2 externes";
+"1930.title" = "Remultiplexer les flux MPEG2 externes";
 
 /* Class = "NSButtonCell"; title = "Loop DVD-Video discs"; ObjectID = "1942"; */
 "1942.title" = "Lire les DVD-Vidéo en boucle";
@@ -286,7 +286,7 @@
 "1938.title" = "Thème:";
 
 /* Class = "NSMenuItem"; title = "Default"; ObjectID = "1624"; */
-"1624.title" = "Default";
+"1624.title" = "Par défaut";
 
 /* Class = "NSButtonCell"; title = "-"; ObjectID = "1937"; */
 "1937.title" = "-";
@@ -369,7 +369,7 @@
 "1955.title" = "pixels";
 
 /* Class = "NSButtonCell"; title = "Framerate"; ObjectID = "1953"; */
-"1953.title" = "Nombre d'images / s:";
+"1953.title" = "Nombre d'images/seconde:";
 
 /* Class = "NSTextFieldCell"; title = "25"; ObjectID = "1957"; */
 "1957.title" = "25";

@@ -37,16 +37,16 @@
 "2157.title" = "Date de création:";
 
 /* Class = "NSTextFieldCell"; title = "Content Mod Date:"; ObjectID = "2153"; */
-"2153.title" = "Content Mod Date:";
+"2153.title" = "Date de modification du contenu:";
 
 /* Class = "NSTextFieldCell"; title = "Attribute Mod Date:"; ObjectID = "2150"; */
-"2150.title" = "Attribute Mod Date:";
+"2150.title" = "Date de modification de l'attribut:";
 
 /* Class = "NSTextFieldCell"; title = "Last Accessed Date:"; ObjectID = "2156"; */
-"2156.title" = "Last Accessed Date:";
+"2156.title" = "Date du dernier accès:";
 
 /* Class = "NSTextFieldCell"; title = "Backup Date:"; ObjectID = "2155"; */
-"2155.title" = "Backup Date:";
+"2155.title" = "Date de la sauvegarde:";
 
 
 
@@ -82,7 +82,7 @@
 "91.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "92"; */
-"92.title" = "execute";
+"92.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "read"; ObjectID = "93"; */
 "93.title" = "Lecture";
@@ -97,10 +97,10 @@
 "96.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "97"; */
-"97.title" = "execute";
+"97.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "98"; */
-"98.title" = "execute";
+"98.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "setuid"; ObjectID = "99"; */
 "99.title" = "setuid";
@@ -110,7 +110,7 @@
 "52.title" = "Dossier";
 
 /* Class = "NSTextFieldCell"; title = "Classic Options:"; ObjectID = "2180"; */
-"2180.title" = "Classic Options:";
+"2180.title" = "Options classiques:";
 
 /* Class = "NSTextFieldCell"; title = "T:"; ObjectID = "2164"; */
 "2164.title" = "T:";
@@ -122,7 +122,7 @@
 "2169.title" = "Limites:";
 
 /* Class = "NSTextFieldCell"; title = "Scroll position:"; ObjectID = "2171"; */
-"2171.title" = "Scroll position:";
+"2171.title" = "Position de défilement:";
 
 /* Class = "NSTextFieldCell"; title = "L:"; ObjectID = "2173"; */
 "2173.title" = "L:";
@@ -144,10 +144,10 @@
 "502.title" = "Fichier";
 
 /* Class = "NSTextFieldCell"; title = "Classic Options:"; ObjectID = "2196"; */
-"2196.title" = "Classic Options:";
+"2196.title" = "Options classiques:";
 
 /* Class = "NSTextFieldCell"; title = "Icon Position:"; ObjectID = "2183"; */
-"2183.title" = "Icon Position:";
+"2183.title" = "Position de l'icône:";
 
 /* Class = "NSTextFieldCell"; title = "Y:"; ObjectID = "2184"; */
 "2184.title" = "Y:";
@@ -156,16 +156,16 @@
 "2185.title" = "X:";
 
 /* Class = "NSTextFieldCell"; title = "Text Encoding Hint:"; ObjectID = "2188"; */
-"2188.title" = "Text Encoding Hint:";
+"2188.title" = "Astuce d'encodage de texte:";
 
 /* Class = "NSTextFieldCell"; title = "Creator:"; ObjectID = "2191"; */
-"2191.title" = "Creator:";
+"2191.title" = "Créateur:";
 
 /* Class = "NSTextFieldCell"; title = "Type:"; ObjectID = "2193"; */
 "2193.title" = "Type:";
 
 /* Class = "NSTextFieldCell"; title = "Catalog Node ID:"; ObjectID = "2194"; */
-"2194.title" = "Catalog Node ID:";
+"2194.title" = "ID du noeud de catalogue:";
 
 
 
@@ -205,16 +205,16 @@
 "2213.title" = "Date de création:";
 
 /* Class = "NSTextFieldCell"; title = "Content Mod Date:"; ObjectID = "2203"; */
-"2203.title" = "Content Mod Date:";
+"2203.title" = "Date de modification du contenu:";
 
 /* Class = "NSTextFieldCell"; title = "Attribute Mod Date:"; ObjectID = "2202"; */
-"2202.title" = "Attribute Mod Date:";
+"2202.title" = "Date de modification de l'attribut:";
 
 /* Class = "NSTextFieldCell"; title = "Last Accessed Date:"; ObjectID = "2207"; */
-"2207.title" = "Last Accessed Date:";
+"2207.title" = "Date du dernier accès:";
 
 /* Class = "NSTextFieldCell"; title = "Backup Date:"; ObjectID = "2206"; */
-"2206.title" = "Backup Date:";
+"2206.title" = "Date de la sauvegarde:";
 
 /* Class = "NSTextFieldCell"; title = "Effective Date:"; ObjectID = "2209"; */
 "2209.title" = "Date effective:";
@@ -223,7 +223,7 @@
 "2211.title" = "Date d'expiration:";
 
 /* Class = "NSTextFieldCell"; title = "Recording Date:"; ObjectID = "2201"; */
-"2201.title" = "Recording Date:";
+"2201.title" = "Date d'enregistrement:";
 
 
 /* Class = "NSMenuItem"; title = "Permissions"; ObjectID = "185"; */
@@ -248,7 +248,7 @@
 "229.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "230"; */
-"230.title" = "execute";
+"230.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "read"; ObjectID = "231"; */
 "231.title" = "Lecture";
@@ -257,7 +257,7 @@
 "232.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "233"; */
-"233.title" = "execute";
+"233.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "read"; ObjectID = "234"; */
 "234.title" = "Lecture";
@@ -266,7 +266,7 @@
 "235.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "236"; */
-"236.title" = "execute";
+"236.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "setuid"; ObjectID = "237"; */
 "237.title" = "setuid";
@@ -282,13 +282,13 @@
 
 
 /* Class = "NSMenuItem"; title = "Item"; ObjectID = "186"; */
-"186.title" = "Item";
+"186.title" = "Elément";
 
 /* Class = "NSButtonCell"; title = "Make Item Invisible"; ObjectID = "2220"; */
-"2220.title" = "Make Item Invisible";
+"2220.title" = "Rendre l'élément invisible";
 
 /* Class = "NSTextFieldCell"; title = "Version Number:"; ObjectID = "2221"; */
-"2221.title" = "Version Number:";
+"2221.title" = "Numéro de version:";
 
 
 
@@ -316,16 +316,16 @@
 "2257.title" = "Date de création:";
 
 /* Class = "NSTextFieldCell"; title = "Content Mod Date:"; ObjectID = "2248"; */
-"2248.title" = "Content Mod Date:";
+"2248.title" = "Date de modification du contenu:";
 
 /* Class = "NSTextFieldCell"; title = "Attribute Mod Date:"; ObjectID = "2246"; */
-"2246.title" = "Attribute Mod Date:";
+"2246.title" = "Date de modification de l'attribut:";
 
 /* Class = "NSTextFieldCell"; title = "Last Accessed Date:"; ObjectID = "2253"; */
-"2253.title" = "Last Accessed Date:";
+"2253.title" = "Date du dernier accès:";
 
 /* Class = "NSTextFieldCell"; title = "Backup Date:"; ObjectID = "2251"; */
-"2251.title" = "Backup Date:";
+"2251.title" = "Date de la sauvegarde:";
 
 /* Class = "NSTextFieldCell"; title = "Effective Date:"; ObjectID = "2256"; */
 "2256.title" = "Date effective:";
@@ -334,7 +334,7 @@
 "2258.title" = "Date d'expiration:";
 
 /* Class = "NSTextFieldCell"; title = "Recording Date:"; ObjectID = "2249"; */
-"2249.title" = "Recording Date:";
+"2249.title" = "Date d'enregistrement:";
 
 
 /* Class = "NSMenuItem"; title = "Permissions"; ObjectID = "277"; */
@@ -353,7 +353,7 @@
 "300.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "301"; */
-"301.title" = "execute";
+"301.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "setuid"; ObjectID = "302"; */
 "302.title" = "setuid";
@@ -371,7 +371,7 @@
 "306.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "307"; */
-"307.title" = "execute";
+"307.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "read"; ObjectID = "308"; */
 "308.title" = "Lecture";
@@ -380,7 +380,7 @@
 "309.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "310"; */
-"310.title" = "execute";
+"310.title" = "Exécution";
 
 /* Class = "NSTextFieldCell"; title = "owner:"; ObjectID = "312"; */
 "312.title" = "Propriétaire:";
@@ -393,13 +393,13 @@
 
 
 /* Class = "NSMenuItem"; title = "Item"; ObjectID = "278"; */
-"278.title" = "Item";
+"278.title" = "Elément";
 
 /* Class = "NSButtonCell"; title = "Make Item Invisible"; ObjectID = "2235"; */
-"2235.title" = "Make Item Invisible";
+"2235.title" = "Rendre l'élément invisible";
 
 /* Class = "NSTextFieldCell"; title = "Version Number:"; ObjectID = "2236"; */
-"2236.title" = "Version Number:";
+"2236.title" = "Numéro de version:";
 
 
 
@@ -427,16 +427,16 @@
 "2278.title" = "Date de création:";
 
 /* Class = "NSTextFieldCell"; title = "Content Mod Date:"; ObjectID = "2271"; */
-"2271.title" = "Content Mod Date:";
+"2271.title" = "Date de modification du contenu:";
 
 /* Class = "NSTextFieldCell"; title = "Attribute Mod Date:"; ObjectID = "2269"; */
-"2269.title" = "Attribute Mod Date:";
+"2269.title" = "Date de modification de l'attribut:";
 
 /* Class = "NSTextFieldCell"; title = "Last Accessed Date:"; ObjectID = "2275"; */
-"2275.title" = "Last Accessed Date:";
+"2275.title" = "Date du dernier accès:";
 
 /* Class = "NSTextFieldCell"; title = "Backup Date:"; ObjectID = "2273"; */
-"2273.title" = "Backup Date:";
+"2273.title" = "Date de la sauvegarde:";
 
 /* Class = "NSTextFieldCell"; title = "Effective Date:"; ObjectID = "2274"; */
 "2274.title" = "Date effective:";
@@ -445,7 +445,7 @@
 "2276.title" = "Date d'expiration:";
 
 /* Class = "NSTextFieldCell"; title = "Recording Date:"; ObjectID = "2267"; */
-"2267.title" = "Recording Date:";
+"2267.title" = "Date d'enregistrement:";
 
 
 /* Class = "NSMenuItem"; title = "Permissions"; ObjectID = "729"; */
@@ -470,7 +470,7 @@
 "740.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "741"; */
-"741.title" = "execute";
+"741.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "read"; ObjectID = "742"; */
 "742.title" = "Lecture";
@@ -479,7 +479,7 @@
 "743.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "744"; */
-"744.title" = "execute";
+"744.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "read"; ObjectID = "745"; */
 "745.title" = "Lecture";
@@ -488,7 +488,7 @@
 "746.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "747"; */
-"747.title" = "execute";
+"747.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "setuid"; ObjectID = "748"; */
 "748.title" = "setuid";
@@ -504,10 +504,10 @@
 
 
 /* Class = "NSMenuItem"; title = "Item"; ObjectID = "730"; */
-"730.title" = "Item";
+"730.title" = "Elément";
 
 /* Class = "NSButtonCell"; title = "Make Item Invisible"; ObjectID = "2287"; */
-"2287.title" = "Make Item Invisible";
+"2287.title" = "Rendre l'élément invisible";
 
 
 // Data disc view
@@ -610,7 +610,7 @@
 "2455.title" = "Date effective:";
 
 /* Class = "NSTextFieldCell"; title = "Copyright File:"; ObjectID = "2457"; */
-"2457.title" = " Fichier Copyright:";
+"2457.title" = "Fichier Copyright:";
 
 /* Class = "NSButtonCell"; title = "Choose…"; ObjectID = "2434"; */
 "2434.title" = "Choisir...";
@@ -721,7 +721,7 @@
 "1530.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "1531"; */
-"1531.title" = "execute";
+"1531.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "read"; ObjectID = "1532"; */
 "1532.title" = "Lecture";
@@ -730,7 +730,7 @@
 "1533.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "1534"; */
-"1534.title" = "execute";
+"1534.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "read"; ObjectID = "1535"; */
 "1535.title" = "Lecture";
@@ -739,7 +739,7 @@
 "1536.title" = "Ecriture";
 
 /* Class = "NSButtonCell"; title = "execute"; ObjectID = "1537"; */
-"1537.title" = "execute";
+"1537.title" = "Exécution";
 
 /* Class = "NSButtonCell"; title = "setuid"; ObjectID = "1538"; */
 "1538.title" = "setuid";
@@ -793,7 +793,7 @@
 "2327.title" = "Fonctionnalités:";
 
 /* Class = "NSTextFieldCell"; title = "Gap before track:"; ObjectID = "2320"; */
-"2320.title" = "Inter-piste :";
+"2320.title" = "Inter-piste:";
 
 /* Class = "NSTextFieldCell"; title = "seconds"; ObjectID = "2318"; */
 "2318.title" = "secondes";
@@ -947,7 +947,7 @@
 "2395.title" = "Ajouter";
 
 /* Class = "NSButtonCell"; title = "Stop"; ObjectID = "2396"; */
-"2396.title" = "Stop";
+"2396.title" = "Arrêt";
 
 /* Class = "NSTextFieldCell"; title = "Title:"; ObjectID = "2400"; */
 "2400.title" = "Titre:";
@@ -962,4 +962,4 @@
 "2293.title" = "OK";
 
 /* Class = "NSButtonCell"; title = "Cancel"; ObjectID = "2294"; */
-"2294.title" = "Arrêt";
+"2294.title" = "Annuler";

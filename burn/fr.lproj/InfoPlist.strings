@@ -1,8 +1,8 @@
 /* Basic info */
-NSHumanReadableCopyright = "Kiwi Fruitware 2019";
+NSHumanReadableCopyright = "Kiwi Fruitware 2021";
 CFBundleName = "Burn";
 CFBundleDisplayName = "Burn";
-CFBundleHelpBookName = "Burn Help";
+CFBundleHelpBookName = "Aide de Burn";
 
 /* File types */
 "Image document" = "Document Image";

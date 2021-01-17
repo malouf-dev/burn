@@ -45,7 +45,7 @@
 "145.title" = "Cacher les autres";
 
 /* Class = "NSMenuItem"; title = "Show All"; ObjectID = "150"; */
-"150.title" = "Tout montrer";
+"150.title" = "Afficher tout";
 
 /* Class = "NSMenuItem"; title = "Find…"; ObjectID = "154"; */
 "154.title" = "Trouver…";
@@ -108,7 +108,7 @@
 "189.title" = "Vérification d'orthographe";
 
 /* Class = "NSMenuItem"; title = "Check Spelling as You Type"; ObjectID = "191"; */
-"191.title" = "Check Spelling as You Type";
+"191.title" = "Vérifier l'orthographe au cours de la frappe";
 
 /* Class = "NSMenuItem"; title = "Paste and Match Style"; ObjectID = "210"; */
 "210.title" = "Coller et fusionner le style";
@@ -141,7 +141,7 @@
 "236.title" = "Rechercher les disques";
 
 /* Class = "NSMenuItem"; title = "Mount Image"; ObjectID = "237"; */
-"237.title" = "Monter l'image-disque";
+"237.title" = "Monter l'image disque";
 
 /* Class = "NSMenuItem"; title = "Create Folder"; ObjectID = "238"; */
 "238.title" = "Créer le dossier";
@@ -186,7 +186,7 @@
 "277.title" = "Aide données";
 
 /* Class = "NSMenuItem"; title = "Save Image…"; ObjectID = "278"; */
-"278.title" = "Sauvegarder l'image-disque";
+"278.title" = "Sauvegarder l'image disque";
 
 /* Class = "NSMenuItem"; title = " "; ObjectID = "368"; */
 "368.title" = " ";
@@ -195,7 +195,7 @@
 "375.title" = "Inspecteur";
 
 /* Class = "NSMenuItem"; title = "Burn Site"; ObjectID = "385"; */
-"385.title" = "'Burn' sur le Web";
+"385.title" = "Site Web de Burn";
 
 /* Class = "NSWindow"; title = "Burn"; ObjectID = "388"; */
 "388.title" = "Burn";
@@ -204,43 +204,43 @@
 "391.label" = "Copie";
 
 /* Class = "NSTextField"; ibExternalAccessibilityHelp = "Size of the opened disc"; ObjectID = "393"; */
-"393.ibExternalAccessibilityHelp" = "Size of the opened disc";
+"393.ibExternalAccessibilityHelp" = "Taille du disque ouvert";
 
 /* Class = "NSTextField"; ibExternalAccessibilityHelp = "Kind of disc openend"; ObjectID = "396"; */
-"396.ibExternalAccessibilityHelp" = "Kind of disc openend";
+"396.ibExternalAccessibilityHelp" = "Type de disque ouvert";
 
 /* Class = "NSTextField"; ibExternalAccessibilityHelp = "Current disc image"; ObjectID = "397"; */
-"397.ibExternalAccessibilityHelp" = "Current disc image";
+"397.ibExternalAccessibilityHelp" = "Image disque actuelle";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Mount, unmount or eject a disc or disc image"; ObjectID = "398"; */
-"398.ibExternalAccessibilityHelp" = "Mount, unmount or eject a disc or disc image";
+"398.ibExternalAccessibilityHelp" = "Monter, démonter ou éjecter un disque ou une image disque";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Close"; ObjectID = "399"; */
-"399.ibExternalAccessibilityDescription" = "Close";
+"399.ibExternalAccessibilityDescription" = "Fermer";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Close current disc image"; ObjectID = "399"; */
-"399.ibExternalAccessibilityHelp" = "Close current disc image";
+"399.ibExternalAccessibilityHelp" = "Fermer l'image disque actuelle";
 
 /* Class = "NSBox"; ibExternalAccessibilityDescription = "Drop zone"; ObjectID = "401"; */
-"401.ibExternalAccessibilityDescription" = "Drop zone";
+"401.ibExternalAccessibilityDescription" = "Zone de dépôt";
 
 /* Class = "NSBox"; ibExternalAccessibilityHelp = "Drop discs and images here"; ObjectID = "401"; */
-"401.ibExternalAccessibilityHelp" = "Drop discs and images here";
+"401.ibExternalAccessibilityHelp" = "Déposer les disques et images ici";
 
 /* Class = "NSBox"; title = "Title"; ObjectID = "401"; */
-"401.title" = "Title";
+"401.title" = "Titre";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Scan for removable discs currently connected"; ObjectID = "405"; */
-"405.ibExternalAccessibilityHelp" = "Scan for removable discs currently connected";
+"405.ibExternalAccessibilityHelp" = "Rechercher les disques amovibles actuellement connectés";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Open or save a disc image"; ObjectID = "406"; */
-"406.ibExternalAccessibilityHelp" = "Open or save a disc image";
+"406.ibExternalAccessibilityHelp" = "Ouvrir ou enregistrer une image disque";
 
 /* Class = "NSTabViewItem"; label = "Video"; ObjectID = "408"; */
 "408.label" = "Vidéo";
 
 /* Class = "NSTextField"; ibExternalAccessibilityHelp = "Total size used on the video disc"; ObjectID = "410"; */
-"410.ibExternalAccessibilityHelp" = "Total size used on the video disc";
+"410.ibExternalAccessibilityHelp" = "Taille totale utilisée par le disque vidéo";
 
 /* Class = "NSMenu"; title = "OtherViews"; ObjectID = "412"; */
 "412.title" = "OtherViews";
@@ -264,7 +264,7 @@
 "420.title" = "Multiplexer des fichiers audio et vidéo séparés";
 
 /* Class = "NSPopUpButton"; ibExternalAccessibilityHelp = "Choose a video disc format"; ObjectID = "421"; */
-"421.ibExternalAccessibilityHelp" = "Choose a video disc format";
+"421.ibExternalAccessibilityHelp" = "Choisir un format de disque vidéo";
 
 /* Class = "NSMenu"; title = "OtherViews"; ObjectID = "422"; */
 "422.title" = "OtherViews";
@@ -282,10 +282,10 @@
 "426.title" = "VCD";
 
 /* Class = "NSTableView"; ibExternalAccessibilityDescription = "Video disc list"; ObjectID = "428"; */
-"428.ibExternalAccessibilityDescription" = "Video disc list";
+"428.ibExternalAccessibilityDescription" = "Liste du disque vidéo";
 
 /* Class = "NSTableView"; ibExternalAccessibilityHelp = "Items on the disc"; ObjectID = "428"; */
-"428.ibExternalAccessibilityHelp" = "Items on the disc";
+"428.ibExternalAccessibilityHelp" = "Eléments sur le disque";
 
 /* Class = "NSTableColumn"; headerCell.title = "Size"; ObjectID = "429"; */
 "429.headerCell.title" = "Taille";
@@ -294,22 +294,22 @@
 "432.headerCell.title" = "Fichier";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Delete"; ObjectID = "434"; */
-"434.ibExternalAccessibilityDescription" = "Delete";
+"434.ibExternalAccessibilityDescription" = "Supprimer";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Delete selected items from the video disc"; ObjectID = "434"; */
-"434.ibExternalAccessibilityHelp" = "Delete selected items from the video disc";
+"434.ibExternalAccessibilityHelp" = "Supprimer les éléments sélectionnés du disque vidéo";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Options"; ObjectID = "435"; */
 "435.ibExternalAccessibilityDescription" = "Options";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Quickly set options without opening preferences"; ObjectID = "435"; */
-"435.ibExternalAccessibilityHelp" = "Quickly set options without opening preferences";
+"435.ibExternalAccessibilityHelp" = "Définissez rapidement les options sans ouvrir les préférences";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Add"; ObjectID = "436"; */
-"436.ibExternalAccessibilityDescription" = "Add";
+"436.ibExternalAccessibilityDescription" = "Ajouter";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Add items to the video disc"; ObjectID = "436"; */
-"436.ibExternalAccessibilityHelp" = "Add items to the video disc";
+"436.ibExternalAccessibilityHelp" = "Ajouter des éléments au disque vidéo";
 
 /* Class = "NSMenu"; title = "OtherViews"; ObjectID = "438"; */
 "438.title" = "OtherViews";
@@ -318,40 +318,40 @@
 "439.title" = "Forcer l'encodage en DivX";
 
 /* Class = "NSTextField"; ibExternalAccessibilityHelp = "Choose the video disc label"; ObjectID = "441"; */
-"441.ibExternalAccessibilityHelp" = "Choose the video disc label";
+"441.ibExternalAccessibilityHelp" = "Choisir l'étiquette du disque vidéo";
 
 /* Class = "NSTabViewItem"; label = "Audio"; ObjectID = "442"; */
 "442.label" = "Audio";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Forward"; ObjectID = "444"; */
-"444.ibExternalAccessibilityDescription" = "Forward";
+"444.ibExternalAccessibilityDescription" = "Suivant";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Play the next sound"; ObjectID = "444"; */
-"444.ibExternalAccessibilityHelp" = "Play the next sound";
+"444.ibExternalAccessibilityHelp" = "Jouer la piste suivante";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Back"; ObjectID = "446"; */
-"446.ibExternalAccessibilityDescription" = "Back";
+"446.ibExternalAccessibilityDescription" = "Précédent";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Play the previous sound"; ObjectID = "446"; */
-"446.ibExternalAccessibilityHelp" = "Play the previous sound";
+"446.ibExternalAccessibilityHelp" = "Jouer la piste précédente";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Add"; ObjectID = "447"; */
-"447.ibExternalAccessibilityDescription" = "Add";
+"447.ibExternalAccessibilityDescription" = "Ajouter";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Add items to the audio disc"; ObjectID = "447"; */
-"447.ibExternalAccessibilityHelp" = "Add items to the audio disc";
+"447.ibExternalAccessibilityHelp" = "Ajouter des éléments au disque audio";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Delete"; ObjectID = "448"; */
-"448.ibExternalAccessibilityDescription" = "Delete";
+"448.ibExternalAccessibilityDescription" = "Supprimer";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Delete selected items from the audio disc"; ObjectID = "448"; */
-"448.ibExternalAccessibilityHelp" = "Delete selected items from the audio disc";
+"448.ibExternalAccessibilityHelp" = "Supprimer des éléments du disque audio";
 
 /* Class = "NSTableView"; ibExternalAccessibilityDescription = "Audio disc list"; ObjectID = "450"; */
-"450.ibExternalAccessibilityDescription" = "Audio disc list";
+"450.ibExternalAccessibilityDescription" = "Liste du disque audio";
 
 /* Class = "NSTableView"; ibExternalAccessibilityHelp = "Items on the disc"; ObjectID = "450"; */
-"450.ibExternalAccessibilityHelp" = "Items on the disc";
+"450.ibExternalAccessibilityHelp" = "Eléments sur le disque";
 
 /* Class = "NSTableColumn"; headerCell.title = "Time"; ObjectID = "451"; */
 "451.headerCell.title" = "Durée";
@@ -363,16 +363,16 @@
 "455.ibExternalAccessibilityDescription" = "Options";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Quickly set options without opening preferences"; ObjectID = "455"; */
-"455.ibExternalAccessibilityHelp" = "Quickly set options without opening preferences";
+"455.ibExternalAccessibilityHelp" = "Définissez rapidement les options sans ouvrir les préférences";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Play"; ObjectID = "456"; */
-"456.ibExternalAccessibilityDescription" = "Play";
+"456.ibExternalAccessibilityDescription" = "Jouer";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Play the current selected sound"; ObjectID = "456"; */
-"456.ibExternalAccessibilityHelp" = "Play the current selected sound";
+"456.ibExternalAccessibilityHelp" = "Jouer la piste sélectionnée";
 
 /* Class = "NSPopUpButton"; ibExternalAccessibilityHelp = "Choose a audio disc format"; ObjectID = "457"; */
-"457.ibExternalAccessibilityHelp" = "Choose a audio disc format";
+"457.ibExternalAccessibilityHelp" = "Choisir un format de disque audio";
 
 /* Class = "NSMenu"; title = "OtherViews"; ObjectID = "458"; */
 "458.title" = "OtherViews";
@@ -390,37 +390,37 @@
 "465.title" = "Inclure les infos CD-Text";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Stop"; ObjectID = "466"; */
-"466.ibExternalAccessibilityDescription" = "Stop";
+"466.ibExternalAccessibilityDescription" = "Arrêter";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Stop playing"; ObjectID = "466"; */
-"466.ibExternalAccessibilityHelp" = "Stop playing";
+"466.ibExternalAccessibilityHelp" = "Arrêter la lecture";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Switch between time display modes (if possible)"; ObjectID = "467"; */
-"467.ibExternalAccessibilityHelp" = "Switch between time display modes (if possible)";
+"467.ibExternalAccessibilityHelp" = "Basculer entre les modes d'affichage de durée (si possible)";
 
 /* Class = "NSMenu"; title = "OtherViews"; ObjectID = "471"; */
 "471.title" = "OtherViews";
 
 /* Class = "NSMenuItem"; title = "Create folders for artists"; ObjectID = "473"; */
-"473.title" = "Créer un dossier -artistes-";
+"473.title" = "Créer un dossier -Artistes-";
 
 /* Class = "NSMenuItem"; title = "Create folders for albums"; ObjectID = "474"; */
-"474.title" = "Créer un dossier -albums-";
+"474.title" = "Créer un dossier -Albums-";
 
 /* Class = "NSTabViewItem"; label = "Data"; ObjectID = "475"; */
 "475.label" = "Données";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Create a new folder on the data disc"; ObjectID = "478"; */
-"478.ibExternalAccessibilityHelp" = "Create a new folder on the data disc";
+"478.ibExternalAccessibilityHelp" = "Créer un nouveau dossier sur le disque de données";
 
 /* Class = "NSTextField"; ibExternalAccessibilityHelp = "Size of the data disc"; ObjectID = "479"; */
-"479.ibExternalAccessibilityHelp" = "Size of the data disc";
+"479.ibExternalAccessibilityHelp" = "Taille du disque de données";
 
 /* Class = "NSTableView"; ibExternalAccessibilityDescription = "Data disc list"; ObjectID = "481"; */
-"481.ibExternalAccessibilityDescription" = "Data disc list";
+"481.ibExternalAccessibilityDescription" = "Liste du disque de données";
 
 /* Class = "NSTableView"; ibExternalAccessibilityHelp = "Items on the disc"; ObjectID = "481"; */
-"481.ibExternalAccessibilityHelp" = "Items on the disc";
+"481.ibExternalAccessibilityHelp" = "Eléments sur le disque";
 
 /* Class = "NSTableColumn"; headerCell.title = "Size"; ObjectID = "482"; */
 "482.headerCell.title" = "Taille";
@@ -429,7 +429,7 @@
 "483.headerCell.title" = "Fichier";
 
 /* Class = "NSPopUpButton"; ibExternalAccessibilityHelp = "Choose the filesystem for the data disc"; ObjectID = "485"; */
-"485.ibExternalAccessibilityHelp" = "Choose the filesystem for the data disc";
+"485.ibExternalAccessibilityHelp" = "Choisir le système de fichiers du disque de données";
 
 /* Class = "NSMenu"; title = "OtherViews"; ObjectID = "486"; */
 "486.title" = "OtherViews";
@@ -450,25 +450,25 @@
 "491.title" = "DVD (UDF)";
 
 /* Class = "NSTextField"; ibExternalAccessibilityHelp = "Set the data disc label"; ObjectID = "492"; */
-"492.ibExternalAccessibilityHelp" = "Set the data disc label";
+"492.ibExternalAccessibilityHelp" = "Définir l'étiquette du disque de données";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Add"; ObjectID = "493"; */
-"493.ibExternalAccessibilityDescription" = "Add";
+"493.ibExternalAccessibilityDescription" = "Ajouter";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Add items to the data disc"; ObjectID = "493"; */
-"493.ibExternalAccessibilityHelp" = "Add items to the data disc";
+"493.ibExternalAccessibilityHelp" = "Ajouter des éléments au disque de données";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Options"; ObjectID = "494"; */
 "494.ibExternalAccessibilityDescription" = "Options";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Quickly set options without opening preferences"; ObjectID = "494"; */
-"494.ibExternalAccessibilityHelp" = "Quickly set options without opening preferences";
+"494.ibExternalAccessibilityHelp" = "Définissez rapidement les options sans ouvrir les préférences";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Delete"; ObjectID = "495"; */
-"495.ibExternalAccessibilityDescription" = "Delete";
+"495.ibExternalAccessibilityDescription" = "Supprimer";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Delete selected items from the data disc"; ObjectID = "495"; */
-"495.ibExternalAccessibilityHelp" = "Delete selected items from the data disc";
+"495.ibExternalAccessibilityHelp" = "Supprimer les éléments sélectionnés du disque de données";
 
 /* Class = "NSMenu"; title = "OtherViews"; ObjectID = "497"; */
 "497.title" = "OtherViews";
@@ -477,31 +477,31 @@
 "498.title" = "Calcul de la taille totale";
 
 /* Class = "NSMenuItem"; title = "Calculate folder sizes"; ObjectID = "499"; */
-"499.title" = "Calculer la taille de l'arborescence du disque";
+"499.title" = "Calcul de la taille des répertoires";
 
 /* Class = "NSMenuItem"; title = "Calculate filepackage sizes"; ObjectID = "501"; */
-"501.title" = "Calculer la taille des 'Packages'";
+"501.title" = "Calcul de la taille des 'Paquets'";
 
 /* Class = "NSMenuItem"; title = "Show filepackages as folder"; ObjectID = "502"; */
-"502.title" = "Afficher les 'Packages' sous forme de dossiers";
+"502.title" = "Afficher les 'Paquets' sous forme de dossiers";
 
 /* Class = "NSButton"; ibExternalAccessibilityDescription = "Help"; ObjectID = "503"; */
-"503.ibExternalAccessibilityDescription" = "Help";
+"503.ibExternalAccessibilityDescription" = "Aide";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Shows help about current disc type"; ObjectID = "503"; */
-"503.ibExternalAccessibilityHelp" = "Shows help about current disc type";
+"503.ibExternalAccessibilityHelp" = "Afficher l'aide à propos du type de disque actuel";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Burn the created disc"; ObjectID = "504"; */
-"504.ibExternalAccessibilityHelp" = "Burn the created disc";
+"504.ibExternalAccessibilityHelp" = "Graver le disque créé";
 
 /* Class = "NSTextField"; ibExternalAccessibilityHelp = "Information about the current writer and disc in it"; ObjectID = "505"; */
-"505.ibExternalAccessibilityHelp" = "Information about the current writer and disc in it";
+"505.ibExternalAccessibilityHelp" = "Information à propos du graveur actuel et du disque inséré";
 
 /* Class = "NSButton"; ibExternalAccessibilityHelp = "Information about the current writer and disc in it"; ObjectID = "506"; */
-"506.ibExternalAccessibilityHelp" = "Information about the current writer and disc in it";
+"506.ibExternalAccessibilityHelp" = "Information à propos du graveur actuel et du disque inséré";
 
 /* Class = "NSWindow"; title = "Panel"; ObjectID = "544"; */
-"544.title" = "Panel";
+"544.title" = "Panneau";
 
 /* Class = "NSMenu"; title = "OtherViews"; ObjectID = "565"; */
 "565.title" = "OtherViews";
@@ -513,7 +513,7 @@
 "567.title" = "NTSC";
 
 /* Class = "NSTextField"; ibExternalAccessibilityHelp = "Set the audio disc label (if possible)"; ObjectID = "824"; */
-"824.ibExternalAccessibilityHelp" = "Set the audio disc label (if possible)";
+"824.ibExternalAccessibilityHelp" = "Définir l'étiquette du disque audio (si possible)";
 
 /* Class = "NSButtonCell"; title = "HFS+"; ObjectID = "848"; */
 "848.title" = "HFS+";
@@ -546,13 +546,13 @@
 "917.title" = "Monter";
 
 /* Class = "NSButtonCell"; title = "Scan..."; ObjectID = "920"; */
-"920.title" = "Choisir un disque...";
+"920.title" = "Analyser...";
 
 /* Class = "NSButtonCell"; title = "Open..."; ObjectID = "921"; */
-"921.title" = "Choisir une image-disque...";
+"921.title" = "Ouvrir...";
 
 /* Class = "NSTextFieldCell"; title = "Total size: 0 KB"; ObjectID = "922"; */
-"922.title" = "Taille totale: 0 KB";
+"922.title" = "Taille totale: 0 KO";
 
 /* Class = "NSButtonCell"; title = "-"; ObjectID = "926"; */
 "926.title" = "-";
@@ -570,10 +570,10 @@
 "934.title" = "-";
 
 /* Class = "NSButtonCell"; title = "Change Display Time"; ObjectID = "940"; */
-"940.title" = "Button";
+"940.title" = "Changer la durée d'affichage";
 
 /* Class = "NSTextFieldCell"; title = "Total time: 00:00:00"; ObjectID = "942"; */
-"942.title" = "Durée totale : 00:00:00";
+"942.title" = "Durée totale: 00:00:00";
 
 /* Class = "NSTextFieldCell"; title = "Untitled"; ObjectID = "944"; */
 "944.title" = "Sans titre";
@@ -582,7 +582,7 @@
 "945.title" = "Dossier";
 
 /* Class = "NSTextFieldCell"; title = "Total size: 0 KB"; ObjectID = "946"; */
-"946.title" = "Taille totale: 0 KB";
+"946.title" = "Taille totale: 0 KO";
 
 /* Class = "NSTextFieldCell"; title = "Untitled"; ObjectID = "949"; */
 "949.title" = "Sans titre";
@@ -597,19 +597,19 @@
 "955.title" = "Graver";
 
 /* Class = "NSButtonCell"; title = "Change burner"; ObjectID = "957"; */
-"957.title" = "Change burner";
+"957.title" = "Changer de graveur";
 
 /* Class = "NSTextFieldCell"; title = "No writer connected\n0 bytes free"; ObjectID = "956"; */
-"956.title" = "Pas de graveur connecté";
+"956.title" = "Pas de graveur connecté\n0 octet libre";
 
 /* Class = "NSButtonCell"; title = "OK"; ObjectID = "958"; */
 "958.title" = "OK";
 
 /* Class = "NSTextFieldCell"; title = "Use Filesystems on the disc:"; ObjectID = "960"; */
-"960.title" = "Utiliser les systèmes de gestion de fichiers sur le disque:";
+"960.title" = "Utiliser les systèmes de fichiers sur le disque:";
 
 /* Class = "NSButtonCell"; title = "Cancel"; ObjectID = "961"; */
-"961.title" = "Arrêt";
+"961.title" = "Annuler";
 
 /* Class = "NSTextFieldCell"; title = "Region:"; ObjectID = "963"; */
 "963.title" = "Région:";
@@ -630,7 +630,7 @@
 "965.title" = "Importer d'autres sessions";
 
 /* Class = "NSTextFieldCell"; title = "Drag discs and images here"; ObjectID = "966"; */
-"966.title" = "Déposez un disque ou une image-disque ici";
+"966.title" = "Déposez un disque ou une image disque ici";
 
 /* Class = "NSButtonCell"; title = "HFS Standard / Joliet (only)"; ObjectID = "968"; */
 "968.title" = "HFS Standard / Joliet (uniquement)";
@@ -645,4 +645,13 @@
 /* UNLOCALISED */
 
 /* Class = "NSMenuItem"; title = "Contact Support"; ObjectID = "qur-i9-1dj"; */
-"qur-i9-1dj.title" = "Contact Support";
+"qur-i9-1dj.title" = "Contacter le Support";
+
+/* Class = "NSTextField"; title = "Region"; ObjectID = "T6Y-D5-zBb"; */
+"T6Y-D5-zBb.title" = "Région:";
+
+/* Class = "NSMenuItem"; title = "PAL"; ObjectID = "YxC-aq-R7n"; */
+"YxC-aq-R7n.title" = "PAL";
+
+/* Class = "NSMenuItem"; title = "NTSC"; ObjectID = "nIa-yj-RHn"; */
+"nIa-yj-RHn.title" = "NTSC";

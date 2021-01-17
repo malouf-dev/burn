@@ -7,7 +7,7 @@
 "42.title" = "Produit:";
 
 /* Class = "NSTextFieldCell"; title = "Vendor:"; ObjectID = "44"; */
-"44.title" = "Vendeur:";
+"44.title" = "Fabricant:";
 
 /* Class = "NSTextFieldCell"; title = "Writes:"; ObjectID = "38"; */
 "38.title" = "Ecriture:";
@@ -19,4 +19,4 @@
 "46.title" = "Cache:";
 
 /* Class = "NSTextFieldCell"; title = "Buffer Underrun Prevention:"; ObjectID = "48"; */
-"48.title" = "Avertissement de tampon vide:";
+"48.title" = "Prévention de la sous-utilisation du tampon:";

@@ -1,10 +1,10 @@
 // Main Panel
 
 /* Class = "NSTextFieldCell"; title = "Erase Disc In:"; ObjectID = "39"; */
-"39.title" = "Effacer le disque situé dans :";
+"39.title" = "Effacer le disque situé dans:";
 
 /* Class = "NSTextFieldCell"; title = "Erase Method:"; ObjectID = "41"; */
-"41.title" = "Méthode d'effacement :";
+"41.title" = "Méthode d'effacement:";
 
 /* Class = "NSButtonCell"; title = "Quickly"; ObjectID = "17"; */
 "17.title" = "Rapide";
@@ -16,7 +16,7 @@
 "37.title" = "Fermer";
 
 /* Class = "NSButtonCell"; title = "Cancel"; ObjectID = "42"; */
-"42.title" = "Arrêt";
+"42.title" = "Annuler";
 
 /* Class = "NSButtonCell"; title = "Erase"; ObjectID = "40"; */
 "40.title" = "Effacer";
