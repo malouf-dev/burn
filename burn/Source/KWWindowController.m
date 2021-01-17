@@ -15,7 +15,6 @@
 #import "KWAudioController.h"
 #import "KWVideoController.h"
 #import "KWCopyController.h"
-#import "KWRegionDialog.h"
 
 @interface KWWindowController() <NSToolbarDelegate>
 
@@ -25,8 +24,6 @@
 @property (nonatomic, weak) IBOutlet KWCopyController *discCopyController;
 
 @property (nonatomic, weak) IBOutlet NSButton *changeRecorderButton;
-
-@property (nonatomic, strong) KWRegionDialog *regionDialog;
 
 @end
 

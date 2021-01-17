@@ -113,55 +113,66 @@
     }
     else
     {
-        // This shouldn't happen, but just to be sure :)
-        [self updateRecorderInfo];
+        [self setupRecorderInfoForDevice:nil];
     }
 }
 
 #pragma mark - Convenient Methods
 
-- (void)setupRecorderInfoForDevice:(DRDevice *)device
+- (void)setupRecorderInfoForDevice:(nullable DRDevice *)device
 {
     NSDictionary *deviceInfo = [device info];
 
-    [[self productTextField] setStringValue:deviceInfo[DRDeviceProductNameKey]];
-    [[self vendorTextField] setStringValue:deviceInfo[DRDeviceVendorNameKey]];
-    [[self connectionTypeTextField] setStringValue:deviceInfo[DRDevicePhysicalInterconnectKey]];
-    
-    NSString *cache = [NSString localizedStringWithFormat:NSLocalizedString(@"%.0f KB", nil), [deviceInfo[@"DRDeviceWriteBufferSizeKey"] doubleValue]];
-    [[self cacheTextField] setStringValue:cache];
+	if (deviceInfo != nil)
+	{
+		[[self productTextField] setStringValue:deviceInfo[DRDeviceProductNameKey]];
+		[[self vendorTextField] setStringValue:deviceInfo[DRDeviceVendorNameKey]];
+		[[self connectionTypeTextField] setStringValue:deviceInfo[DRDevicePhysicalInterconnectKey]];
+		
+		NSString *cache = [NSString localizedStringWithFormat:NSLocalizedString(@"%.0f KB", nil), [deviceInfo[@"DRDeviceWriteBufferSizeKey"] doubleValue]];
+		[[self cacheTextField] setStringValue:cache];
 
-    NSDictionary *writeCapabilities = deviceInfo[DRDeviceWriteCapabilitiesKey];
-    BOOL cdUnderrunProtect = [writeCapabilities[DRDeviceCanUnderrunProtectCDKey] boolValue];
-    BOOL canWriteDVD = [writeCapabilities[DRDeviceCanWriteDVDKey] boolValue];
-    
-    if (cdUnderrunProtect && !canWriteDVD)
-    {
-	    [[self bufferTextField] setStringValue:NSLocalizedString(@"Yes", nil)];
+		NSDictionary *writeCapabilities = deviceInfo[DRDeviceWriteCapabilitiesKey];
+		BOOL cdUnderrunProtect = [writeCapabilities[DRDeviceCanUnderrunProtectCDKey] boolValue];
+		BOOL canWriteDVD = [writeCapabilities[DRDeviceCanWriteDVDKey] boolValue];
+		
+		if (cdUnderrunProtect && !canWriteDVD)
+		{
+			[[self bufferTextField] setStringValue:NSLocalizedString(@"Yes", nil)];
+		}
+		
+		if (canWriteDVD)
+		{
+			BOOL dvdUnderrunProtect = [writeCapabilities[DRDeviceCanUnderrunProtectDVDKey] boolValue];
+			NSString *cdUnderrun = cdUnderrunProtect ? NSLocalizedString(@"Yes", nil) : NSLocalizedString(@"No", nil);
+			NSString *dvdUnderrun = dvdUnderrunProtect ? NSLocalizedString(@"Yes", nil) : NSLocalizedString(@"No", nil);
+			[[self bufferTextField] setStringValue:[NSString stringWithFormat:@"CD: %@ DVD: %@", cdUnderrun, dvdUnderrun]];
+		}
+		
+		NSDictionary *discTypes = [self discTypeMappings];
+		NSString *writesOn = @"";
+		NSString *space = @"";
+		
+		for (NSString *key in [discTypes allKeys])
+		{
+			if ([writeCapabilities[key] boolValue])
+			{
+				writesOn = [NSString stringWithFormat:@"%@%@%@", writesOn, space, discTypes[key]];
+				space = @" ";
+			}
+		}
+		
+		[[self writesTextField] setStringValue:writesOn];
     }
-    
-    if (canWriteDVD)
+    else
     {
-	    BOOL dvdUnderrunProtect = [writeCapabilities[DRDeviceCanUnderrunProtectDVDKey] boolValue];
-	    NSString *cdUnderrun = cdUnderrunProtect ? NSLocalizedString(@"Yes", nil) : NSLocalizedString(@"No", nil);
-	    NSString *dvdUnderrun = dvdUnderrunProtect ? NSLocalizedString(@"Yes", nil) : NSLocalizedString(@"No", nil);
-	    [[self bufferTextField] setStringValue:[NSString stringWithFormat:@"CD: %@ DVD: %@", cdUnderrun, dvdUnderrun]];
+		[[self productTextField] setStringValue:@""];
+		[[self vendorTextField] setStringValue:@""];
+		[[self connectionTypeTextField] setStringValue:@""];
+		[[self cacheTextField] setStringValue:@""];
+		[[self bufferTextField] setStringValue:@""];
+		[[self writesTextField] setStringValue:@""	];
     }
-    
-    NSDictionary *discTypes = [self discTypeMappings];
-    NSString *writesOn = @"";
-    NSString *space = @"";
-    
-    for (NSString *key in [discTypes allKeys])
-    {
-        if ([writeCapabilities[key] boolValue])
-	    {
-    	    writesOn = [NSString stringWithFormat:@"%@%@%@", writesOn, space, discTypes[key]];
-    	    space = @" ";
-	    }
-    }
-    
-    [[self writesTextField] setStringValue:writesOn];
 }
 
 - (void)updateRecorderInfo
