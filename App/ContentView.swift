@@ -293,7 +293,7 @@ struct ProgressSheet: View {
     private var fraction: Double? {
         switch model.activity {
         case .buildingImage(let fraction): return fraction
-        case .burning(let progress) where progress.phase == .writing || progress.phase == .verifying:
+        case .burning(let progress) where !progress.isIndeterminate:
             return progress.fraction
         default: return nil
         }

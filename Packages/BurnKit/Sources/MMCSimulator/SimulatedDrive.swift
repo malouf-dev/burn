@@ -65,6 +65,23 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     }
     private var _removeMediaAfterWrites: Int?
 
+    /// Like a USB drive, a long command sent without the immediate bit times out in the transport,
+    /// although the drive still carries it out. On by default so the engine must poll.
+    public var timesOutLongCommands: Bool {
+        get { withLock { _timesOutLongCommands } }
+        set { withLock { _timesOutLongCommands = newValue } }
+    }
+    private var _timesOutLongCommands = true
+
+    /// After a long command sent with the immediate bit, TEST UNIT READY reports "operation in
+    /// progress" this many times, with progress, before the drive is ready.
+    public var busyPollsAfterLongCommand: Int {
+        get { withLock { _busyPollsAfterLongCommand } }
+        set { withLock { _busyPollsAfterLongCommand = newValue } }
+    }
+    private var _busyPollsAfterLongCommand = 0
+    private var busyPollsRemaining = 0
+
     /// When true, exclusive access is refused, as when a disc is mounted.
     public var refusesExclusiveAccess: Bool {
         get { withLock { _refusesExclusiveAccess } }
@@ -161,6 +178,29 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
             throw TransportError.needsExclusiveAccess
         }
 
+        if busyPollsRemaining > 0 && command.operationCode != 0x00 {
+            return .check(.operationInProgress)
+        }
+
+        if let immediateBit = Self.longCommandImmediateBits[command.operationCode] {
+            let response = try handleCommand(command)
+            if cdb[1] & immediateBit == 0 {
+                if _timesOutLongCommands {
+                    throw TransportError.notDelivered(reason: "the connection timed out (simulated)")
+                }
+            } else if response.isGood {
+                busyPollsRemaining = _busyPollsAfterLongCommand
+            }
+            return response
+        }
+        return try handleCommand(command)
+    }
+
+    /// Long operations, and the immediate bit in byte 1 of each.
+    private static let longCommandImmediateBits: [UInt8: UInt8] = [0x35: 0x02, 0x5B: 0x01, 0xA1: 0x10]
+
+    private func handleCommand(_ command: SCSICommand) throws -> SCSIResponse {
+        let cdb = command.cdb
         switch command.operationCode {
         case 0x00: return testUnitReady()
         case 0x12: return .good(Array(inquiry.bytes.prefix(allocation(command))))
@@ -189,6 +229,12 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
 
     private func testUnitReady() -> SCSIResponse {
         guard media != nil else { return .check(.mediumNotPresent) }
+        if busyPollsRemaining > 0 {
+            let total = max(1, _busyPollsAfterLongCommand)
+            let done = Double(total - busyPollsRemaining) / Double(total)
+            busyPollsRemaining -= 1
+            return .check(SenseData(key: 0x02, asc: 0x04, ascq: 0x07, progress: done))
+        }
         if pendingUnitAttention {
             pendingUnitAttention = false
             return .check(.mediumChanged)

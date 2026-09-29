@@ -160,8 +160,13 @@ struct BurnCtl {
             }
         }
         do {
-            print("Erasing…")
-            try await drive.quickErase()
+            printStatusLine("Erasing…")
+            try await drive.quickErase { fraction in
+                if let fraction {
+                    printStatusLine("Erasing " + String(format: "%5.1f%%", fraction * 100))
+                }
+            }
+            print("")
             print("Erased.")
             try writeLog(drive.log, to: logPath)
         } catch {
@@ -260,11 +265,20 @@ struct BurnCtl {
         switch progress.phase {
         case .preparing: label = "Preparing"
         case .writing: label = "Writing"
-        case .closing: label = "Closing"
+        case .closing: label = "Closing the disc"
         case .verifying: label = "Verifying"
         }
-        let line = "\r\(label) " + String(format: "%5.1f%%", progress.fraction * 100)
-        FileHandle.standardOutput.write(Data(line.utf8))
+        if progress.isIndeterminate {
+            printStatusLine("\(label)…")
+        } else {
+            printStatusLine("\(label) " + String(format: "%5.1f%%", progress.fraction * 100))
+        }
+    }
+
+    /// Rewrites the current terminal line, padding so nothing from a longer earlier line is left behind.
+    static func printStatusLine(_ text: String) {
+        let padded = text.padding(toLength: max(text.count, 40), withPad: " ", startingAt: 0)
+        FileHandle.standardOutput.write(Data(("\r" + padded).utf8))
     }
 
     static func confirm(_ prompt: String) -> Bool {

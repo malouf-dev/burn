@@ -25,9 +25,27 @@ public struct WriteProgress: Sendable, Equatable {
     public var phase: WritePhase
     public var completedBlocks: Int
     public var totalBlocks: Int
+    /// Progress the drive reports while closing the disc, if it reports any.
+    public var driveProgress: Double?
+
+    public init(phase: WritePhase, completedBlocks: Int, totalBlocks: Int, driveProgress: Double? = nil) {
+        self.phase = phase
+        self.completedBlocks = completedBlocks
+        self.totalBlocks = totalBlocks
+        self.driveProgress = driveProgress
+    }
 
     public var fraction: Double {
-        totalBlocks == 0 ? 0 : Double(completedBlocks) / Double(totalBlocks)
+        switch phase {
+        case .preparing: return 0
+        case .closing: return driveProgress ?? 0
+        case .writing, .verifying: return totalBlocks == 0 ? 0 : Double(completedBlocks) / Double(totalBlocks)
+        }
+    }
+
+    /// True when there is no meaningful fraction to show.
+    public var isIndeterminate: Bool {
+        phase == .preparing || (phase == .closing && driveProgress == nil)
     }
 }
 
@@ -52,9 +70,13 @@ public actor DiscDrive {
     /// Blocks per WRITE(10) and READ(10): 32 KiB, a whole DVD ECC block pair.
     static let transferBlocks = 16
 
-    public init(transport: any SCSITransport, log: CommandLog = CommandLog()) {
+    /// How long to wait between polls while the drive finishes a long operation.
+    private let pollInterval: Duration
+
+    public init(transport: any SCSITransport, log: CommandLog = CommandLog(), pollInterval: Duration = .seconds(1)) {
         self.transport = transport
         self.log = log
+        self.pollInterval = pollInterval
     }
 
     // MARK: - Status
@@ -217,13 +239,19 @@ public actor DiscDrive {
 
         // Flush and close. After a cancel, still flush so the drive stops cleanly.
         progress(WriteProgress(phase: .closing, completedBlocks: written, totalBlocks: paddedBlocks))
-        _ = try await run(MMC.synchronizeCache(), "SYNCHRONIZE CACHE", notReadyRetries: 3000)
+        let writtenBlocks = written
+        let reportClosing: @Sendable (Double?) -> Void = { fraction in
+            progress(WriteProgress(phase: .closing, completedBlocks: writtenBlocks, totalBlocks: paddedBlocks,
+                                   driveProgress: fraction))
+        }
+        try await runLong(MMC.synchronizeCache(immediate: true), fallback: MMC.synchronizeCache(),
+                          "SYNCHRONIZE CACHE", progress: reportClosing)
         if cancelled {
             log.note("Cancelled after \(written) blocks")
             throw DriveError.cancelled
         }
         if !options.simulate {
-            try await close(method: method, track: track.track)
+            try await close(method: method, track: track.track, progress: reportClosing)
         }
         _ = try? await perform(MMC.preventAllowMediumRemoval(prevent: false))
 
@@ -243,23 +271,24 @@ public actor DiscDrive {
                            duration: Date().timeIntervalSince(started))
     }
 
-    private func close(method: WriteMethod, track: Int) async throws {
+    private func close(method: WriteMethod, track: Int, progress: @escaping @Sendable (Double?) -> Void) async throws {
         let trackNumber = UInt16(clamping: track)
+        var functions: [(MMC.CloseFunction, UInt16, String)] = []
         switch method {
         case .cdTrackAtOnce:
-            _ = try await run(MMC.closeTrackSession(.track, track: trackNumber), "CLOSE TRACK", notReadyRetries: 3000)
-            _ = try await run(MMC.closeTrackSession(.session), "CLOSE SESSION", notReadyRetries: 3000)
+            functions = [(.track, trackNumber, "CLOSE TRACK"), (.session, 0, "CLOSE SESSION")]
         case .dvdMinusDiscAtOnce:
-            // Disc at once closes itself after SYNCHRONIZE CACHE.
+            // Disc at once closes itself during SYNCHRONIZE CACHE.
             break
         case .dvdPlusR:
-            _ = try await run(MMC.closeTrackSession(.track, track: trackNumber), "CLOSE TRACK", notReadyRetries: 3000)
-            _ = try await run(MMC.closeTrackSession(.finaliseDVDPlusR), "FINALISE", notReadyRetries: 3000)
+            functions = [(.track, trackNumber, "CLOSE TRACK"), (.finaliseDVDPlusR, 0, "FINALISE")]
         case .dvdPlusRDualLayer, .bluRayR:
-            _ = try await run(MMC.closeTrackSession(.track, track: trackNumber), "CLOSE TRACK", notReadyRetries: 3000)
-            _ = try await run(MMC.closeTrackSession(.finaliseDisc), "FINALISE", notReadyRetries: 3000)
+            functions = [(.track, trackNumber, "CLOSE TRACK"), (.finaliseDisc, 0, "FINALISE")]
         }
-        try await waitUntilReady()
+        for (function, number, name) in functions {
+            try await runLong(MMC.closeTrackSession(function, track: number, immediate: true),
+                              fallback: MMC.closeTrackSession(function, track: number), name, progress: progress)
+        }
     }
 
     private func verify(_ image: any ImageSource, startBlock: UInt32,
@@ -310,8 +339,8 @@ public actor DiscDrive {
 
     // MARK: - Erase and eject
 
-    /// Quick-erases a CD-RW or DVD-RW.
-    public func quickErase() async throws {
+    /// Quick-erases a CD-RW or DVD-RW. `progress` receives the drive's progress when it reports it.
+    public func quickErase(progress: @escaping @Sendable (Double?) -> Void = { _ in }) async throws {
         guard !isBusy else { throw DriveError.busy }
         isBusy = true
         defer { isBusy = false }
@@ -321,8 +350,8 @@ public actor DiscDrive {
 
         try await beginExclusiveAccess()
         do {
-            _ = try await run(MMC.blank(quick: true), "BLANK", notReadyRetries: 3000)
-            try await waitUntilReady()
+            try await runLong(MMC.blank(quick: true, immediate: true), fallback: MMC.blank(quick: true),
+                              "BLANK", progress: progress)
             await endExclusiveAccess()
         } catch {
             await endExclusiveAccess()
@@ -357,13 +386,29 @@ public actor DiscDrive {
 
     // MARK: - Plumbing
 
-    private func waitUntilReady(timeout: TimeInterval = 3600) async throws {
+    /// Runs a long operation without holding one command open for its whole length: the command
+    /// goes with the immediate bit set, then TEST UNIT READY is polled until the drive is ready.
+    /// Drives that reject the immediate bit get `fallback` instead.
+    private func runLong(_ command: SCSICommand, fallback: SCSICommand, _ operation: String,
+                         progress: @escaping @Sendable (Double?) -> Void) async throws {
+        do {
+            _ = try await run(command, operation, notReadyRetries: 3000)
+        } catch DriveError.commandFailed(_, _, let sense?) where sense.key == 0x05 && sense.asc == 0x24 {
+            log.note("\(operation): the drive rejected the immediate bit, sending it without")
+            _ = try await run(fallback, operation, notReadyRetries: 3000)
+        }
+        try await waitUntilReady(progress: progress)
+    }
+
+    private func waitUntilReady(timeout: TimeInterval = 3600,
+                                progress: @escaping @Sendable (Double?) -> Void = { _ in }) async throws {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             let response = try await perform(MMC.testUnitReady())
             if response.isGood { return }
             if let sense = response.sense, sense.isTransientNotReady || sense.isUnitAttention {
-                try? await Task.sleep(for: .milliseconds(500))
+                progress(sense.progress)
+                try? await Task.sleep(for: pollInterval)
                 continue
             }
             throw DriveError.commandFailed(operation: "TEST UNIT READY", status: response.status, sense: response.sense)

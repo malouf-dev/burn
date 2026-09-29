@@ -87,8 +87,11 @@ public enum MMC {
         return SCSICommand(cdb: cdb, direction: .fromDevice(length: Int(blocks) * blockSize), timeout: 120)
     }
 
-    public static func synchronizeCache() -> SCSICommand {
-        SCSICommand(cdb: [0x35, 0, 0, 0, 0, 0, 0, 0, 0, 0], timeout: 1800)
+    /// Long operations can outlast the USB transport's own timeout (about four minutes on
+    /// a Pioneer BDR-UD04), so the engine sends them with the immediate bit set and polls
+    /// TEST UNIT READY until the drive is done.
+    public static func synchronizeCache(immediate: Bool = false) -> SCSICommand {
+        SCSICommand(cdb: [0x35, immediate ? 0x02 : 0x00, 0, 0, 0, 0, 0, 0, 0, 0], timeout: immediate ? 60 : 1800)
     }
 
     /// CLOSE TRACK/SESSION functions.
@@ -101,20 +104,21 @@ public enum MMC {
         case finaliseDisc = 0x06
     }
 
-    public static func closeTrackSession(_ function: CloseFunction, track: UInt16 = 0) -> SCSICommand {
+    public static func closeTrackSession(_ function: CloseFunction, track: UInt16 = 0, immediate: Bool = false) -> SCSICommand {
         var cdb = [UInt8](repeating: 0, count: 10)
         cdb[0] = 0x5B
+        cdb[1] = immediate ? 0x01 : 0x00
         cdb[2] = function.rawValue
         cdb.put(track, at: 4)
-        return SCSICommand(cdb: cdb, timeout: 1800)
+        return SCSICommand(cdb: cdb, timeout: immediate ? 60 : 1800)
     }
 
     /// BLANK. Type 1 is a minimal (quick) blank, type 0 blanks the whole disc.
-    public static func blank(quick: Bool = true) -> SCSICommand {
+    public static func blank(quick: Bool = true, immediate: Bool = false) -> SCSICommand {
         var cdb = [UInt8](repeating: 0, count: 12)
         cdb[0] = 0xA1
-        cdb[1] = quick ? 0x01 : 0x00
-        return SCSICommand(cdb: cdb, timeout: 3600)
+        cdb[1] = (quick ? 0x01 : 0x00) | (immediate ? 0x10 : 0x00)
+        return SCSICommand(cdb: cdb, timeout: immediate ? 60 : 3600)
     }
 
     /// START STOP UNIT with the load/eject bit: `load` false ejects, true loads.

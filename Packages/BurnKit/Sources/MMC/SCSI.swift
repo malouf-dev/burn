@@ -65,6 +65,8 @@ public enum TransportError: Error, Sendable, Equatable, CustomStringConvertible 
     case deviceGone
     /// The drive couldn't be opened. The reason names the step that failed.
     case cannotOpen(reason: String)
+    /// The command never completed: the connection timed out or the drive stopped responding.
+    case notDelivered(reason: String)
     /// Any other IOKit error.
     case ioError(code: Int32)
 
@@ -76,6 +78,8 @@ public enum TransportError: Error, Sendable, Equatable, CustomStringConvertible 
             return "Couldn't take control of the drive (error \(String(format: "0x%08X", UInt32(bitPattern: code)))). A mounted disc or another app may be using it."
         case .deviceGone:
             return "The drive is no longer connected."
+        case .notDelivered(let reason):
+            return "The command didn't complete: \(reason)."
         case .cannotOpen(let reason):
             return "Couldn't open the drive: \(reason) Run `burnctl diagnose` for details."
         case .ioError(let code):

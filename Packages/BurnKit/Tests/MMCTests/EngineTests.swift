@@ -204,6 +204,72 @@ struct WriteTests {
     }
 }
 
+@Suite("Long operations")
+struct LongOperationTests {
+    /// Hardware run 7: a Pioneer BDR-UD04 over USB failed a DVD-RW burn when SYNCHRONIZE CACHE,
+    /// sent without the immediate bit, ran past the transport's timeout while the drive closed the disc.
+    @Test func dvdRWClosesWithoutHittingTheTransportTimeout() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdRWSequential, capacityBlocks: 2_297_888))
+        #expect(simulator.timesOutLongCommands)
+        let report = try await DiscDrive(transport: simulator).write(patternImage(blocks: 176))
+        #expect(report.verified)
+        let sync = try #require(simulator.commandHistory.first { $0.first == 0x35 })
+        #expect(sync[1] & 0x02 != 0, "SYNCHRONIZE CACHE must use the immediate bit")
+    }
+
+    @Test func closeCommandsUseTheImmediateBit() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .cdR, capacityBlocks: 20_000))
+        _ = try await DiscDrive(transport: simulator).write(patternImage(blocks: 20))
+        let closes = simulator.commandHistory.filter { $0.first == 0x5B }
+        #expect(closes.count == 2)
+        #expect(closes.allSatisfy { $0[1] & 0x01 != 0 })
+    }
+
+    @Test func closingReportsTheDrivesProgress() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
+        simulator.busyPollsAfterLongCommand = 4
+        let drive = DiscDrive(transport: simulator, pollInterval: .milliseconds(1))
+        let recorder = ClosingRecorder()
+        let report = try await drive.write(patternImage(blocks: 50)) { progress in
+            if progress.phase == .closing { recorder.add(progress.driveProgress) }
+        }
+        #expect(report.verified)
+        #expect(recorder.values.contains(0.25))
+        #expect(recorder.values.contains(0.75))
+    }
+
+    @Test func eraseWaitsForTheDriveAndReportsProgress() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 500))
+        simulator.busyPollsAfterLongCommand = 2
+        let drive = DiscDrive(transport: simulator, pollInterval: .milliseconds(1))
+        let recorder = ClosingRecorder()
+        try await drive.quickErase { recorder.add($0) }
+        #expect(recorder.values.contains(0.5))
+        let blank = simulator.commandHistory.first { $0.first == 0xA1 }
+        #expect(blank.map { $0[1] & 0x10 != 0 } == true)
+        #expect(try await discState(drive)?.writability == .blank)
+    }
+}
+
+/// Collects reported fractions from any thread.
+final class ClosingRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var recorded: [Double] = []
+
+    func add(_ value: Double?) {
+        guard let value else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        recorded.append(value)
+    }
+
+    var values: [Double] {
+        lock.lock()
+        defer { lock.unlock() }
+        return recorded
+    }
+}
+
 @Suite("Erase and eject")
 struct EraseTests {
     @Test func quickEraseMakesTheDiscBlank() async throws {
