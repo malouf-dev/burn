@@ -102,14 +102,26 @@ public struct DiscInformation: Sendable, Equatable {
         case other = 3
     }
 
+    /// State of the last session.
+    public enum SessionState: UInt8, Sendable {
+        case empty = 0
+        /// Written to but not closed, as after a burn that stopped part-way.
+        case incomplete = 1
+        case damaged = 2
+        case complete = 3
+    }
+
     public var status: Status
+    public var lastSessionState: SessionState
     public var isErasable: Bool
     public var sessions: Int
     public var firstTrackInLastSession: Int
     public var lastTrackInLastSession: Int
 
-    public init(status: Status, isErasable: Bool, sessions: Int, firstTrackInLastSession: Int, lastTrackInLastSession: Int) {
+    public init(status: Status, lastSessionState: SessionState? = nil, isErasable: Bool, sessions: Int,
+                firstTrackInLastSession: Int, lastTrackInLastSession: Int) {
         self.status = status
+        self.lastSessionState = lastSessionState ?? (status == .blank ? .empty : .complete)
         self.isErasable = isErasable
         self.sessions = sessions
         self.firstTrackInLastSession = firstTrackInLastSession
@@ -119,6 +131,7 @@ public struct DiscInformation: Sendable, Equatable {
     public init?(bytes: [UInt8]) {
         guard bytes.count >= 12 else { return nil }
         status = Status(rawValue: bytes[2] & 0x03) ?? .other
+        lastSessionState = SessionState(rawValue: (bytes[2] >> 2) & 0x03) ?? .damaged
         isErasable = bytes[2] & 0x10 != 0
         sessions = Int(bytes[4]) | Int(bytes[9]) << 8
         firstTrackInLastSession = Int(bytes[5]) | Int(bytes[10]) << 8
@@ -128,7 +141,7 @@ public struct DiscInformation: Sendable, Equatable {
     public var bytes: [UInt8] {
         var result = [UInt8](repeating: 0, count: 34)
         result.put(UInt16(32), at: 0)
-        result[2] = status.rawValue | (isErasable ? 0x10 : 0) | (status == .blank ? 0 : 0x0C)
+        result[2] = status.rawValue | (isErasable ? 0x10 : 0) | lastSessionState.rawValue << 2
         result[3] = 1
         result[4] = UInt8(truncatingIfNeeded: sessions)
         result[5] = UInt8(truncatingIfNeeded: firstTrackInLastSession)

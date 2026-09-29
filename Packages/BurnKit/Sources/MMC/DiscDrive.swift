@@ -136,8 +136,11 @@ public actor DiscDrive {
         }
 
         let writability = Writability.classify(profile: profile, info: info)
-        return .disc(DiscState(profile: profile, status: info.status, isErasable: info.isErasable,
-                               freeBlocks: freeBlocks, writability: writability))
+        if info.lastSessionState == .incomplete || info.lastSessionState == .damaged {
+            log.note("The last session is \(info.lastSessionState): a burn didn't finish")
+        }
+        return .disc(DiscState(profile: profile, status: info.status, lastSessionState: info.lastSessionState,
+                               isErasable: info.isErasable, freeBlocks: freeBlocks, writability: writability))
     }
 
     // MARK: - Writing
@@ -478,7 +481,29 @@ public actor DiscDrive {
         }
     }
 
+    /// IOKit's kIOReturnBusy.
+    static let ioReturnBusy = Int32(bitPattern: 0xE000_02D5)
+    /// How many times to retry exclusive access while the drive is busy, one poll interval apart.
+    static let exclusiveAccessRetries = 30
+
+    /// Takes exclusive access, retrying while macOS is still busy with the disc, as it is for a
+    /// moment after an unmount or while it reads a newly inserted disc.
     private func beginExclusiveAccess() async throws {
+        var attempts = 0
+        while true {
+            do {
+                try await takeExclusiveAccess()
+                return
+            } catch DriveError.transport(.exclusiveAccessDenied(let code))
+                        where code == Self.ioReturnBusy && attempts < Self.exclusiveAccessRetries {
+                attempts += 1
+                if attempts == 1 { log.note("The drive is busy, retrying exclusive access") }
+                try? await Task.sleep(for: pollInterval)
+            }
+        }
+    }
+
+    private func takeExclusiveAccess() async throws {
         let transport = self.transport
         let log = self.log
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in

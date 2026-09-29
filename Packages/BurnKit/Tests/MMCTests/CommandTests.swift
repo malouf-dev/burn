@@ -103,6 +103,16 @@ struct ParserTests {
         #expect(info?.isErasable == true)
         #expect(info?.sessions == 2)
         #expect(info?.lastTrackInLastSession == 3)
+        #expect(info?.lastSessionState == .complete)
+    }
+
+    @Test func unfinishedDiscInformation() {
+        var bytes = [UInt8](repeating: 0, count: 34)
+        bytes[2] = 0x15 // erasable, last session incomplete, disc appendable
+        let info = DiscInformation(bytes: bytes)
+        #expect(info?.status == .appendable)
+        #expect(info?.lastSessionState == .incomplete)
+        #expect(info.map { DiscInformation(bytes: $0.bytes) } == info)
     }
 
     @Test func trackInformation() {

@@ -250,6 +250,11 @@ struct BurnCtl {
             return "reading the disc…"
         case .disc(let disc):
             let free = formatBytes(disc.freeBytes)
+            if disc.isUnfinished {
+                return disc.writability == .needsErase
+                    ? "\(disc.profile.name) with an unfinished burn (erase it to reuse it)"
+                    : "\(disc.profile.name) with an unfinished burn (this version can't finish it)"
+            }
             switch disc.writability {
             case .blank: return "blank \(disc.profile.name), \(free) free"
             case .needsErase: return "\(disc.profile.name) with data on it (erase it to reuse it)"

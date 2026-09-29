@@ -13,6 +13,8 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         public var blocks: [UInt32: [UInt8]] = [:]
         public var nextWritable: UInt32 = 0
         public var closed = false
+        /// A close that was cut off part-way, as when the connection reset during it.
+        public var closeInterrupted = false
         public var reserved: UInt32?
 
         public init(profile: MediaProfile, capacityBlocks: UInt32) {
@@ -65,8 +67,9 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     }
     private var _removeMediaAfterWrites: Int?
 
-    /// Like a USB drive, a long command sent without the immediate bit times out in the transport,
-    /// although the drive still carries it out. On by default so the engine must poll.
+    /// Like a USB drive, a long command sent without the immediate bit times out in the transport.
+    /// A close cut off this way leaves the disc unfinished, which hardware run 7 suggests but
+    /// hasn't shown for certain. On by default so the engine must poll.
     public var timesOutLongCommands: Bool {
         get { withLock { _timesOutLongCommands } }
         set { withLock { _timesOutLongCommands = newValue } }
@@ -96,6 +99,14 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         set { withLock { _refusesExclusiveAccess = newValue } }
     }
     private var _refusesExclusiveAccess = false
+
+    /// Exclusive access is refused as busy this many times, then allowed, as while macOS is
+    /// still reading a disc.
+    public var exclusiveAccessRefusals: Int {
+        get { withLock { _exclusiveAccessRefusals } }
+        set { withLock { _exclusiveAccessRefusals = newValue } }
+    }
+    private var _exclusiveAccessRefusals = 0
 
     public init(inquiry: InquiryData = InquiryData(vendor: "SIMULATE", product: "Disc Burner", revision: "1.00"),
                 supportedProfiles: [MediaProfile] = [.bdRE, .bdRSequential, .dvdPlusRDualLayer, .dvdPlusR, .dvdPlusRW,
@@ -165,6 +176,10 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     public func beginExclusiveAccess() throws {
         try withLock {
             if _refusesExclusiveAccess { throw TransportError.exclusiveAccessDenied(code: -536870187) }
+            if _exclusiveAccessRefusals > 0 {
+                _exclusiveAccessRefusals -= 1
+                throw TransportError.exclusiveAccessDenied(code: -536870187)
+            }
             _isMounted = false
             exclusive = true
         }
@@ -197,12 +212,15 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         }
 
         if let immediateBit = Self.longCommandImmediateBits[command.operationCode] {
-            let response = try handleCommand(command)
-            if cdb[1] & immediateBit == 0 {
-                if _timesOutLongCommands {
-                    throw TransportError.notDelivered(reason: "the connection timed out (simulated)")
+            if cdb[1] & immediateBit == 0 && _timesOutLongCommands {
+                if command.operationCode != 0xA1, var media, media.nextWritable > 0 {
+                    media.closeInterrupted = true
+                    self.media = media
                 }
-            } else if response.isGood {
+                throw TransportError.notDelivered(reason: "the connection timed out (simulated)")
+            }
+            let response = try handleCommand(command)
+            if cdb[1] & immediateBit != 0 && response.isGood {
                 busyPollsRemaining = _busyPollsAfterLongCommand
             }
             return response
@@ -264,7 +282,8 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     private func readDiscInformation(_ command: SCSICommand) -> SCSIResponse {
         guard let media else { return .check(.mediumNotPresent) }
         let status: DiscInformation.Status = media.closed ? .complete : (media.isBlank ? .blank : .appendable)
-        let info = DiscInformation(status: status, isErasable: media.profile.isRewritable, sessions: 1,
+        let info = DiscInformation(status: status, lastSessionState: media.closeInterrupted ? .incomplete : nil,
+                                   isErasable: media.profile.isRewritable, sessions: 1,
                                    firstTrackInLastSession: 1, lastTrackInLastSession: 1)
         return .good(Array(info.bytes.prefix(allocation(command))))
     }
@@ -419,6 +438,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         media.blocks = [:]
         media.nextWritable = 0
         media.closed = false
+        media.closeInterrupted = false
         media.reserved = nil
         self.media = media
         return .good()

@@ -53,6 +53,21 @@ struct StateTests {
         #expect(try await discState(drive)?.writability == .notWritable)
     }
 
+    // Hardware run 7: the connection timed out while a DVD-RW was closing.
+    @Test func closeCutOffByTheConnectionShowsAsUnfinished() async throws {
+        var media = SimulatedDrive.Media.written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176)
+        media.closed = false
+        let simulator = SimulatedDrive(media: media)
+        try simulator.beginExclusiveAccess()
+        #expect(throws: TransportError.self) { try simulator.execute(MMC.synchronizeCache()) }
+        simulator.endExclusiveAccess()
+
+        let disc = try #require(try await discState(DiscDrive(transport: simulator)))
+        #expect(disc.lastSessionState == .incomplete)
+        #expect(disc.isUnfinished)
+        #expect(disc.writability == .needsErase)
+    }
+
     @Test func blankDVDPlusRWIsNotYetSupported() async throws {
         let simulator = SimulatedDrive(media: .init(profile: .dvdPlusRW, capacityBlocks: 2_295_104))
         let drive = DiscDrive(transport: simulator)
@@ -153,10 +168,20 @@ struct WriteTests {
     @Test func exclusiveAccessRefused() async throws {
         let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
         simulator.refusesExclusiveAccess = true
-        let drive = DiscDrive(transport: simulator)
+        let drive = DiscDrive(transport: simulator, pollInterval: .milliseconds(1))
         await #expect(throws: DriveError.transport(.exclusiveAccessDenied(code: -536870187))) {
             try await drive.write(patternImage(blocks: 10))
         }
+    }
+
+    // Hardware run 8: exclusive access was refused as busy while macOS read the disc.
+    @Test func exclusiveAccessIsRetriedWhileBusy() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
+        simulator.exclusiveAccessRefusals = 3
+        let drive = DiscDrive(transport: simulator, pollInterval: .milliseconds(1))
+        let report = try await drive.write(patternImage(blocks: 10))
+        #expect(report.verified)
+        #expect(simulator.exclusiveAccessRefusals == 0)
     }
 
     @Test func notBlankIsRefused() async throws {
@@ -278,6 +303,18 @@ struct EraseTests {
         try await drive.quickErase()
         #expect(try await discState(drive)?.writability == .blank)
         #expect(!simulator.hasExclusiveAccess)
+    }
+
+    @Test func eraseClearsAnUnfinishedBurn() async throws {
+        var media = SimulatedDrive.Media.written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176)
+        media.closed = false
+        media.closeInterrupted = true
+        let simulator = SimulatedDrive(media: media)
+        let drive = DiscDrive(transport: simulator)
+        try await drive.quickErase()
+        let disc = try #require(try await discState(drive))
+        #expect(disc.writability == .blank)
+        #expect(!disc.isUnfinished)
     }
 
     @Test func eraseRefusesWriteOnceDiscs() async throws {

@@ -12,20 +12,26 @@ public enum DriveState: Sendable, Equatable {
 public struct DiscState: Sendable, Equatable {
     public var profile: MediaProfile
     public var status: DiscInformation.Status
+    public var lastSessionState: DiscInformation.SessionState
     public var isErasable: Bool
     /// Blocks still writable, in 2,048-byte blocks.
     public var freeBlocks: UInt32
     public var writability: Writability
 
-    public init(profile: MediaProfile, status: DiscInformation.Status, isErasable: Bool, freeBlocks: UInt32, writability: Writability) {
+    public init(profile: MediaProfile, status: DiscInformation.Status, lastSessionState: DiscInformation.SessionState? = nil,
+                isErasable: Bool, freeBlocks: UInt32, writability: Writability) {
         self.profile = profile
         self.status = status
+        self.lastSessionState = lastSessionState ?? (status == .blank ? .empty : .complete)
         self.isErasable = isErasable
         self.freeBlocks = freeBlocks
         self.writability = writability
     }
 
     public var freeBytes: Int64 { Int64(freeBlocks) * Int64(MMC.blockSize) }
+
+    /// True when a burn stopped before the disc was closed, so the disc may not read back.
+    public var isUnfinished: Bool { lastSessionState == .incomplete || lastSessionState == .damaged }
 }
 
 /// What the app can do with the disc in 0.1.
