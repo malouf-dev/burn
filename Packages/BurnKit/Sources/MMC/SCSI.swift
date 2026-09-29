@@ -87,7 +87,26 @@ public enum TransportError: Error, Sendable, Equatable, CustomStringConvertible 
         case .cannotOpen(let reason):
             return "Couldn't open the drive: \(reason) Run `burnctl diagnose` for details."
         case .ioError(let code):
-            return "The drive didn't respond (error \(String(format: "0x%08X", UInt32(bitPattern: code))))."
+            let hexCode = String(format: "0x%08X", UInt32(bitPattern: code))
+            if let meaning = Self.ioReturnMeaning(code) {
+                return "macOS refused the command: \(meaning) (error \(hexCode))."
+            }
+            return "macOS refused the command (error \(hexCode))."
+        }
+    }
+
+    /// Plain words for the IOKit errors drives are most likely to return.
+    static func ioReturnMeaning(_ code: Int32) -> String? {
+        switch UInt32(bitPattern: code) {
+        case 0xE000_02C0: "no such device"
+        case 0xE000_02C5: "another app has the drive"
+        case 0xE000_02D5: "the drive is busy"
+        case 0xE000_02D6: "timed out"
+        case 0xE000_02D8: "the drive isn't ready"
+        case 0xE000_02E2: "not permitted while the disc is mounted or in use"
+        case 0xE000_02E4: "no disc"
+        case 0xE000_02ED: "the drive isn't responding"
+        default: nil
         }
     }
 }
