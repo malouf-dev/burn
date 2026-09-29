@@ -17,6 +17,8 @@ public final class CommandLog: @unchecked Sendable {
     private var notes: [(Date, String)] = []
     /// Consecutive identical WRITE and READ commands are counted, not stored, to keep logs small.
     private var repeatedTransfers = 0
+    private var repeatStart: Date?
+    private var repeatDuration: TimeInterval = 0
     private let limit: Int
 
     public init(limit: Int = 20_000) {
@@ -31,6 +33,8 @@ public final class CommandLog: @unchecked Sendable {
         if isTransfer, isGood, let last = entries.last, last.cdb.first == entry.cdb.first,
            last.status == SCSIStatus.good.rawValue {
             repeatedTransfers += 1
+            if repeatStart == nil { repeatStart = entry.time }
+            repeatDuration += entry.duration
             return
         }
         flushRepeats()
@@ -49,9 +53,13 @@ public final class CommandLog: @unchecked Sendable {
 
     private func flushRepeats() {
         if repeatedTransfers > 0 {
-            entries.append(Entry(time: Date(), cdb: [], dataLength: 0, status: nil, sense: nil,
-                                 error: "… \(repeatedTransfers) more transfers of the same kind succeeded", duration: 0))
+            let summary = "… \(repeatedTransfers) more transfers of the same kind succeeded, "
+                + String(format: "%.3fs in total", repeatDuration)
+            entries.append(Entry(time: repeatStart ?? Date(), cdb: [], dataLength: 0, status: nil, sense: nil,
+                                 error: summary, duration: 0))
             repeatedTransfers = 0
+            repeatStart = nil
+            repeatDuration = 0
         }
     }
 
