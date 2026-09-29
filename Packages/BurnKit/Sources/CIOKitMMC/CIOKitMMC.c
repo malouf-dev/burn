@@ -8,6 +8,7 @@
 #include <IOKit/IOKitLib.h>
 #include <IOKit/IOCFPlugIn.h>
 #include <IOKit/scsi/SCSITaskLib.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -60,6 +61,26 @@ int BKMMCCopyDeviceIDs(uint64_t *ids, int maxCount) {
     return found;
 }
 
+// Creates the IOKit plug-in for `service` and asks it for one interface.
+// Returns 0 on success, or the failing step's error.
+static int32_t BKMMCQueryInterface(io_service_t service, CFUUIDRef userClientType, CFUUIDRef interfaceID,
+                                   void **outInterface) {
+    *outInterface = NULL;
+    IOCFPlugInInterface **plugIn = NULL;
+    SInt32 score = 0;
+    IOReturn result = IOCreatePlugInInterfaceForService(service, userClientType, kIOCFPlugInInterfaceID,
+                                                        &plugIn, &score);
+    if (result != kIOReturnSuccess) return result;
+    if (plugIn == NULL) return BKMMC_ERROR_NO_PLUGIN;
+    HRESULT queryResult = (*plugIn)->QueryInterface(plugIn, CFUUIDGetUUIDBytes(interfaceID), outInterface);
+    IODestroyPlugInInterface(plugIn);
+    if (queryResult != S_OK || *outInterface == NULL) {
+        *outInterface = NULL;
+        return BKMMC_ERROR_QUERY_FAILED;
+    }
+    return 0;
+}
+
 BKMMCDevice *BKMMCDeviceOpen(uint64_t registryID, int32_t *outError) {
     if (outError != NULL) *outError = 0;
 
@@ -69,36 +90,32 @@ BKMMCDevice *BKMMCDeviceOpen(uint64_t registryID, int32_t *outError) {
         return NULL;
     }
 
-    IOCFPlugInInterface **plugIn = NULL;
-    SInt32 score = 0;
-    IOReturn result = IOCreatePlugInInterfaceForService(service, kIOMMCDeviceUserClientTypeID,
-                                                        kIOCFPlugInInterfaceID, &plugIn, &score);
-    IOObjectRelease(service);
-    if (result != kIOReturnSuccess || plugIn == NULL) {
-        if (outError != NULL) *outError = (result != kIOReturnSuccess) ? result : BKMMC_ERROR_NO_INTERFACE;
-        return NULL;
-    }
-
+    // The MMC interface gives read-only status commands without exclusive access,
+    // and hands out the SCSI task interface that writing needs.
     MMCDeviceInterface **mmc = NULL;
-    HRESULT queryResult = (*plugIn)->QueryInterface(plugIn, CFUUIDGetUUIDBytes(kIOMMCDeviceInterfaceID),
-                                                    (LPVOID *)&mmc);
-    IODestroyPlugInInterface(plugIn);
-    if (queryResult != S_OK || mmc == NULL) {
-        if (outError != NULL) *outError = BKMMC_ERROR_NO_INTERFACE;
-        return NULL;
+    int32_t mmcResult = BKMMCQueryInterface(service, kIOMMCDeviceUserClientTypeID, kIOMMCDeviceInterfaceID,
+                                            (void **)&mmc);
+    SCSITaskDeviceInterface **task = NULL;
+    if (mmc != NULL) {
+        task = (*mmc)->GetSCSITaskDeviceInterface(mmc);
     }
-
-    SCSITaskDeviceInterface **task = (*mmc)->GetSCSITaskDeviceInterface(mmc);
+    // Fall back to asking for the SCSI task interface directly.
+    int32_t taskResult = 0;
     if (task == NULL) {
-        (*mmc)->Release(mmc);
-        if (outError != NULL) *outError = BKMMC_ERROR_NO_INTERFACE;
+        taskResult = BKMMCQueryInterface(service, kIOSCSITaskDeviceUserClientTypeID, kIOSCSITaskDeviceInterfaceID,
+                                         (void **)&task);
+    }
+    IOObjectRelease(service);
+
+    if (mmc == NULL && task == NULL) {
+        if (outError != NULL) *outError = mmcResult != 0 ? mmcResult : taskResult;
         return NULL;
     }
 
     BKMMCDevice *device = calloc(1, sizeof(BKMMCDevice));
     if (device == NULL) {
-        (*task)->Release(task);
-        (*mmc)->Release(mmc);
+        if (task != NULL) (*task)->Release(task);
+        if (mmc != NULL) (*mmc)->Release(mmc);
         if (outError != NULL) *outError = kIOReturnNoMemory;
         return NULL;
     }
@@ -111,14 +128,103 @@ BKMMCDevice *BKMMCDeviceOpen(uint64_t registryID, int32_t *outError) {
 void BKMMCDeviceClose(BKMMCDevice *device) {
     if (device == NULL) return;
     BKMMCDeviceReleaseExclusiveAccess(device);
-    (*device->task)->Release(device->task);
-    (*device->mmc)->Release(device->mmc);
+    if (device->task != NULL) (*device->task)->Release(device->task);
+    if (device->mmc != NULL) (*device->mmc)->Release(device->mmc);
     free(device);
+}
+
+static void BKMMCAppend(char *out, size_t length, const char *text) {
+    if (out == NULL || length == 0) return;
+    size_t used = strlen(out);
+    if (used + 1 >= length) return;
+    strncat(out, text, length - used - 1);
+}
+
+static void BKMMCAppendProperty(char *out, size_t length, io_registry_entry_t entry, const char *key) {
+    CFStringRef name = CFStringCreateWithCString(kCFAllocatorDefault, key, kCFStringEncodingUTF8);
+    CFTypeRef value = IORegistryEntryCreateCFProperty(entry, name, kCFAllocatorDefault, 0);
+    CFRelease(name);
+    char line[512];
+    if (value == NULL) {
+        snprintf(line, sizeof(line), "    %s: (none)\n", key);
+    } else {
+        CFStringRef description = CFCopyDescription(value);
+        char text[400] = "";
+        CFStringGetCString(description, text, sizeof(text), kCFStringEncodingUTF8);
+        snprintf(line, sizeof(line), "    %s: %s\n", key, text);
+        CFRelease(description);
+        CFRelease(value);
+    }
+    BKMMCAppend(out, length, line);
+}
+
+void BKMMCDescribeDevice(uint64_t registryID, char *out, size_t length) {
+    if (out == NULL || length == 0) return;
+    out[0] = 0;
+    char line[512];
+
+    io_service_t service = IOServiceGetMatchingService(kIOMainPortDefault, IORegistryEntryIDMatching(registryID));
+    if (service == IO_OBJECT_NULL) {
+        BKMMCAppend(out, length, "Service not found in the IORegistry.\n");
+        return;
+    }
+
+    // The matched service and its parents.
+    io_registry_entry_t entry = service;
+    IOObjectRetain(entry);
+    for (int level = 0; level < 6 && entry != IO_OBJECT_NULL; level++) {
+        io_name_t className;
+        IOObjectGetClass(entry, className);
+        snprintf(line, sizeof(line), "%s%s\n", level == 0 ? "Matched: " : "Parent:  ", className);
+        BKMMCAppend(out, length, line);
+        if (level == 0) {
+            BKMMCAppendProperty(out, length, entry, kIOPropertySCSITaskDeviceCategory);
+            BKMMCAppendProperty(out, length, entry, "IOCFPlugInTypes");
+            BKMMCAppendProperty(out, length, entry, "IOUserClientClass");
+        }
+        io_registry_entry_t parent = IO_OBJECT_NULL;
+        kern_return_t kr = IORegistryEntryGetParentEntry(entry, kIOServicePlane, &parent);
+        IOObjectRelease(entry);
+        entry = (kr == KERN_SUCCESS) ? parent : IO_OBJECT_NULL;
+    }
+    if (entry != IO_OBJECT_NULL) IOObjectRelease(entry);
+
+    // Each step of opening the device.
+    MMCDeviceInterface **mmc = NULL;
+    int32_t result = BKMMCQueryInterface(service, kIOMMCDeviceUserClientTypeID, kIOMMCDeviceInterfaceID, (void **)&mmc);
+    snprintf(line, sizeof(line), "MMC interface: %s (0x%08X)\n", result == 0 ? "ok" : "failed", (uint32_t)result);
+    BKMMCAppend(out, length, line);
+    if (mmc != NULL) {
+        SCSITaskDeviceInterface **task = (*mmc)->GetSCSITaskDeviceInterface(mmc);
+        snprintf(line, sizeof(line), "SCSI task interface from MMC: %s\n", task != NULL ? "ok" : "none");
+        BKMMCAppend(out, length, line);
+        SCSITaskStatus status = kSCSITaskStatus_No_Status;
+        SCSI_Sense_Data sense;
+        memset(&sense, 0, sizeof(sense));
+        IOReturn tur = (*mmc)->TestUnitReady(mmc, &status, &sense);
+        snprintf(line, sizeof(line), "TEST UNIT READY: 0x%08X, status 0x%02X, sense key 0x%X ASC 0x%02X ASCQ 0x%02X\n",
+                 (uint32_t)tur, (unsigned)status, sense.SENSE_KEY & 0x0F,
+                 sense.ADDITIONAL_SENSE_CODE, sense.ADDITIONAL_SENSE_CODE_QUALIFIER);
+        BKMMCAppend(out, length, line);
+        if (task != NULL) (*task)->Release(task);
+        (*mmc)->Release(mmc);
+    }
+
+    SCSITaskDeviceInterface **direct = NULL;
+    result = BKMMCQueryInterface(service, kIOSCSITaskDeviceUserClientTypeID, kIOSCSITaskDeviceInterfaceID,
+                                 (void **)&direct);
+    snprintf(line, sizeof(line), "SCSI task interface directly: %s (0x%08X)\n", result == 0 ? "ok" : "failed",
+             (uint32_t)result);
+    BKMMCAppend(out, length, line);
+    if (direct != NULL) (*direct)->Release(direct);
+
+    IOObjectRelease(service);
 }
 
 int32_t BKMMCDeviceObtainExclusiveAccess(BKMMCDevice *device) {
     if (device == NULL) return kIOReturnBadArgument;
     if (device->exclusive) return kIOReturnSuccess;
+    if (device->task == NULL) return BKMMC_ERROR_TASK_UNAVAILABLE;
     IOReturn result = (*device->task)->ObtainExclusiveAccess(device->task);
     if (result == kIOReturnSuccess) device->exclusive = true;
     return result;
@@ -143,6 +249,7 @@ static int32_t BKMMCExecuteShared(BKMMCDevice *device, const uint8_t *cdb, uint8
                                   void *buffer, uint64_t bufferLength,
                                   SCSITaskStatus *status, SCSI_Sense_Data *sense) {
     MMCDeviceInterface **mmc = device->mmc;
+    if (mmc == NULL) return BKMMC_ERROR_NEEDS_EXCLUSIVE_ACCESS;
     uint16_t length16 = bufferLength > 0xFFFF ? 0xFFFF : (uint16_t)bufferLength;
 
     switch (cdb[0]) {
@@ -263,6 +370,11 @@ BKMMCDevice *BKMMCDeviceOpen(uint64_t registryID, int32_t *outError) {
 }
 
 void BKMMCDeviceClose(BKMMCDevice *device) { (void)device; }
+
+void BKMMCDescribeDevice(uint64_t registryID, char *out, size_t length) {
+    (void)registryID;
+    if (out != NULL && length > 0) out[0] = 0;
+}
 
 int32_t BKMMCDeviceObtainExclusiveAccess(BKMMCDevice *device) {
     (void)device;

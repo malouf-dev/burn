@@ -35,7 +35,7 @@ public final class IOKitTransport: SCSITransport, @unchecked Sendable {
     public init(_ reference: DriveReference) throws {
         var error: Int32 = 0
         guard let device = BKMMCDeviceOpen(reference.id, &error) else {
-            throw TransportError.ioError(code: error)
+            throw TransportError.cannotOpen(reason: Self.openFailureReason(error))
         }
         self.reference = reference
         self.device = device
@@ -45,10 +45,36 @@ public final class IOKitTransport: SCSITransport, @unchecked Sendable {
         BKMMCDeviceClose(device)
     }
 
+    static func openFailureReason(_ code: Int32) -> String {
+        let hexCode = String(format: "0x%08X", UInt32(bitPattern: code))
+        switch code {
+        case BKMMC_ERROR_NO_PLUGIN:
+            return "macOS returned no drive interface (\(hexCode))."
+        case BKMMC_ERROR_QUERY_FAILED:
+            return "the drive's IOKit plug-in refused the MMC and SCSI task interfaces (\(hexCode))."
+        case BKMMC_ERROR_UNSUPPORTED:
+            return "IOKit isn't available on this platform."
+        default:
+            return "IOKit error \(hexCode)."
+        }
+    }
+
+    /// A report of each step of opening the drive, for diagnosing problems.
+    public static func diagnose(_ reference: DriveReference) -> String {
+        let size = 16_384
+        var buffer = [CChar](repeating: 0, count: size)
+        BKMMCDescribeDevice(reference.id, &buffer, size)
+        let bytes = buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
+        return String(decoding: bytes, as: UTF8.self)
+    }
+
     public func beginExclusiveAccess() throws {
         lock.lock()
         defer { lock.unlock() }
         let result = BKMMCDeviceObtainExclusiveAccess(device)
+        if result == BKMMC_ERROR_TASK_UNAVAILABLE {
+            throw TransportError.cannotOpen(reason: "the SCSI task interface, which writing needs, isn't available.")
+        }
         guard result == 0 else { throw TransportError.exclusiveAccessDenied(code: result) }
     }
 

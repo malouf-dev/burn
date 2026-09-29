@@ -5,6 +5,7 @@
 #define CIOKITMMC_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -15,6 +16,12 @@ extern "C" {
 #define BKMMC_ERROR_NEEDS_EXCLUSIVE_ACCESS (-2)
 /// Returned when the device interfaces could not be created.
 #define BKMMC_ERROR_NO_INTERFACE (-3)
+/// IOKit reported success but returned no plug-in.
+#define BKMMC_ERROR_NO_PLUGIN (-5)
+/// The plug-in didn't provide the requested interface.
+#define BKMMC_ERROR_QUERY_FAILED (-6)
+/// The SCSI task interface, which writing needs, isn't available for this drive.
+#define BKMMC_ERROR_TASK_UNAVAILABLE (-7)
 /// Returned on platforms without IOKit.
 #define BKMMC_ERROR_UNSUPPORTED (-4)
 
@@ -34,6 +41,9 @@ int BKMMCCopyDeviceIDs(uint64_t *ids, int maxCount);
 
 /// Opens the burner with this IORegistry entry ID. Returns NULL on failure and sets `outError`.
 BKMMCDevice *BKMMCDeviceOpen(uint64_t registryID, int32_t *outError);
+
+/// Writes a plain-text report of each step of opening this device, for diagnosing drive problems.
+void BKMMCDescribeDevice(uint64_t registryID, char *out, size_t length);
 
 /// Releases exclusive access if held, then closes the device.
 void BKMMCDeviceClose(BKMMCDevice *device);

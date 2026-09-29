@@ -36,3 +36,4 @@ For each run: date, commit, macOS version, Mac model, drive vendor, model and fi
 
 | Run | Date | Commit | Drive | Media | Operation | Result | Notes |
 |---|---|---|---|---|---|---|---|
+| 1 | 2026-09-29 | `0eaf0d8` | 1 drive found (model not yet known) | none | `burnctl list`, `burnctl status` | Failed: drive found, but opening it returned 0xFFFFFFFD (couldn't create the drive interface) | Open code didn't say which IOKit step failed. Added per-step errors, fallbacks and `burnctl diagnose`. Simulator can't reproduce IOKit plug-in failures, so no simulator test. |

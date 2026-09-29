@@ -11,6 +11,7 @@ struct BurnCtl {
 
     Usage:
       burnctl list
+      burnctl diagnose
       burnctl status [--drive N]
       burnctl make-iso PATH... --output FILE [--name NAME]
       burnctl burn PATH... [--drive N] [--name NAME] [--simulate] [--no-verify] [--eject] [--yes] [--log FILE]
@@ -31,6 +32,7 @@ struct BurnCtl {
         do {
             switch command {
             case "list": try await list()
+            case "diagnose": diagnose()
             case "status": try await status(&arguments)
             case "make-iso": try makeISO(&arguments)
             case "burn": try await burn(&arguments)
@@ -66,6 +68,16 @@ struct BurnCtl {
             } catch {
                 print("\(index + 1). Couldn't open drive \(reference.id): \(error)")
             }
+        }
+    }
+
+    /// Prints each step of opening every drive, to find where it fails.
+    static func diagnose() {
+        let drives = IOKitDrives.list()
+        print("Found \(drives.count) burner(s).")
+        for (index, reference) in drives.enumerated() {
+            print("\nDrive \(index + 1), id \(reference.id)")
+            print(IOKitTransport.diagnose(reference), terminator: "")
         }
     }
 
