@@ -83,7 +83,8 @@ struct WriteTests {
         #expect(simulator.recordedBytes(from: 0, count: 1_001) == image.bytes)
         #expect(simulator.currentMedia?.closed == true)
         #expect(!simulator.hasExclusiveAccess)
-        #expect(try await discState(drive)?.writability == .notWritable)
+        let expected: Writability = profile.isRewritable ? .needsErase : .notWritable
+        #expect(try await discState(drive)?.writability == expected)
     }
 
     @Test func cdSetsTrackAtOnceBeforeWriting() async throws {

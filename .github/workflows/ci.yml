@@ -39,6 +39,12 @@ jobs:
       - name: Test
         run: swift test --package-path Packages/BurnKit -Xswiftc -warnings-as-errors
 
+      - name: Build the app
+        run: |
+          set -o pipefail
+          xcodebuild build -project Burn.xcodeproj -scheme Burn -destination 'platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" SWIFT_TREAT_WARNINGS_AS_ERRORS=YES | tail -40
+
       - name: ISO round trip through macOS
         run: |
           set -euo pipefail
