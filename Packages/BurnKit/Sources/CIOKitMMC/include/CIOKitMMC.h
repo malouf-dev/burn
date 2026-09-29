@@ -52,6 +52,12 @@ void BKMMCDescribeDevice(uint64_t registryID, char *out, size_t length);
 /// Releases exclusive access if held, then closes the device.
 void BKMMCDeviceClose(BKMMCDevice *device);
 
+/// Unmounts every volume on the disc in the drive through Disk Arbitration, so exclusive
+/// access can be taken. Does nothing when no disc is present or nothing is mounted.
+/// Returns 0 on success. Otherwise returns the Disk Arbitration status and writes its
+/// explanation, when there is one, into `reason`.
+int32_t BKMMCDeviceUnmountDisc(BKMMCDevice *device, char *reason, size_t reasonLength);
+
 /// Takes exclusive access. Fails while a disc in the drive is mounted.
 int32_t BKMMCDeviceObtainExclusiveAccess(BKMMCDevice *device);
 

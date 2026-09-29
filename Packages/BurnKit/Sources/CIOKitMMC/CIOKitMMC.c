@@ -8,6 +8,10 @@
 #include <IOKit/IOKitLib.h>
 #include <IOKit/IOCFPlugIn.h>
 #include <IOKit/scsi/SCSITaskLib.h>
+#include <IOKit/storage/IOMedia.h>
+#include <IOKit/IOBSD.h>
+#include <DiskArbitration/DiskArbitration.h>
+#include <dispatch/dispatch.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +24,7 @@ struct BKMMCDevice {
     MMCDeviceInterface **mmc;
     SCSITaskDeviceInterface **task;
     bool exclusive;
+    uint64_t registryID;
 };
 
 static CFMutableDictionaryRef BKMMCCreateMatchingDictionary(void) {
@@ -105,6 +110,8 @@ BKMMCDevice *BKMMCDeviceOpen(uint64_t registryID, int32_t *outError) {
         if (outError != NULL) *outError = kIOReturnNoMemory;
         return NULL;
     }
+
+    device->registryID = registryID;
 
     int32_t mmcResult = BKMMCQueryInterface(service, kIOMMCDeviceUserClientTypeID, kIOMMCDeviceInterfaceID,
                                             &device->mmcPlugIn, (void **)&device->mmc);
@@ -223,6 +230,95 @@ void BKMMCDescribeDevice(uint64_t registryID, char *out, size_t length) {
     }
 
     IOObjectRelease(service);
+}
+
+// Finds the BSD name of the whole-disc IOMedia below the drive. False when there is no disc
+// macOS can read, as with a blank one.
+static bool BKMMCCopyWholeMediaBSDName(uint64_t registryID, char *name, size_t length) {
+    io_service_t service = IOServiceGetMatchingService(kIOMainPortDefault, IORegistryEntryIDMatching(registryID));
+    if (service == IO_OBJECT_NULL) return false;
+    io_iterator_t iterator = IO_OBJECT_NULL;
+    kern_return_t result = IORegistryEntryCreateIterator(service, kIOServicePlane, kIORegistryIterateRecursively,
+                                                         &iterator);
+    IOObjectRelease(service);
+    if (result != KERN_SUCCESS) return false;
+
+    bool found = false;
+    io_registry_entry_t entry;
+    while (!found && (entry = IOIteratorNext(iterator)) != IO_OBJECT_NULL) {
+        if (IOObjectConformsTo(entry, kIOMediaClass)) {
+            CFTypeRef whole = IORegistryEntryCreateCFProperty(entry, CFSTR(kIOMediaWholeKey), kCFAllocatorDefault, 0);
+            CFTypeRef bsdName = IORegistryEntryCreateCFProperty(entry, CFSTR(kIOBSDNameKey), kCFAllocatorDefault, 0);
+            if (whole == kCFBooleanTrue && bsdName != NULL && CFGetTypeID(bsdName) == CFStringGetTypeID()) {
+                found = CFStringGetCString((CFStringRef)bsdName, name, (CFIndex)length, kCFStringEncodingUTF8);
+            }
+            if (whole != NULL) CFRelease(whole);
+            if (bsdName != NULL) CFRelease(bsdName);
+        }
+        IOObjectRelease(entry);
+    }
+    IOObjectRelease(iterator);
+    return found;
+}
+
+typedef struct {
+    dispatch_semaphore_t done;
+    int32_t status;
+    char *reason;
+    size_t reasonLength;
+} BKMMCUnmountContext;
+
+static void BKMMCUnmountFinished(DADiskRef disk, DADissenterRef dissenter, void *context) {
+    (void)disk;
+    BKMMCUnmountContext *unmount = context;
+    if (dissenter != NULL) {
+        unmount->status = DADissenterGetStatus(dissenter);
+        CFStringRef explanation = DADissenterGetStatusString(dissenter);
+        if (explanation != NULL && unmount->reason != NULL && unmount->reasonLength > 0) {
+            CFStringGetCString(explanation, unmount->reason, (CFIndex)unmount->reasonLength, kCFStringEncodingUTF8);
+        }
+    }
+    dispatch_semaphore_signal(unmount->done);
+}
+
+static void BKMMCNothing(void *context) { (void)context; }
+
+int32_t BKMMCDeviceUnmountDisc(BKMMCDevice *device, char *reason, size_t reasonLength) {
+    if (reason != NULL && reasonLength > 0) reason[0] = 0;
+    if (device == NULL) return kIOReturnBadArgument;
+
+    char bsdName[64];
+    if (!BKMMCCopyWholeMediaBSDName(device->registryID, bsdName, sizeof(bsdName))) return 0;
+
+    DASessionRef session = DASessionCreate(kCFAllocatorDefault);
+    if (session == NULL) return kIOReturnNoMemory;
+    DADiskRef disk = DADiskCreateFromBSDName(kCFAllocatorDefault, session, bsdName);
+    if (disk == NULL) {
+        CFRelease(session);
+        return 0;
+    }
+
+    dispatch_queue_t queue = dispatch_queue_create("BurnKit.unmount", DISPATCH_QUEUE_SERIAL);
+    BKMMCUnmountContext unmount = { dispatch_semaphore_create(0), 0, reason, reasonLength };
+    DASessionSetDispatchQueue(session, queue);
+    DADiskUnmount(disk, kDADiskUnmountOptionWhole, BKMMCUnmountFinished, &unmount);
+    bool finished = dispatch_semaphore_wait(unmount.done, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC)) == 0;
+    // Stop callbacks, then let any that were already queued finish before `unmount` goes away.
+    DASessionSetDispatchQueue(session, NULL);
+    dispatch_sync_f(queue, NULL, BKMMCNothing);
+
+    int32_t status = finished ? unmount.status : kDAReturnBusy;
+    if (!finished && reason != NULL && reasonLength > 0) {
+        snprintf(reason, reasonLength, "macOS didn't unmount it within 30 seconds");
+    }
+    // Nothing was mounted.
+    if (status == kDAReturnNotMounted) status = 0;
+
+    dispatch_release(unmount.done);
+    dispatch_release(queue);
+    CFRelease(disk);
+    CFRelease(session);
+    return status;
 }
 
 int32_t BKMMCDeviceObtainExclusiveAccess(BKMMCDevice *device) {
@@ -388,6 +484,12 @@ void BKMMCDeviceClose(BKMMCDevice *device) { (void)device; }
 void BKMMCDescribeDevice(uint64_t registryID, char *out, size_t length) {
     (void)registryID;
     if (out != NULL && length > 0) out[0] = 0;
+}
+
+int32_t BKMMCDeviceUnmountDisc(BKMMCDevice *device, char *reason, size_t reasonLength) {
+    (void)device;
+    if (reason != NULL && reasonLength > 0) reason[0] = 0;
+    return BKMMC_ERROR_UNSUPPORTED;
 }
 
 int32_t BKMMCDeviceObtainExclusiveAccess(BKMMCDevice *device) {

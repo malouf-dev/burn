@@ -294,6 +294,27 @@ struct EraseTests {
         try await drive.eject()
         #expect(try await drive.state() == .noDisc)
     }
+
+    // Hardware run 8: ejecting a mounted DVD-RW failed with kIOReturnNotPermitted.
+    @Test func ejectUnmountsAMountedDisc() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176))
+        simulator.isMounted = true
+        let drive = DiscDrive(transport: simulator)
+        try await drive.eject()
+        #expect(try await drive.state() == .noDisc)
+        #expect(!simulator.isMounted)
+        #expect(!simulator.hasExclusiveAccess)
+    }
+
+    // Hardware run 8: erasing a mounted DVD-RW failed because exclusive access was refused.
+    @Test func eraseUnmountsAMountedDisc() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176))
+        simulator.isMounted = true
+        let drive = DiscDrive(transport: simulator)
+        try await drive.quickErase()
+        #expect(try await discState(drive)?.writability == .blank)
+        #expect(!simulator.isMounted)
+    }
 }
 
 /// Collects distinct phases in order, from any thread.

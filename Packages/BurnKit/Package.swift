@@ -24,6 +24,7 @@ let package = Package(
             linkerSettings: [
                 .linkedFramework("IOKit", .when(platforms: [.macOS])),
                 .linkedFramework("CoreFoundation", .when(platforms: [.macOS])),
+                .linkedFramework("DiskArbitration", .when(platforms: [.macOS])),
             ]
         ),
         // The only Swift module that talks to real drives.

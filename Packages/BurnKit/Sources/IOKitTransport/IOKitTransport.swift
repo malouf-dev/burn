@@ -71,6 +71,16 @@ public final class IOKitTransport: SCSITransport, @unchecked Sendable {
     public func beginExclusiveAccess() throws {
         lock.lock()
         defer { lock.unlock() }
+        guard !BKMMCDeviceHasExclusiveAccess(device) else { return }
+        // macOS won't hand over a drive while a disc in it is mounted.
+        var reason = [CChar](repeating: 0, count: 256)
+        let unmounted = BKMMCDeviceUnmountDisc(device, &reason, reason.count)
+        if unmounted != 0 {
+            let bytes = reason.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
+            let explanation = String(decoding: bytes, as: UTF8.self)
+            throw TransportError.cannotUnmount(
+                reason: explanation.isEmpty ? String(format: "error 0x%08X", UInt32(bitPattern: unmounted)) : explanation)
+        }
         let result = BKMMCDeviceObtainExclusiveAccess(device)
         if result == BKMMC_ERROR_TASK_UNAVAILABLE {
             throw TransportError.cannotOpen(reason: "the SCSI task interface, which writing needs, isn't available.")

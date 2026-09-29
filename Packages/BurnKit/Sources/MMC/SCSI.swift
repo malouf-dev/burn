@@ -61,6 +61,8 @@ public enum TransportError: Error, Sendable, Equatable, CustomStringConvertible 
     case needsExclusiveAccess
     /// Exclusive access was refused, usually because a disc in the drive is mounted or another app is using it.
     case exclusiveAccessDenied(code: Int32)
+    /// macOS wouldn't unmount the disc, so exclusive access couldn't be taken.
+    case cannotUnmount(reason: String)
     /// The drive disappeared.
     case deviceGone
     /// The drive couldn't be opened. The reason names the step that failed.
@@ -76,6 +78,8 @@ public enum TransportError: Error, Sendable, Equatable, CustomStringConvertible 
             return "The drive needs exclusive access for this command."
         case .exclusiveAccessDenied(let code):
             return "Couldn't take control of the drive (error \(String(format: "0x%08X", UInt32(bitPattern: code)))). A mounted disc or another app may be using it."
+        case .cannotUnmount(let reason):
+            return "Couldn't unmount the disc (\(reason)). Close any files open on it and try again."
         case .deviceGone:
             return "The drive is no longer connected."
         case .notDelivered(let reason):
@@ -97,7 +101,8 @@ public protocol SCSITransport: AnyObject, Sendable {
     /// A CHECK CONDITION is a normal response. Only transport failures throw.
     func execute(_ command: SCSICommand) throws -> SCSIResponse
 
-    /// Takes exclusive control of the drive, which writing needs.
+    /// Takes exclusive control of the drive, which writing needs. Unmounts the disc first if
+    /// macOS has mounted it.
     func beginExclusiveAccess() throws
 
     /// Gives control back to macOS.

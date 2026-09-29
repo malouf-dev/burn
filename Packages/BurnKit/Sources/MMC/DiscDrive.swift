@@ -366,7 +366,14 @@ public actor DiscDrive {
             _ = try await run(MMC.startStopUnit(load: false), "EJECT")
             return
         } catch let error as DriveError {
-            guard case .transport(.needsExclusiveAccess) = error else { throw error }
+            // macOS refuses to eject a mounted disc through the shared interface. Taking
+            // exclusive access unmounts it first.
+            switch error {
+            case .transport(.needsExclusiveAccess), .transport(.ioError):
+                log.note("EJECT was refused without exclusive access, taking it")
+            default:
+                throw error
+            }
         }
         try await beginExclusiveAccess()
         do {

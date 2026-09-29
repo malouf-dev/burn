@@ -82,7 +82,15 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     private var _busyPollsAfterLongCommand = 0
     private var busyPollsRemaining = 0
 
-    /// When true, exclusive access is refused, as when a disc is mounted.
+    /// True while macOS has the disc mounted. Ejecting without exclusive access is then refused,
+    /// and taking exclusive access unmounts it, as the IOKit transport does.
+    public var isMounted: Bool {
+        get { withLock { _isMounted } }
+        set { withLock { _isMounted = newValue } }
+    }
+    private var _isMounted = false
+
+    /// When true, exclusive access is refused, as when a disc can't be unmounted.
     public var refusesExclusiveAccess: Bool {
         get { withLock { _refusesExclusiveAccess } }
         set { withLock { _refusesExclusiveAccess = newValue } }
@@ -157,6 +165,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     public func beginExclusiveAccess() throws {
         try withLock {
             if _refusesExclusiveAccess { throw TransportError.exclusiveAccessDenied(code: -536870187) }
+            _isMounted = false
             exclusive = true
         }
     }
@@ -176,6 +185,11 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         history.append(cdb)
         if !exclusive && !Self.sharedCommands.contains(command.operationCode) {
             throw TransportError.needsExclusiveAccess
+        }
+
+        if _isMounted && !exclusive && command.operationCode == 0x1B && cdb[4] & 0x03 == 0x02 {
+            // IOKit's kIOReturnNotPermitted, as for a real drive with a mounted disc.
+            throw TransportError.ioError(code: Int32(bitPattern: 0xE000_02E2))
         }
 
         if busyPollsRemaining > 0 && command.operationCode != 0x00 {
