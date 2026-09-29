@@ -23,7 +23,7 @@ One folder containing:
 ## Comparing a burned disc with its source
 
 ```sh
-python3 scripts/compare-trees.py /path/to/TestData "/Volumes/DiscName/TestData"
+python3 scripts/compare-trees.py /path/to/TestData "/Volumes/TestData"
 ```
 
 It compares every file's contents, and compares names in composed Unicode form, because macOS can report accented names decomposed.
@@ -40,3 +40,4 @@ For each run: date, commit, macOS version, Mac model, drive vendor, model and fi
 | 2 | 2026-09-29 | `f3c5bed` | USB Blu-ray burner (IOBDServices) | not recorded | `burnctl diagnose`, `burnctl status` | Failed: MMC interface created, but TEST UNIT READY returned 0x10000003 (Mach: invalid destination) and no SCSI task interface | The C wrapper destroyed the IOKit plug-in straight after taking the interface, which closes the connection to the kernel. Plug-ins now live until the drive is closed. Direct SCSI task interface returns 0xE00002C7 (unsupported), as expected for burners. |
 | 3 | 2026-09-29 | `a02d4aa` | Pioneer BD-RW BDR-UD04, firmware 1.14, USB | BD-R (already written) | `burnctl diagnose`, `burnctl status` | Passed: MMC and SCSI task interfaces open, TEST UNIT READY good, exclusive access available. Status read the disc as a closed BD-R. | First run where the drive answers commands. Whether the disc really was closed still needs confirming. |
 | 4 | 2026-09-29 | `ff85139` | Pioneer BD-RW BDR-UD04, firmware 1.14, USB | DVD-R, blank | `burnctl status`, then `burnctl burn ~/burn-test --log burn.log` (one 6-byte file, 178-block image) | Passed: status read "blank DVD-R, 4.71 GB free". Written (disc at once) and every block verified. 243 seconds in total. | First real burn. Still to check: the disc mounts in Finder with hello.txt intact, and where the 243 seconds went (see burn.log). |
+| 5 | 2026-09-29 | `b048a9b` | Pioneer BD-RW BDR-UD04, firmware 1.14, USB | DVD-R from run 4 | Mounted in Finder, compared with `compare-trees.py` | Contents correct, but at `burn-test/hello.txt` rather than the root. burn.log: writes and read-back took seconds; SYNCHRONIZE CACHE took 236 s while the drive closed the disc at once, which is expected for a small DVD-R. | `burnctl` now puts a single folder's contents at the root. The log's repeated-transfer summary now keeps time order and totals its duration. |

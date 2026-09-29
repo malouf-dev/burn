@@ -39,6 +39,17 @@ public struct ISOImageBuilder {
         root.children.append(node)
     }
 
+    /// Adds everything inside a folder at the top level of the disc, without the folder itself.
+    /// This is what disc tools usually do with a single folder: the disc takes the folder's place.
+    public mutating func addContents(of folder: URL) throws {
+        let node = try Self.scan(folder, skipping: skippedNames)
+        guard node.isDirectory else {
+            root.children.append(node)
+            return
+        }
+        root.children += node.children
+    }
+
     /// Total bytes of file data added so far.
     public var contentBytes: UInt64 {
         root.totalSize

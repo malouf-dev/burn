@@ -97,6 +97,20 @@ struct ISOBuilderTests {
         #expect(count == 8)
     }
 
+    @Test func addContentsPutsFilesAtTheRoot() throws {
+        let (folder, expected) = try makeSourceFolder()
+        var builder = ISOImageBuilder(volumeName: "Contents")
+        try builder.addContents(of: folder)
+        let output = folder.deletingLastPathComponent().appendingPathComponent("contents.iso")
+        try builder.write(to: output)
+        let files = try ISOReader(url: output).jolietFiles()
+        let prefix = "Holiday Photos/"
+        #expect(files.count == expected.count)
+        for (path, bytes) in expected {
+            #expect(files[String(path.dropFirst(prefix.count))] == bytes, "\(path)")
+        }
+    }
+
     @Test func largeDirectorySpansSectors() throws {
         let (reader, _, _, _) = try build()
         let root = reader.rootRecord(descriptorSector: 17)

@@ -20,6 +20,7 @@ struct BurnCtl {
       burnctl simulate-burn PATH... [--profile cd-r|cd-rw|dvd-r|dvd+r|dvd+r-dl|bd-r] [--name NAME]
 
     PATH is a file or folder to put on the disc, or a single .iso image to burn as it is.
+    A single folder's contents go at the root of the disc, which is named after the folder.
     Drives are numbered from 1, in the order `burnctl list` shows them.
     """
 
@@ -215,10 +216,18 @@ struct BurnCtl {
         return try FileImageSource(url: output)
     }
 
+    /// A single folder's contents go at the root of the disc, as other disc tools do.
+    /// Several paths are added as they are.
     static func buildImage(paths: [String], name: String, output: URL) throws -> Int {
         var builder = ISOImageBuilder(volumeName: name)
-        for path in paths {
-            try builder.add(URL(fileURLWithPath: path))
+        var isDirectory: ObjCBool = false
+        if paths.count == 1, FileManager.default.fileExists(atPath: paths[0], isDirectory: &isDirectory),
+           isDirectory.boolValue {
+            try builder.addContents(of: URL(fileURLWithPath: paths[0]))
+        } else {
+            for path in paths {
+                try builder.add(URL(fileURLWithPath: path))
+            }
         }
         return try builder.write(to: output)
     }
