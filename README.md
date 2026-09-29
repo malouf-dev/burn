@@ -4,7 +4,7 @@ A disc-burning app for macOS, written in Swift. It has its own burning engine an
 
 Status: early development, working towards 0.1 alpha. See [docs/proposal.md](docs/proposal.md) for the plan.
 
-The original Objective-C Burn app is on the [`master`](../../tree/master) branch, kept as a reference.
+The original Objective-C Burn app is on the [`legacy`](../../tree/legacy) branch, kept as a reference.
 
 ## Layout
 

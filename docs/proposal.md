@@ -9,7 +9,7 @@
 This is the plan for the new app on the `main` branch of `malouf-dev/burn`. It is written for the owner and for any Claude Code session working here.
 
 - Section 2 lists decisions. Items marked **Open** need the owner's answer before the step that depends on them.
-- The old Objective-C app lives on the `master` branch of the same repository. It is a reference for behaviour only (see D5).
+- The old Objective-C app lives on the `legacy` branch of the same repository. It is a reference for behaviour only (see D5).
 
 ## Contents
 
@@ -41,7 +41,7 @@ The first milestone, 0.1 alpha, is an app that opens, sees a disc, and writes fi
 
 | ID | Decision | Status |
 |---|---|---|
-| D1 | New code on an orphan `main` branch in `malouf-dev/burn`. Burn stays on `master` as a reference. | Decided |
+| D1 | New code on an orphan `main` branch in `malouf-dev/burn`. Burn stays on `legacy` as a reference. | Decided |
 | D2 | 0.1 alpha goal: the app opens, sees a disc, and writes files to it with verification. | Decided |
 | D3 | Swift 6 language mode. SwiftUI first, AppKit only where SwiftUI falls short. | Decided |
 | D4 | Minimum macOS follows a rolling policy: the current version and the two before it. Today that means macOS 15. | Decided |
@@ -55,7 +55,7 @@ The first milestone, 0.1 alpha, is an app that opens, sees a disc, and writes fi
 
 ## 3. Background: Burn
 
-Burn is a free macOS app by Maarten Foukhar (Kiwi Fruitware), licensed GPL v2. Its code is on the `master` branch here, copied from https://sourceforge.net/p/burn-osx/code-git/ci/master/tree/ at commit `f39366b` (17 January 2021). It burns data discs, audio CDs, MP3 discs, DVD-Video with menus, VCD, SVCD, DivX discs, DVD-Audio and disc images, and it copies discs.
+Burn is a free macOS app by Maarten Foukhar (Kiwi Fruitware), licensed GPL v2. Its code is on the `legacy` branch here, copied from https://sourceforge.net/p/burn-osx/code-git/ci/master/tree/ at commit `f39366b` (17 January 2021). It burns data discs, audio CDs, MP3 discs, DVD-Video with menus, VCD, SVCD, DivX discs, DVD-Audio and disc images, and it copies discs.
 
 - About 22,700 lines of Objective-C, plus 10 XIB files. 13 languages.
 - Deployment target macOS 10.9. No tests and no CI.
@@ -262,9 +262,9 @@ About 6 to 10 weeks of focused work, most of it hardware testing. Confidence is 
 
 ### 10.1 Branches
 
-- `main` holds the new app. It shares no history with `master`.
-- `master` holds Burn. Read it with `git show master:burn/Source/KWBurner.m`.
-- Claude Code sessions work on their own branches and open pull requests into `main`.
+- `main` holds the new app. It shares no history with `legacy`.
+- `legacy` holds Burn. Read it with `git show legacy:burn/Source/KWBurner.m`.
+- New work is committed to `main`. If a session starts on a generated branch, merge it into `main` and delete it.
 
 ### 10.2 CI
 
@@ -296,7 +296,7 @@ Hardware tests need the owner's Mac, a drive and blank media. The easiest way is
 
 ## 13. Reference map of Burn's source
 
-On the `master` branch. Files are in `burn/Source/`.
+On the `legacy` branch. Files are in `burn/Source/`.
 
 | Topic | Files |
 |---|---|

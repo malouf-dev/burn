@@ -13,6 +13,10 @@
 #include <string.h>
 
 struct BKMMCDevice {
+    // The plug-ins own the connection to the kernel. Destroying one closes it,
+    // so they live as long as the interfaces taken from them.
+    IOCFPlugInInterface **mmcPlugIn;
+    IOCFPlugInInterface **taskPlugIn;
     MMCDeviceInterface **mmc;
     SCSITaskDeviceInterface **task;
     bool exclusive;
@@ -62,10 +66,12 @@ int BKMMCCopyDeviceIDs(uint64_t *ids, int maxCount) {
 }
 
 // Creates the IOKit plug-in for `service` and asks it for one interface.
-// Returns 0 on success, or the failing step's error.
+// On success the caller owns `*outPlugIn` and must destroy it after releasing the interface:
+// destroying the plug-in closes the connection to the drive.
 static int32_t BKMMCQueryInterface(io_service_t service, CFUUIDRef userClientType, CFUUIDRef interfaceID,
-                                   void **outInterface) {
+                                   IOCFPlugInInterface ***outPlugIn, void **outInterface) {
     *outInterface = NULL;
+    *outPlugIn = NULL;
     IOCFPlugInInterface **plugIn = NULL;
     SInt32 score = 0;
     IOReturn result = IOCreatePlugInInterfaceForService(service, userClientType, kIOCFPlugInInterfaceID,
@@ -73,11 +79,12 @@ static int32_t BKMMCQueryInterface(io_service_t service, CFUUIDRef userClientTyp
     if (result != kIOReturnSuccess) return result;
     if (plugIn == NULL) return BKMMC_ERROR_NO_PLUGIN;
     HRESULT queryResult = (*plugIn)->QueryInterface(plugIn, CFUUIDGetUUIDBytes(interfaceID), outInterface);
-    IODestroyPlugInInterface(plugIn);
     if (queryResult != S_OK || *outInterface == NULL) {
         *outInterface = NULL;
+        IODestroyPlugInInterface(plugIn);
         return BKMMC_ERROR_QUERY_FAILED;
     }
+    *outPlugIn = plugIn;
     return 0;
 }
 
@@ -92,36 +99,31 @@ BKMMCDevice *BKMMCDeviceOpen(uint64_t registryID, int32_t *outError) {
 
     // The MMC interface gives read-only status commands without exclusive access,
     // and hands out the SCSI task interface that writing needs.
-    MMCDeviceInterface **mmc = NULL;
-    int32_t mmcResult = BKMMCQueryInterface(service, kIOMMCDeviceUserClientTypeID, kIOMMCDeviceInterfaceID,
-                                            (void **)&mmc);
-    SCSITaskDeviceInterface **task = NULL;
-    if (mmc != NULL) {
-        task = (*mmc)->GetSCSITaskDeviceInterface(mmc);
-    }
-    // Fall back to asking for the SCSI task interface directly.
-    int32_t taskResult = 0;
-    if (task == NULL) {
-        taskResult = BKMMCQueryInterface(service, kIOSCSITaskDeviceUserClientTypeID, kIOSCSITaskDeviceInterfaceID,
-                                         (void **)&task);
-    }
-    IOObjectRelease(service);
-
-    if (mmc == NULL && task == NULL) {
-        if (outError != NULL) *outError = mmcResult != 0 ? mmcResult : taskResult;
-        return NULL;
-    }
-
     BKMMCDevice *device = calloc(1, sizeof(BKMMCDevice));
     if (device == NULL) {
-        if (task != NULL) (*task)->Release(task);
-        if (mmc != NULL) (*mmc)->Release(mmc);
+        IOObjectRelease(service);
         if (outError != NULL) *outError = kIOReturnNoMemory;
         return NULL;
     }
-    device->mmc = mmc;
-    device->task = task;
-    device->exclusive = false;
+
+    int32_t mmcResult = BKMMCQueryInterface(service, kIOMMCDeviceUserClientTypeID, kIOMMCDeviceInterfaceID,
+                                            &device->mmcPlugIn, (void **)&device->mmc);
+    if (device->mmc != NULL) {
+        device->task = (*device->mmc)->GetSCSITaskDeviceInterface(device->mmc);
+    }
+    // Fall back to asking for the SCSI task interface directly.
+    int32_t taskResult = 0;
+    if (device->task == NULL) {
+        taskResult = BKMMCQueryInterface(service, kIOSCSITaskDeviceUserClientTypeID, kIOSCSITaskDeviceInterfaceID,
+                                         &device->taskPlugIn, (void **)&device->task);
+    }
+    IOObjectRelease(service);
+
+    if (device->mmc == NULL && device->task == NULL) {
+        if (outError != NULL) *outError = mmcResult != 0 ? mmcResult : taskResult;
+        BKMMCDeviceClose(device);
+        return NULL;
+    }
     return device;
 }
 
@@ -130,6 +132,8 @@ void BKMMCDeviceClose(BKMMCDevice *device) {
     BKMMCDeviceReleaseExclusiveAccess(device);
     if (device->task != NULL) (*device->task)->Release(device->task);
     if (device->mmc != NULL) (*device->mmc)->Release(device->mmc);
+    if (device->taskPlugIn != NULL) IODestroyPlugInInterface(device->taskPlugIn);
+    if (device->mmcPlugIn != NULL) IODestroyPlugInInterface(device->mmcPlugIn);
     free(device);
 }
 
@@ -191,7 +195,9 @@ void BKMMCDescribeDevice(uint64_t registryID, char *out, size_t length) {
 
     // Each step of opening the device.
     MMCDeviceInterface **mmc = NULL;
-    int32_t result = BKMMCQueryInterface(service, kIOMMCDeviceUserClientTypeID, kIOMMCDeviceInterfaceID, (void **)&mmc);
+    IOCFPlugInInterface **mmcPlugIn = NULL;
+    int32_t result = BKMMCQueryInterface(service, kIOMMCDeviceUserClientTypeID, kIOMMCDeviceInterfaceID,
+                                         &mmcPlugIn, (void **)&mmc);
     snprintf(line, sizeof(line), "MMC interface: %s (0x%08X)\n", result == 0 ? "ok" : "failed", (uint32_t)result);
     BKMMCAppend(out, length, line);
     if (mmc != NULL) {
@@ -206,17 +212,15 @@ void BKMMCDescribeDevice(uint64_t registryID, char *out, size_t length) {
                  (uint32_t)tur, (unsigned)status, sense.SENSE_KEY & 0x0F,
                  sense.ADDITIONAL_SENSE_CODE, sense.ADDITIONAL_SENSE_CODE_QUALIFIER);
         BKMMCAppend(out, length, line);
-        if (task != NULL) (*task)->Release(task);
+        if (task != NULL) {
+            snprintf(line, sizeof(line), "Exclusive access available: %s\n",
+                     (*task)->IsExclusiveAccessAvailable(task) ? "yes" : "no");
+            BKMMCAppend(out, length, line);
+            (*task)->Release(task);
+        }
         (*mmc)->Release(mmc);
+        IODestroyPlugInInterface(mmcPlugIn);
     }
-
-    SCSITaskDeviceInterface **direct = NULL;
-    result = BKMMCQueryInterface(service, kIOSCSITaskDeviceUserClientTypeID, kIOSCSITaskDeviceInterfaceID,
-                                 (void **)&direct);
-    snprintf(line, sizeof(line), "SCSI task interface directly: %s (0x%08X)\n", result == 0 ? "ok" : "failed",
-             (uint32_t)result);
-    BKMMCAppend(out, length, line);
-    if (direct != NULL) (*direct)->Release(direct);
 
     IOObjectRelease(service);
 }
