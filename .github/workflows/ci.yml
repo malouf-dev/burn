@@ -12,12 +12,11 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Select the newest Xcode
         run: |
           sw_vers
-          ls -d /Applications/Xcode*.app
           XCODE="$(ls -d /Applications/Xcode_*.app | grep -vi beta | sort -V | tail -1)"
           sudo xcode-select -s "$XCODE"
           xcodebuild -version
@@ -35,9 +34,34 @@ jobs:
           fi
 
       - name: Build
-        if: hashFiles('Packages/BurnKit/Package.swift') != ''
         run: swift build --package-path Packages/BurnKit -Xswiftc -warnings-as-errors
 
       - name: Test
-        if: hashFiles('Packages/BurnKit/Package.swift') != ''
         run: swift test --package-path Packages/BurnKit -Xswiftc -warnings-as-errors
+
+      - name: ISO round trip through macOS
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/src/Test Data"
+          mkdir -p "$SRC/sub dir/deeper/a/b"
+          printf 'hello\n' > "$SRC/hello.txt"
+          : > "$SRC/empty"
+          head -c 3000000 /dev/urandom > "$SRC/sub dir/random.bin"
+          printf 'accents\n' > "$SRC/sub dir/deeper/Café résumé.txt"
+          printf 'deep\n' > "$SRC/sub dir/deeper/a/b/deep.txt"
+          printf 'long\n' > "$SRC/$(printf 'L%.0s' $(seq 1 90)).txt"
+          swift run --package-path Packages/BurnKit burnctl make-iso "$SRC" --output "$RUNNER_TEMP/test.iso" --name "Round Trip"
+          MNT="$RUNNER_TEMP/mnt"
+          mkdir -p "$MNT"
+          hdiutil attach -readonly -nobrowse -mountpoint "$MNT" "$RUNNER_TEMP/test.iso"
+          mount | grep "$MNT"
+          ls -laR "$MNT"
+          diff -r "$SRC" "$MNT/Test Data"
+          hdiutil detach "$MNT"
+
+      - name: Simulated burn of the same files
+        run: |
+          set -euo pipefail
+          for profile in cd-r dvd-r dvd+r bd-r; do
+            swift run --package-path Packages/BurnKit burnctl simulate-burn "$RUNNER_TEMP/src/Test Data" --profile "$profile"
+          done

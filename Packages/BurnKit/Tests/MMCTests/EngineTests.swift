@@ -1,0 +1,248 @@
+import Testing
+import Foundation
+@testable import MMC
+import MMCSimulator
+
+/// An image whose every byte depends on its position, so misplaced blocks are caught.
+func patternImage(blocks: Int) -> MemoryImageSource {
+    var bytes = [UInt8](repeating: 0, count: blocks * MMC.blockSize)
+    for index in bytes.indices {
+        bytes[index] = UInt8(truncatingIfNeeded: index / MMC.blockSize &* 31 &+ index)
+    }
+    return MemoryImageSource(bytes: bytes)
+}
+
+func discState(_ drive: DiscDrive) async throws -> DiscState? {
+    if case .disc(let disc) = try await drive.state() { return disc }
+    return nil
+}
+
+@Suite("Drive state")
+struct StateTests {
+    @Test func noDisc() async throws {
+        let drive = DiscDrive(transport: SimulatedDrive())
+        #expect(try await drive.state() == .noDisc)
+    }
+
+    @Test func blankDVDPlusR() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 2_295_104))
+        let drive = DiscDrive(transport: simulator)
+        let disc = try await discState(drive)
+        #expect(disc?.profile == .dvdPlusR)
+        #expect(disc?.writability == .blank)
+        #expect(disc?.freeBlocks == 2_295_104)
+        #expect(disc?.freeBytes == 4_700_372_992)
+    }
+
+    @Test func newlyInsertedDiscIsReadAfterUnitAttention() async throws {
+        let simulator = SimulatedDrive()
+        simulator.insert(.init(profile: .cdR, capacityBlocks: 359_847))
+        let drive = DiscDrive(transport: simulator)
+        #expect(try await discState(drive)?.writability == .blank)
+    }
+
+    @Test func rewritableWithDataNeedsErase() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .cdRW, capacityBlocks: 300_000, blockCount: 500))
+        let drive = DiscDrive(transport: simulator)
+        #expect(try await discState(drive)?.writability == .needsErase)
+    }
+
+    @Test func closedWriteOnceDiscIsNotWritable() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .dvdPlusR, capacityBlocks: 2_295_104, blockCount: 500))
+        let drive = DiscDrive(transport: simulator)
+        #expect(try await discState(drive)?.writability == .notWritable)
+    }
+
+    @Test func blankDVDPlusRWIsNotYetSupported() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdPlusRW, capacityBlocks: 2_295_104))
+        let drive = DiscDrive(transport: simulator)
+        #expect(try await discState(drive)?.writability == .unsupported)
+    }
+
+    @Test func identify() async throws {
+        let drive = DiscDrive(transport: SimulatedDrive())
+        let inquiry = try await drive.identify()
+        #expect(inquiry.vendor == "SIMULATE")
+        #expect(inquiry.deviceType == 5)
+    }
+}
+
+@Suite("Writing and verifying")
+struct WriteTests {
+    @Test(arguments: [MediaProfile.cdR, .cdRW, .dvdRSequential, .dvdRWSequential, .dvdPlusR, .dvdPlusRDualLayer, .bdRSequential])
+    func writeAndVerify(profile: MediaProfile) async throws {
+        let simulator = SimulatedDrive(media: .init(profile: profile, capacityBlocks: 20_000))
+        let drive = DiscDrive(transport: simulator)
+        let image = patternImage(blocks: 1_001)
+
+        let report = try await drive.write(image)
+
+        #expect(report.verified)
+        #expect(report.imageBlocks == 1_001)
+        #expect(report.writtenBlocks % (profile.writeMethod?.blockAlignment ?? 1) == 0)
+        #expect(simulator.recordedBytes(from: 0, count: 1_001) == image.bytes)
+        #expect(simulator.currentMedia?.closed == true)
+        #expect(!simulator.hasExclusiveAccess)
+        #expect(try await discState(drive)?.writability == .notWritable)
+    }
+
+    @Test func cdSetsTrackAtOnceBeforeWriting() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .cdR, capacityBlocks: 20_000))
+        _ = try await DiscDrive(transport: simulator).write(patternImage(blocks: 10))
+        let codes = simulator.operationCodes
+        let select = try #require(codes.firstIndex(of: 0x55))
+        let firstWrite = try #require(codes.firstIndex(of: 0x2A))
+        #expect(select < firstWrite)
+        #expect(codes.contains(0x5B))
+    }
+
+    @Test func dvdMinusRReservesTrack() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdRSequential, capacityBlocks: 20_000))
+        _ = try await DiscDrive(transport: simulator).write(patternImage(blocks: 10))
+        let reserve = try #require(simulator.commandHistory.first { $0.first == 0x53 })
+        #expect(reserve.uint32(at: 5) == 16) // 10 blocks rounded up to a DVD ECC block
+    }
+
+    @Test func progressReachesEveryPhase() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
+        let phases = PhaseRecorder()
+        _ = try await DiscDrive(transport: simulator).write(patternImage(blocks: 64)) { progress in
+            phases.add(progress.phase)
+        }
+        #expect(phases.seen == [.preparing, .writing, .closing, .verifying])
+    }
+
+    @Test func verificationMismatchIsReported() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
+        simulator.corruptReadBlock = 42
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.verificationFailed(block: 42)) {
+            try await drive.write(patternImage(blocks: 100))
+        }
+        #expect(!simulator.hasExclusiveAccess)
+    }
+
+    @Test func tooBigForTheDisc() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .cdR, capacityBlocks: 100))
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.doesNotFit(neededBlocks: 101, freeBlocks: 100)) {
+            try await drive.write(patternImage(blocks: 101))
+        }
+        #expect(!simulator.operationCodes.contains(0x2A))
+    }
+
+    @Test func busyDriveIsRetried() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .bdRSequential, capacityBlocks: 20_000))
+        simulator.longWriteEvery = 3
+        let report = try await DiscDrive(transport: simulator).write(patternImage(blocks: 500))
+        #expect(report.verified)
+    }
+
+    @Test func discRemovedDuringBurn() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
+        simulator.removeMediaAfterWrites = 3
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.self) {
+            try await drive.write(patternImage(blocks: 500))
+        }
+        #expect(!simulator.hasExclusiveAccess)
+        #expect(try await drive.state() == .noDisc)
+    }
+
+    @Test func exclusiveAccessRefused() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
+        simulator.refusesExclusiveAccess = true
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.transport(.exclusiveAccessDenied(code: -536870187))) {
+            try await drive.write(patternImage(blocks: 10))
+        }
+    }
+
+    @Test func notBlankIsRefused() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .cdRW, capacityBlocks: 20_000, blockCount: 10))
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.notWritable(.needsErase)) {
+            try await drive.write(patternImage(blocks: 10))
+        }
+    }
+
+    @Test func simulatedBurnRecordsNothing() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .cdR, capacityBlocks: 20_000))
+        let drive = DiscDrive(transport: simulator)
+        let report = try await drive.write(patternImage(blocks: 50), options: WriteOptions(simulate: true))
+        #expect(report.simulated)
+        #expect(!report.verified)
+        #expect(simulator.currentMedia?.blocks.isEmpty == true)
+        #expect(!simulator.operationCodes.contains(0x5B))
+    }
+
+    @Test func simulationNeedsSupportingMedia() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.simulationUnsupported(.dvdPlusR)) {
+            try await drive.write(patternImage(blocks: 10), options: WriteOptions(simulate: true))
+        }
+    }
+
+    @Test func cancelStopsBeforeWriting() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
+        let drive = DiscDrive(transport: simulator)
+        let task = Task { try await drive.write(patternImage(blocks: 500)) }
+        task.cancel()
+        await #expect(throws: DriveError.cancelled) {
+            try await task.value
+        }
+        #expect(!simulator.hasExclusiveAccess)
+        #expect(!simulator.operationCodes.contains(0x2A))
+    }
+
+    @Test func ejectWhenDone() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
+        _ = try await DiscDrive(transport: simulator).write(patternImage(blocks: 10), options: WriteOptions(ejectWhenDone: true))
+        #expect(simulator.currentMedia == nil)
+    }
+}
+
+@Suite("Erase and eject")
+struct EraseTests {
+    @Test func quickEraseMakesTheDiscBlank() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .cdRW, capacityBlocks: 300_000, blockCount: 500))
+        let drive = DiscDrive(transport: simulator)
+        try await drive.quickErase()
+        #expect(try await discState(drive)?.writability == .blank)
+        #expect(!simulator.hasExclusiveAccess)
+    }
+
+    @Test func eraseRefusesWriteOnceDiscs() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .dvdPlusR, capacityBlocks: 20_000, blockCount: 5))
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.unsupportedMedia(.dvdPlusR)) {
+            try await drive.quickErase()
+        }
+    }
+
+    @Test func eject() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .cdR, capacityBlocks: 1_000))
+        let drive = DiscDrive(transport: simulator)
+        try await drive.eject()
+        #expect(try await drive.state() == .noDisc)
+    }
+}
+
+/// Collects distinct phases in order, from any thread.
+final class PhaseRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var phases: [WritePhase] = []
+
+    func add(_ phase: WritePhase) {
+        lock.lock()
+        defer { lock.unlock() }
+        if phases.last != phase { phases.append(phase) }
+    }
+
+    var seen: [WritePhase] {
+        lock.lock()
+        defer { lock.unlock() }
+        return phases
+    }
+}
