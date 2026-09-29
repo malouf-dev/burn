@@ -355,7 +355,7 @@ int32_t BKMMCDeviceExecute(BKMMCDevice *device,
             // is IOKit's code for a protocol timeout, and the other codes 01h to 05h also stand
             // for failures in the transport.
             SCSIServiceResponse serviceResponse = kSCSIServiceResponse_Request_In_Process;
-            result = (*task)->GetServiceResponse(task, &serviceResponse);
+            result = (*task)->GetSCSIServiceResponse(task, &serviceResponse);
             if (result == kIOReturnSuccess && serviceResponse != kSCSIServiceResponse_TASK_COMPLETE) {
                 result = BKMMC_ERROR_SERVICE_FAILURE;
             }
