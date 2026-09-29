@@ -350,6 +350,16 @@ int32_t BKMMCDeviceExecute(BKMMCDevice *device,
         if (result == kIOReturnSuccess) {
             result = (*task)->ExecuteTaskSync(task, &sense, &status, &transferred);
         }
+        if (result == kIOReturnSuccess) {
+            // A status of 02h means CHECK CONDITION only when the task completed. Otherwise it
+            // is IOKit's code for a protocol timeout, and the other codes 01h to 05h also stand
+            // for failures in the transport.
+            SCSIServiceResponse serviceResponse = kSCSIServiceResponse_Request_In_Process;
+            result = (*task)->GetServiceResponse(task, &serviceResponse);
+            if (result == kIOReturnSuccess && serviceResponse != kSCSIServiceResponse_TASK_COMPLETE) {
+                result = BKMMC_ERROR_SERVICE_FAILURE;
+            }
+        }
         (*task)->Release(task);
     }
 

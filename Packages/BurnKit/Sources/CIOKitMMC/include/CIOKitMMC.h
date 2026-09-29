@@ -22,6 +22,10 @@ extern "C" {
 #define BKMMC_ERROR_QUERY_FAILED (-6)
 /// The SCSI task interface, which writing needs, isn't available for this drive.
 #define BKMMC_ERROR_TASK_UNAVAILABLE (-7)
+/// The command didn't complete: the transport or the drive failed before it returned a status.
+/// `outTaskStatus` then holds IOKit's reason (task timeout, protocol timeout, not responding,
+/// not present or delivery failure).
+#define BKMMC_ERROR_SERVICE_FAILURE (-8)
 /// Returned on platforms without IOKit.
 #define BKMMC_ERROR_UNSUPPORTED (-4)
 
@@ -60,7 +64,8 @@ bool BKMMCDeviceHasExclusiveAccess(const BKMMCDevice *device);
 /// (TEST UNIT READY, INQUIRY, GET CONFIGURATION, READ DISC INFORMATION, READ TRACK INFORMATION,
 /// MODE SENSE (10), READ TOC and tray open or close through START STOP UNIT); anything else
 /// returns BKMMC_ERROR_NEEDS_EXCLUSIVE_ACCESS.
-/// Returns an IOReturn value. 0 means the command was delivered; check `outTaskStatus` for its result.
+/// Returns an IOReturn value or a BKMMC_ERROR code. 0 means the command completed; check
+/// `outTaskStatus` for its result.
 int32_t BKMMCDeviceExecute(BKMMCDevice *device,
                            const uint8_t *cdb,
                            uint8_t cdbLength,

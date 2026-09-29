@@ -125,6 +125,9 @@ public final class IOKitTransport: SCSITransport, @unchecked Sendable {
         if result == BKMMC_ERROR_NEEDS_EXCLUSIVE_ACCESS {
             throw TransportError.needsExclusiveAccess
         }
+        if result == BKMMC_ERROR_SERVICE_FAILURE {
+            throw TransportError.notDelivered(reason: Self.serviceFailureReason(status))
+        }
         guard result == 0 else {
             throw TransportError.ioError(code: result)
         }
@@ -135,5 +138,17 @@ public final class IOKitTransport: SCSITransport, @unchecked Sendable {
         }
         let senseData = status == SCSIStatus.checkCondition.rawValue ? SenseData(bytes: sense) : nil
         return SCSIResponse(status: status, sense: senseData, data: data)
+    }
+
+    /// IOKit's task status codes for a command that didn't complete.
+    static func serviceFailureReason(_ status: UInt8) -> String {
+        switch status {
+        case 0x01: "the command timed out"
+        case 0x02: "the connection to the drive timed out"
+        case 0x03: "the drive stopped responding"
+        case 0x04: "the drive is no longer connected"
+        case 0x05: "the command could not be delivered"
+        default: String(format: "the command failed in transport (status %02Xh)", status)
+        }
     }
 }
