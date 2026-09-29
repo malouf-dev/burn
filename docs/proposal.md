@@ -128,8 +128,8 @@ Everything above the transport is plain Swift. It builds and tests on any platfo
 | DVD-R, DVD-RW (sequential) | Disc-at-once: RESERVE TRACK for the full size, then write. |
 | DVD+R, DVD+R DL | Sequential write, then CLOSE TRACK and close the session or finalise the disc. |
 | BD-R | Sequential write (SRM), then CLOSE TRACK and close the session. |
-| DVD+RW, BD-RE | Overwrite from block 0. Format first if the disc is unformatted. |
 | CD-RW, DVD-RW with data | Quick BLANK first, after the user confirms. |
+| DVD+RW, BD-RE | Not in 0.1. They need formatting and overwriting, planned for 0.2. |
 
 All writes use WRITE(10) in 2,048-byte blocks, followed by SYNCHRONIZE CACHE. Every method needs testing on real drives, and the table will change as we learn.
 
@@ -187,7 +187,7 @@ Packages/BurnKit/
     IOKitTransport/           Swift transport and drive discovery (macOS only)
     burnctl/                  command-line tool for hardware tests
   Tests/
-Burn.xcodeproj, App/          SwiftUI app (from task 7 in section 9.2)
+Burn.xcodeproj, App/          SwiftUI app
 .github/workflows/ci.yml
 ```
 
@@ -205,13 +205,13 @@ An app that opens, sees a disc, and writes files to it with verification.
 
 ### 9.2 Task order
 
-1. Branch, docs, licence and CI. (Done in the first commits.)
-2. MMC commands and parsers with tests, and the simulated drive.
-3. The engine: drive status, write and verify, quick erase, against the simulated drive.
-4. The ISO 9660 + Joliet builder, tested by mounting its output in CI with `hdiutil`.
-5. The IOKit transport and `burnctl`.
-6. First hardware session on the owner's Mac: `burnctl list`, `burnctl status`, then a burn to CD-R and DVD+R.
-7. The SwiftUI app: drive and disc state, adding files, burning with progress, results.
+1. Branch, docs, licence and CI. Done.
+2. MMC commands and parsers with tests, and the simulated drive. Done.
+3. The engine: drive status, write and verify, quick erase, against the simulated drive. Done.
+4. The ISO 9660 + Joliet builder, tested by mounting its output in CI with `hdiutil`. Done.
+5. The IOKit transport and `burnctl`. Written; untested on hardware.
+6. The SwiftUI app: drive and disc state, adding files, burning with progress, results. First version done.
+7. First hardware session on the owner's Mac: `burnctl list`, `burnctl status`, then a burn to CD-R and DVD+R.
 8. Hardware test pass (section 10.3), fixes, then tag `v0.1.0-alpha`.
 
 ### 9.3 Media for 0.1
