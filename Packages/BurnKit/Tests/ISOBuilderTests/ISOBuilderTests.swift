@@ -125,6 +125,12 @@ struct NameTests {
         #expect(Names.joliet(long, isDirectory: true).utf16.count == Names.jolietLimit)
     }
 
+    @Test func jolietNamesAreComposed() {
+        let decomposed = "Cafe\u{301}"
+        #expect(Names.joliet(decomposed, isDirectory: true) == "Caf\u{E9}")
+        #expect(Names.joliet(decomposed, isDirectory: true).unicodeScalars.count == 4)
+    }
+
     @Test func jolietIdentifierIsBigEndianWithVersion() {
         #expect(Names.jolietIdentifier("A", isDirectory: false) == [0x00, 0x41, 0x00, 0x3B, 0x00, 0x31])
         #expect(Names.jolietIdentifier("A", isDirectory: true) == [0x00, 0x41])

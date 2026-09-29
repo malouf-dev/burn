@@ -62,7 +62,7 @@ jobs:
           hdiutil attach -readonly -nobrowse -mountpoint "$MNT" "$RUNNER_TEMP/test.iso"
           mount | grep "$MNT"
           ls -laR "$MNT"
-          diff -r "$SRC" "$MNT/Test Data"
+          python3 scripts/compare-trees.py "$SRC" "$MNT/Test Data"
           hdiutil detach "$MNT"
 
       - name: Simulated burn of the same files

@@ -23,13 +23,10 @@ One folder containing:
 ## Comparing a burned disc with its source
 
 ```sh
-#!/bin/sh
-# Usage: compare.sh /path/to/TestData "/Volumes/DiscName"
-src="$1"; disc="$2"
-( cd "$src"  && find . -type f ! -name '.DS_Store' -print0 | sort -z | xargs -0 shasum -a 256 ) > /tmp/source.sha256
-( cd "$disc" && find . -type f ! -name '.DS_Store' -print0 | sort -z | xargs -0 shasum -a 256 ) > /tmp/disc.sha256
-diff /tmp/source.sha256 /tmp/disc.sha256 && echo "Match"
+python3 scripts/compare-trees.py /path/to/TestData "/Volumes/DiscName/TestData"
 ```
+
+It compares every file's contents, and compares names in composed Unicode form, because macOS can report accented names decomposed.
 
 ## What to record
 

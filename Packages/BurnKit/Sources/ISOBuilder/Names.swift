@@ -34,7 +34,9 @@ enum Names {
     /// Joliet: the real name in UCS-2, with characters Joliet forbids replaced.
     static func joliet(_ name: String, isDirectory: Bool, index: Int = 0) -> String {
         let forbidden: Set<Character> = ["*", "/", ":", ";", "?", "\\"]
-        var cleaned = String(name.map { character -> Character in
+        // Composed (NFC) form, as Windows expects. macOS reads either.
+        let composed = name.precomposedStringWithCanonicalMapping
+        var cleaned = String(composed.map { character -> Character in
             if forbidden.contains(character) { return "_" }
             if let scalar = character.unicodeScalars.first, scalar.value < 0x20 { return "_" }
             return character
