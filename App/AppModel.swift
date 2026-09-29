@@ -232,7 +232,7 @@ final class AppModel {
         outcome = nil
         Task {
             do {
-                try await engine.quickErase()
+                try await engine.erase()
                 finish(Outcome(succeeded: true, title: String(localized: "Disc erased"), detail: ""), log: engine.log)
             } catch {
                 finish(Outcome(succeeded: false, title: String(localized: "The erase failed"), detail: "\(error)"),

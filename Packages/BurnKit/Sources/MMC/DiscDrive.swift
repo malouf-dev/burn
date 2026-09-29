@@ -437,6 +437,32 @@ public actor DiscDrive {
 
     /// Quick-erases a CD-RW or DVD-RW. `progress` receives the drive's progress when it reports it.
     public func quickErase(progress: @escaping @Sendable (Double?) -> Void = { _ in }) async throws {
+        try await erase(.quick) { progress($0.fraction) }
+    }
+
+    public enum EraseMode: Sendable {
+        /// Clears the disc's lead-in only. Takes a minute or so.
+        case quick
+        /// Rewrites the whole disc. Can take an hour.
+        case full
+        /// A quick erase, then a full one if the drive reports the quick one failed.
+        case quickThenFull
+    }
+
+    public struct EraseProgress: Sendable, Equatable {
+        /// True during a full erase.
+        public var full: Bool
+        /// The drive's progress, when it reports it.
+        public var fraction: Double?
+    }
+
+    /// Erases a CD-RW or DVD-RW. `progress` is called with no fraction when a full erase starts,
+    /// then with the drive's progress when it reports it.
+    ///
+    /// Hardware run 11: the drive reported a quick erase of the DVD-RW left by run 7 as failed,
+    /// so `.quickThenFull` goes on to a full erase.
+    public func erase(_ mode: EraseMode = .quickThenFull,
+                      progress: @escaping @Sendable (EraseProgress) -> Void = { _ in }) async throws {
         guard !isBusy else { throw DriveError.busy }
         isBusy = true
         defer { isBusy = false }
@@ -446,12 +472,32 @@ public actor DiscDrive {
 
         try await beginExclusiveAccess()
         do {
-            try await runLong(MMC.blank(quick: true, immediate: true), fallback: MMC.blank(quick: true),
-                              "BLANK", progress: progress)
+            try await blankLocked(mode, progress: progress)
             await endExclusiveAccess()
         } catch {
             await endExclusiveAccess()
             throw error
+        }
+    }
+
+    private func blankLocked(_ mode: EraseMode, progress: @escaping @Sendable (EraseProgress) -> Void) async throws {
+        if mode == .full {
+            try await blank(full: true, progress: progress)
+            return
+        }
+        do {
+            try await blank(full: false, progress: progress)
+        } catch DriveError.commandFailed(_, _, let sense?) where sense.isEraseFailure && mode == .quickThenFull {
+            log.note("The quick erase failed, erasing the whole disc")
+            try await blank(full: true, progress: progress)
+        }
+    }
+
+    private func blank(full: Bool, progress: @escaping @Sendable (EraseProgress) -> Void) async throws {
+        if full { progress(EraseProgress(full: true, fraction: nil)) }
+        try await runLong(MMC.blank(quick: !full, immediate: true), fallback: MMC.blank(quick: !full),
+                          full ? "BLANK (full)" : "BLANK", timeout: full ? 4 * 3600 : 3600) { fraction in
+            progress(EraseProgress(full: full, fraction: fraction))
         }
     }
 
@@ -493,6 +539,7 @@ public actor DiscDrive {
     /// goes with the immediate bit set, then TEST UNIT READY is polled until the drive is ready.
     /// Drives that reject the immediate bit get `fallback` instead.
     private func runLong(_ command: SCSICommand, fallback: SCSICommand, _ operation: String,
+                         timeout: TimeInterval = 3600,
                          progress: @escaping @Sendable (Double?) -> Void) async throws {
         do {
             _ = try await run(command, operation, notReadyRetries: 3000)
@@ -500,7 +547,7 @@ public actor DiscDrive {
             log.note("\(operation): the drive rejected the immediate bit, sending it without")
             _ = try await run(fallback, operation, notReadyRetries: 3000)
         }
-        try await waitUntilReady(progress: progress)
+        try await waitUntilReady(timeout: timeout, progress: progress)
     }
 
     private func waitUntilReady(timeout: TimeInterval = 3600,

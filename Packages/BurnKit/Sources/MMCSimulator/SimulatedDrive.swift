@@ -15,6 +15,8 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         public var closed = false
         /// A close that was cut off part-way, as when the connection reset during it.
         public var closeInterrupted = false
+        /// The drive reports a quick erase of this disc as failed. A full erase works.
+        public var quickEraseFails = false
         /// Written blocks that don't read back. macOS gets stuck reading a disc like this: it
         /// holds the drive, so exclusive access is refused as busy and eject isn't permitted,
         /// unless the drive was taken before the disc went in. Hardware run 9.
@@ -49,6 +51,8 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     private var history: [[UInt8]] = []
     private var writeCount = 0
     private var pendingUnitAttention = false
+    /// Sense data for the next TEST UNIT READY, as when an immediate operation fails.
+    private var pendingSense: SenseData?
 
     /// When set, reads of this block return corrupted data.
     public var corruptReadBlock: UInt32? {
@@ -253,7 +257,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         case 0x28: return read(cdb)
         case 0x35: return synchronizeCache()
         case 0x5B: return closeTrackSession(cdb)
-        case 0xA1: return blank()
+        case 0xA1: return blank(cdb)
         case 0x1B: return startStopUnit(cdb)
         case 0x1E: return .good()
         default: return .check(.invalidCommand)
@@ -272,6 +276,10 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
             let done = Double(total - busyPollsRemaining) / Double(total)
             busyPollsRemaining -= 1
             return .check(SenseData(key: 0x02, asc: 0x04, ascq: 0x07, progress: done))
+        }
+        if let sense = pendingSense {
+            pendingSense = nil
+            return .check(sense)
         }
         if pendingUnitAttention {
             pendingUnitAttention = false
@@ -439,9 +447,16 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         }
     }
 
-    private func blank() -> SCSIResponse {
+    private func blank(_ cdb: [UInt8]) -> SCSIResponse {
         guard var media else { return .check(.mediumNotPresent) }
         guard media.profile.supportsBlank else { return .check(.incompatibleMedium) }
+        let quick = cdb[1] & 0x07 == 0x01
+        if quick && media.quickEraseFails {
+            // Like the real drive: the command is accepted and the failure shows up afterwards.
+            pendingSense = .eraseFailure
+            return .good()
+        }
+        media.quickEraseFails = false
         media.blocks = [:]
         media.nextWritable = 0
         media.closed = false

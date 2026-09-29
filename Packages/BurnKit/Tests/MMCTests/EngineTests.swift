@@ -277,6 +277,24 @@ struct LongOperationTests {
 }
 
 /// Collects reported fractions from any thread.
+/// Collects values from any thread.
+final class Recorder<Value: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var recorded: [Value] = []
+
+    func add(_ value: Value) {
+        lock.lock()
+        defer { lock.unlock() }
+        recorded.append(value)
+    }
+
+    var values: [Value] {
+        lock.lock()
+        defer { lock.unlock() }
+        return recorded
+    }
+}
+
 final class ClosingRecorder: @unchecked Sendable {
     private let lock = NSLock()
     private var recorded: [Double] = []
@@ -366,6 +384,37 @@ struct EraseTests {
         #expect(report.information.status == .complete)
         #expect(report.tracks.count == 1)
         #expect(report.reads.allSatisfy { $0.error == nil })
+        #expect(!simulator.hasExclusiveAccess)
+    }
+
+    // Hardware run 11: a quick erase of the DVD-RW left by run 7 ended in an erase failure.
+    @Test func quickEraseFailureFallsBackToAFullErase() async throws {
+        var media = SimulatedDrive.Media.written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176)
+        media.quickEraseFails = true
+        let simulator = SimulatedDrive(media: media)
+        let drive = DiscDrive(transport: simulator)
+        let recorder = Recorder<DiscDrive.EraseProgress>()
+        try await drive.erase { recorder.add($0) }
+
+        #expect(try await discState(drive)?.writability == .blank)
+        let blanks = simulator.commandHistory.filter { $0.first == 0xA1 }
+        #expect(blanks.map { $0[1] & 0x07 } == [0x01, 0x00])
+        #expect(blanks.allSatisfy { $0[1] & 0x10 != 0 })
+        #expect(recorder.values.contains(DiscDrive.EraseProgress(full: true, fraction: nil)))
+        #expect(!simulator.hasExclusiveAccess)
+    }
+
+    @Test func quickEraseAloneReportsTheFailure() async throws {
+        var media = SimulatedDrive.Media.written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176)
+        media.quickEraseFails = true
+        let simulator = SimulatedDrive(media: media)
+        let drive = DiscDrive(transport: simulator)
+        do {
+            try await drive.erase(.quick)
+            Issue.record("Expected the quick erase to fail")
+        } catch DriveError.commandFailed(_, _, let sense?) {
+            #expect(sense.isEraseFailure)
+        }
         #expect(!simulator.hasExclusiveAccess)
     }
 

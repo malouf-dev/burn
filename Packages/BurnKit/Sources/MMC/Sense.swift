@@ -69,6 +69,7 @@ public struct SenseData: Sendable, Equatable, CustomStringConvertible {
     public static let incompatibleMedium = SenseData(key: 0x05, asc: 0x30, ascq: 0x00)
     public static let unrecoveredReadError = SenseData(key: 0x03, asc: 0x11, ascq: 0x00)
     public static let writeError = SenseData(key: 0x03, asc: 0x0C, ascq: 0x00)
+    public static let eraseFailure = SenseData(key: 0x03, asc: 0x51, ascq: 0x00)
 
     /// True when the drive is busy and the command should be retried shortly.
     public var isTransientNotReady: Bool {
@@ -78,6 +79,9 @@ public struct SenseData: Sendable, Equatable, CustomStringConvertible {
     public var isNoMedium: Bool { key == 0x02 && asc == 0x3A }
 
     public var isUnitAttention: Bool { key == 0x06 }
+
+    /// The drive couldn't erase the disc.
+    public var isEraseFailure: Bool { key == 0x03 && asc == 0x51 }
 
     public var keyName: String {
         switch key {

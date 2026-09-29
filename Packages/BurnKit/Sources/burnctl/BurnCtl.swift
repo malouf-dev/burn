@@ -15,7 +15,7 @@ struct BurnCtl {
       burnctl status [--drive N]
       burnctl make-iso PATH... --output FILE [--name NAME]
       burnctl burn PATH... [--drive N] [--name NAME] [--simulate] [--no-verify] [--eject] [--yes] [--log FILE]
-      burnctl erase [--drive N] [--yes] [--log FILE]
+      burnctl erase [--drive N] [--full] [--yes] [--log FILE]
       burnctl inspect [--drive N] [--log FILE]
       burnctl eject [--drive N]
       burnctl simulate-burn PATH... [--profile cd-r|cd-rw|dvd-r|dvd+r|dvd+r-dl|bd-r] [--name NAME]
@@ -154,6 +154,7 @@ struct BurnCtl {
     static func erase(_ arguments: inout Arguments) async throws {
         let drive = try openDrive(arguments.option("--drive"))
         let yes = arguments.flag("--yes")
+        let full = arguments.flag("--full")
         let logPath = arguments.option("--log")
         let state = try await discStateTakingDriveIfEmpty(drive, logPath: logPath)
         print("Disc: \(describe(state))")
@@ -165,20 +166,32 @@ struct BurnCtl {
             }
         }
         do {
-            printStatusLine("Erasing…")
-            try await drive.quickErase { fraction in
-                if let fraction {
-                    printStatusLine("Erasing " + String(format: "%5.1f%%", fraction * 100))
-                }
+            printStatusLine(full ? "Erasing the whole disc…" : "Erasing…")
+            try await drive.erase(full ? .full : .quickThenFull) { progress in
+                printEraseProgress(progress, quickFirst: !full)
             }
             print("")
             await drive.releaseDrive()
             print("Erased.")
             try writeLog(drive.log, to: logPath)
         } catch {
+            print("")
             await drive.releaseDrive()
             try fail(error, drive: drive, logPath: logPath)
         }
+    }
+
+    static func printEraseProgress(_ progress: DiscDrive.EraseProgress, quickFirst: Bool) {
+        let label = progress.full ? "Erasing the whole disc" : "Erasing"
+        guard let fraction = progress.fraction else {
+            if progress.full && quickFirst {
+                print("")
+                print("The drive reported the quick erase as failed. Erasing the whole disc, which can take an hour.")
+            }
+            printStatusLine(label + "…")
+            return
+        }
+        printStatusLine(label + " " + String(format: "%5.1f%%", fraction * 100))
     }
 
     /// Prints everything the drive reports about the disc and tries to read a few key blocks.
