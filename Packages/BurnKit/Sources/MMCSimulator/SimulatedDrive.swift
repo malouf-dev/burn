@@ -15,6 +15,10 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         public var closed = false
         /// A close that was cut off part-way, as when the connection reset during it.
         public var closeInterrupted = false
+        /// Written blocks that don't read back. macOS gets stuck reading a disc like this: it
+        /// holds the drive, so exclusive access is refused as busy and eject isn't permitted,
+        /// unless the drive was taken before the disc went in. Hardware run 9.
+        public var unreadable = false
         public var reserved: UInt32?
 
         public init(profile: MediaProfile, capacityBlocks: UInt32) {
@@ -176,6 +180,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     public func beginExclusiveAccess() throws {
         try withLock {
             if _refusesExclusiveAccess { throw TransportError.exclusiveAccessDenied(code: -536870187) }
+            if !exclusive, media?.unreadable == true { throw TransportError.exclusiveAccessDenied(code: -536870187) }
             if _exclusiveAccessRefusals > 0 {
                 _exclusiveAccessRefusals -= 1
                 throw TransportError.exclusiveAccessDenied(code: -536870187)
@@ -202,7 +207,8 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
             throw TransportError.needsExclusiveAccess
         }
 
-        if _isMounted && !exclusive && command.operationCode == 0x1B && cdb[4] & 0x03 == 0x02 {
+        if (_isMounted || media?.unreadable == true) && !exclusive && command.operationCode == 0x1B
+            && cdb[4] & 0x03 == 0x02 {
             // IOKit's kIOReturnNotPermitted, as for a real drive with a mounted disc.
             throw TransportError.ioError(code: Int32(bitPattern: 0xE000_02E2))
         }
@@ -395,6 +401,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         let lba = cdb.uint32(at: 2)
         let blocks = UInt32(cdb.uint16(at: 7))
         guard lba + blocks <= media.nextWritable else { return .check(.lbaOutOfRange) }
+        if media.unreadable { return .check(.unrecoveredReadError) }
         var result: [UInt8] = []
         result.reserveCapacity(Int(blocks) * MMC.blockSize)
         for block in lba..<(lba + blocks) {
@@ -439,6 +446,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         media.nextWritable = 0
         media.closed = false
         media.closeInterrupted = false
+        media.unreadable = false
         media.reserved = nil
         self.media = media
         return .good()

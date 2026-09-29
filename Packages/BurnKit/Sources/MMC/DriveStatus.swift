@@ -34,6 +34,22 @@ public struct DiscState: Sendable, Equatable {
     public var isUnfinished: Bool { lastSessionState == .incomplete || lastSessionState == .damaged }
 }
 
+/// What `DiscDrive.inspect()` found.
+public struct DiscReport: Sendable {
+    public struct BlockRead: Sendable {
+        public var block: UInt32
+        /// Nil when the block read back.
+        public var error: String?
+        public var duration: TimeInterval
+    }
+
+    public var disc: DiscState
+    public var information: DiscInformation
+    public var tracks: [TrackInformation]
+    public var capacity: CapacityData?
+    public var reads: [BlockRead]
+}
+
 /// What the app can do with the disc in 0.1.
 public enum Writability: Sendable, Equatable {
     /// A blank disc this engine can write.

@@ -16,12 +16,15 @@ struct BurnCtl {
       burnctl make-iso PATH... --output FILE [--name NAME]
       burnctl burn PATH... [--drive N] [--name NAME] [--simulate] [--no-verify] [--eject] [--yes] [--log FILE]
       burnctl erase [--drive N] [--yes] [--log FILE]
+      burnctl inspect [--drive N] [--log FILE]
       burnctl eject [--drive N]
       burnctl simulate-burn PATH... [--profile cd-r|cd-rw|dvd-r|dvd+r|dvd+r-dl|bd-r] [--name NAME]
 
     PATH is a file or folder to put on the disc, or a single .iso image to burn as it is.
     A single folder's contents go at the root of the disc, which is named after the folder.
     Drives are numbered from 1, in the order `burnctl list` shows them.
+    Run erase or inspect with the drive empty to take the drive first, then insert the disc
+    when asked. macOS then never reads the disc, which reaches discs it gets stuck on.
     """
 
     static func main() async {
@@ -38,6 +41,7 @@ struct BurnCtl {
             case "make-iso": try makeISO(&arguments)
             case "burn": try await burn(&arguments)
             case "erase": try await erase(&arguments)
+            case "inspect": try await inspect(&arguments)
             case "eject": try await eject(&arguments)
             case "simulate-burn": try await simulateBurn(&arguments)
             case "help", "-h", "--help":
@@ -151,10 +155,11 @@ struct BurnCtl {
         let drive = try openDrive(arguments.option("--drive"))
         let yes = arguments.flag("--yes")
         let logPath = arguments.option("--log")
-        let state = try await drive.state()
+        let state = try await discStateTakingDriveIfEmpty(drive, logPath: logPath)
         print("Disc: \(describe(state))")
         if !yes {
             guard confirm("Erase this disc? Everything on it will be lost. Type yes to continue: ") else {
+                await drive.releaseDrive()
                 print("Cancelled.")
                 return
             }
@@ -167,14 +172,74 @@ struct BurnCtl {
                 }
             }
             print("")
+            await drive.releaseDrive()
             print("Erased.")
             try writeLog(drive.log, to: logPath)
         } catch {
-            let path = try writeLog(drive.log, to: logPath ?? defaultLogPath())
-            printError("\(error)")
-            if let path { printError("Diagnostic log: \(path)") }
-            exit(1)
+            await drive.releaseDrive()
+            try fail(error, drive: drive, logPath: logPath)
         }
+    }
+
+    /// Prints everything the drive reports about the disc and tries to read a few key blocks.
+    static func inspect(_ arguments: inout Arguments) async throws {
+        let drive = try openDrive(arguments.option("--drive"))
+        let logPath = arguments.option("--log")
+        let state = try await discStateTakingDriveIfEmpty(drive, logPath: logPath)
+        print("Disc: \(describe(state))")
+        do {
+            let report = try await drive.inspect()
+            await drive.releaseDrive()
+            let info = report.information
+            print("Disc information: status \(info.status), last session \(info.lastSessionState), "
+                  + "erasable \(info.isErasable), sessions \(info.sessions), "
+                  + "tracks \(info.firstTrackInLastSession)-\(info.lastTrackInLastSession)")
+            for track in report.tracks {
+                print("Track \(track.track): start \(track.start), size \(track.size), free \(track.freeBlocks), "
+                      + "blank \(track.isBlank), reserved \(track.isReserved), "
+                      + "next writable \(track.nextWritableValid ? String(track.nextWritable) : "none")")
+            }
+            if let capacity = report.capacity {
+                print("Capacity: last block \(capacity.lastBlock), block size \(capacity.blockLength)")
+            }
+            for read in report.reads {
+                let time = String(format: "%.1fs", read.duration)
+                print("Read block \(read.block): \(read.error.map { "failed after \(time): \($0)" } ?? "OK in \(time)")")
+            }
+            try writeLog(drive.log, to: logPath)
+        } catch {
+            await drive.releaseDrive()
+            try fail(error, drive: drive, logPath: logPath)
+        }
+    }
+
+    /// With a disc in, returns its state. With the drive empty, takes the drive first and waits
+    /// for a disc, so macOS never reads it. The caller releases the drive.
+    static func discStateTakingDriveIfEmpty(_ drive: DiscDrive, logPath: String?) async throws -> DriveState {
+        do {
+            let state = try await drive.state()
+            guard state == .noDisc else { return state }
+            try await drive.holdDrive()
+            print("The drive is ours, so macOS won't read the next disc. Insert the disc now.")
+            return try await drive.waitForDisc()
+        } catch {
+            await drive.releaseDrive()
+            try fail(error, drive: drive, logPath: logPath)
+        }
+    }
+
+    static func fail(_ error: Error, drive: DiscDrive, logPath: String?) throws -> Never {
+        let path = try writeLog(drive.log, to: logPath ?? defaultLogPath())
+        printError("\(error)")
+        if case DriveError.transport(.exclusiveAccessDenied) = error {
+            printError("""
+                macOS is holding the drive, perhaps stuck reading this disc. Eject the disc (unplug the \
+                drive if the button doesn't respond). Then run this command again with the drive empty \
+                and insert the disc when asked.
+                """)
+        }
+        if let path { printError("Diagnostic log: \(path)") }
+        exit(1)
     }
 
     static func eject(_ arguments: inout Arguments) async throws {

@@ -317,6 +317,58 @@ struct EraseTests {
         #expect(!disc.isUnfinished)
     }
 
+    // Hardware run 9: macOS got stuck reading a DVD-RW and held the drive, so erase and eject failed.
+    @Test func aDiscMacOSIsStuckOnBlocksTheDrive() async throws {
+        var media = SimulatedDrive.Media.written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176)
+        media.unreadable = true
+        let simulator = SimulatedDrive(media: media)
+        let drive = DiscDrive(transport: simulator, pollInterval: .milliseconds(1))
+        await #expect(throws: DriveError.transport(.exclusiveAccessDenied(code: -536870187))) {
+            try await drive.quickErase()
+        }
+        await #expect(throws: DriveError.self) { try await drive.eject() }
+        #expect(simulator.currentMedia != nil)
+    }
+
+    @Test func takingTheDriveFirstReachesADiscMacOSIsStuckOn() async throws {
+        let simulator = SimulatedDrive()
+        let drive = DiscDrive(transport: simulator, pollInterval: .milliseconds(1))
+        #expect(try await drive.state() == .noDisc)
+        try await drive.holdDrive()
+
+        var media = SimulatedDrive.Media.written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176)
+        media.unreadable = true
+        simulator.insert(media)
+        let state = try await drive.waitForDisc(timeout: 5)
+        guard case .disc(let disc) = state else {
+            Issue.record("Expected a disc, got \(state)")
+            return
+        }
+        #expect(disc.writability == .needsErase)
+
+        let report = try await drive.inspect()
+        #expect(report.capacity?.lastBlock == 175)
+        #expect(report.reads.map(\.block) == [0, 16, 175])
+        #expect(report.reads.allSatisfy { $0.error != nil })
+        #expect(simulator.hasExclusiveAccess)
+
+        try await drive.quickErase()
+        #expect(simulator.hasExclusiveAccess)
+        await drive.releaseDrive()
+        #expect(!simulator.hasExclusiveAccess)
+        #expect(try await discState(drive)?.writability == .blank)
+    }
+
+    @Test func inspectReadsBackAGoodDisc() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .dvdRSequential, capacityBlocks: 2_298_496, blockCount: 176))
+        let drive = DiscDrive(transport: simulator)
+        let report = try await drive.inspect()
+        #expect(report.information.status == .complete)
+        #expect(report.tracks.count == 1)
+        #expect(report.reads.allSatisfy { $0.error == nil })
+        #expect(!simulator.hasExclusiveAccess)
+    }
+
     @Test func eraseRefusesWriteOnceDiscs() async throws {
         let simulator = SimulatedDrive(media: .written(profile: .dvdPlusR, capacityBlocks: 20_000, blockCount: 5))
         let drive = DiscDrive(transport: simulator)

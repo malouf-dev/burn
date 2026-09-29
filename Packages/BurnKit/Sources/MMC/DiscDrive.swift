@@ -73,6 +73,9 @@ public actor DiscDrive {
     /// How long to wait between polls while the drive finishes a long operation.
     private let pollInterval: Duration
 
+    /// True between `holdDrive()` and `releaseDrive()`.
+    private var holdingDrive = false
+
     public init(transport: any SCSITransport, log: CommandLog = CommandLog(), pollInterval: Duration = .seconds(1)) {
         self.transport = transport
         self.log = log
@@ -87,6 +90,44 @@ public actor DiscDrive {
             throw DriveError.commandFailed(operation: "INQUIRY", status: 0, sense: nil)
         }
         return inquiry
+    }
+
+    // MARK: - Holding the drive
+
+    /// Takes the drive and keeps it until `releaseDrive()`. Burns, erases and ejects in between
+    /// use it as it is. Taken while the drive is empty, it stops macOS from reading the next disc
+    /// put in, which is the way to reach a disc that macOS gets stuck reading.
+    public func holdDrive() async throws {
+        guard !holdingDrive else { return }
+        try await beginExclusiveAccess()
+        holdingDrive = true
+    }
+
+    /// Gives the drive back to macOS after `holdDrive()`.
+    public func releaseDrive() async {
+        guard holdingDrive else { return }
+        holdingDrive = false
+        await endExclusiveAccess()
+    }
+
+    public var isHoldingDrive: Bool { holdingDrive }
+
+    /// Waits for a disc to be put in and for the drive to finish reading it.
+    public func waitForDisc(timeout: TimeInterval = 300) async throws -> DriveState {
+        guard !isBusy else { throw DriveError.busy }
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            let response = try await perform(MMC.testUnitReady())
+            if response.isGood { break }
+            if let sense = response.sense, sense.isNoMedium || sense.isTransientNotReady || sense.isUnitAttention {
+                try? await Task.sleep(for: pollInterval)
+                continue
+            }
+            break
+        }
+        let state = try await readState()
+        if state == .noDisc { throw DriveError.noDisc }
+        return state
     }
 
     /// Reads the drive and disc state. Throws `.busy` while a burn or erase is running.
@@ -340,6 +381,58 @@ public actor DiscDrive {
         }
     }
 
+    // MARK: - Inspecting
+
+    /// Everything the drive reports about the disc, and whether a few key blocks read back:
+    /// the first block, the volume descriptor at block 16 and the last block. For discs that
+    /// won't mount.
+    public func inspect() async throws -> DiscReport {
+        guard !isBusy else { throw DriveError.busy }
+        isBusy = true
+        defer { isBusy = false }
+
+        guard case .disc(let disc) = try await readState() else { throw DriveError.noDisc }
+        let infoBytes = try await run(MMC.readDiscInformation(), "READ DISC INFORMATION")
+        guard let info = DiscInformation(bytes: infoBytes) else {
+            throw DriveError.commandFailed(operation: "READ DISC INFORMATION", status: 0, sense: nil)
+        }
+        var tracks: [TrackInformation] = []
+        if info.lastTrackInLastSession > 0 {
+            for number in 1...min(info.lastTrackInLastSession, 99) {
+                let bytes = try await run(MMC.readTrackInformation(track: UInt32(number)), "READ TRACK INFORMATION")
+                if let track = TrackInformation(bytes: bytes) { tracks.append(track) }
+            }
+        }
+
+        try await beginExclusiveAccess()
+        var capacity: CapacityData?
+        var reads: [DiscReport.BlockRead] = []
+        do {
+            let capacityBytes = try await run(MMC.readCapacity(), "READ CAPACITY")
+            capacity = CapacityData(bytes: capacityBytes)
+            var blocks: [UInt32] = [0, 16]
+            if let last = capacity?.lastBlock, last > 16 { blocks.append(last) }
+            for block in blocks {
+                var command = MMC.read10(lba: block, blocks: 1)
+                command.timeout = 30
+                let started = Date()
+                var failure: String?
+                do {
+                    _ = try await run(command, "READ", notReadyRetries: 0)
+                } catch {
+                    failure = "\(error)"
+                }
+                reads.append(DiscReport.BlockRead(block: block, error: failure,
+                                                  duration: Date().timeIntervalSince(started)))
+            }
+            await endExclusiveAccess()
+        } catch {
+            await endExclusiveAccess()
+            throw error
+        }
+        return DiscReport(disc: disc, information: info, tracks: tracks, capacity: capacity, reads: reads)
+    }
+
     // MARK: - Erase and eject
 
     /// Quick-erases a CD-RW or DVD-RW. `progress` receives the drive's progress when it reports it.
@@ -489,6 +582,7 @@ public actor DiscDrive {
     /// Takes exclusive access, retrying while macOS is still busy with the disc, as it is for a
     /// moment after an unmount or while it reads a newly inserted disc.
     private func beginExclusiveAccess() async throws {
+        guard !holdingDrive else { return }
         var attempts = 0
         while true {
             do {
@@ -523,6 +617,7 @@ public actor DiscDrive {
     }
 
     private func endExclusiveAccess() async {
+        guard !holdingDrive else { return }
         let transport = self.transport
         let log = self.log
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
