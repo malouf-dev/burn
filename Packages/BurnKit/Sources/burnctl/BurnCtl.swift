@@ -78,9 +78,10 @@ struct BurnCtl {
 
     static func makeISO(_ arguments: inout Arguments) throws {
         guard let output = arguments.option("--output") else { throw CLIError("make-iso needs --output FILE") }
+        let nameOption = arguments.option("--name")
         let paths = arguments.remaining()
         guard !paths.isEmpty else { throw CLIError("make-iso needs at least one file or folder") }
-        let name = arguments.option("--name") ?? defaultName(for: paths)
+        let name = nameOption ?? defaultName(for: paths)
         let blocks = try buildImage(paths: paths, name: name, output: URL(fileURLWithPath: output))
         print("Wrote \(output): \(blocks) blocks (\(formatBytes(Int64(blocks) * 2048)))")
     }
