@@ -144,10 +144,42 @@ struct BurnCtl {
             try writeLog(drive.log, to: logPath)
         } catch {
             print("")
-            let path = try writeLog(drive.log, to: logPath ?? defaultLogPath())
             printError("\(error)")
+            if await drive.isHoldingDrive {
+                await settleFailedBurn(drive, rewritable: disc.profile.isRewritable, askToErase: !yes)
+            }
+            let path = try writeLog(drive.log, to: logPath ?? defaultLogPath())
             if let path { printError("Diagnostic log: \(path)") }
             exit(1)
+        }
+    }
+
+    /// After a burn fails part-way, burnctl still has the drive. Erase or eject the disc before
+    /// giving the drive back, so macOS never gets stuck reading it.
+    static func settleFailedBurn(_ drive: DiscDrive, rewritable: Bool, askToErase: Bool) async {
+        print("The disc may not read back, and macOS can get stuck reading a disc like that. "
+              + "burnctl has kept the drive so macOS can't see it yet.")
+        let erase = rewritable && askToErase
+            && confirm("Erase the disc now so it can be used again? Type yes to erase, anything else to eject it: ")
+        do {
+            let result = try await drive.settleAfterFailedBurn(erase: erase) { progress in
+                printEraseProgress(progress, quickFirst: true)
+            }
+            if erase { print("") }
+            switch result {
+            case .erased:
+                print("Erased. The disc is blank and safe to put back in.")
+            case .ejected:
+                print("Ejected. Don't put it back in as it is: macOS may get stuck reading it.")
+                print(rewritable
+                      ? "To reuse it, run `burnctl erase` with the drive empty and insert it when asked."
+                      : "To check it, run `burnctl inspect` with the drive empty and insert it when asked.")
+            case .nothingNeeded:
+                print("The disc was untouched or gone. The drive is back with macOS.")
+            }
+        } catch {
+            print("")
+            printError("Couldn't settle the disc: \(error)")
         }
     }
 

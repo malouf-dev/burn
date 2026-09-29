@@ -73,8 +73,12 @@ public actor DiscDrive {
     /// How long to wait between polls while the drive finishes a long operation.
     private let pollInterval: Duration
 
-    /// True between `holdDrive()` and `releaseDrive()`.
+    /// True between `holdDrive()` and `releaseDrive()`, and after a burn fails once it has
+    /// changed the disc.
     private var holdingDrive = false
+
+    /// Set once the current burn has changed the disc.
+    private var discTouched = false
 
     public init(transport: any SCSITransport, log: CommandLog = CommandLog(), pollInterval: Duration = .seconds(1)) {
         self.transport = transport
@@ -210,6 +214,7 @@ public actor DiscDrive {
         }
         log.note("Writing \(imageBlocks) blocks (\(paddedBlocks) with padding) to \(disc.profile.name) using \(method)")
 
+        discTouched = false
         try await beginExclusiveAccess()
         do {
             let report = try await writeLocked(image, disc: disc, method: method, paddedBlocks: paddedBlocks,
@@ -218,7 +223,14 @@ public actor DiscDrive {
             return report
         } catch {
             _ = try? await perform(MMC.preventAllowMediumRemoval(prevent: false))
-            await endExclusiveAccess()
+            if discTouched {
+                // The disc may not read back, and macOS can get stuck reading a disc like that
+                // (hardware run 9). Keep the drive until settleAfterFailedBurn.
+                if !holdingDrive { log.note("Keeping the drive: the burn failed after it changed the disc") }
+                holdingDrive = true
+            } else {
+                await endExclusiveAccess()
+            }
             throw error
         }
     }
@@ -236,6 +248,7 @@ public actor DiscDrive {
         case .dvdMinusDiscAtOnce:
             try await setWriteParameters(WriteParameters(writeType: .sessionAtOnce, testWrite: options.simulate,
                                                          multiSession: 0, trackMode: 5, dataBlockType: 8))
+            if !options.simulate { discTouched = true }
             _ = try await run(MMC.reserveTrack(blocks: UInt32(paddedBlocks)), "RESERVE TRACK")
         case .dvdPlusR, .dvdPlusRDualLayer, .bluRayR:
             break
@@ -272,6 +285,7 @@ public actor DiscDrive {
                 data = fromImage > 0 ? try readImage(image, block: written, count: fromImage) : []
                 data += [UInt8](repeating: 0, count: (count - fromImage) * MMC.blockSize)
             }
+            if !options.simulate { discTouched = true }
             _ = try await run(MMC.write10(lba: startBlock + UInt32(written), data: data), "WRITE",
                               notReadyRetries: 3000)
             written += count
@@ -378,6 +392,48 @@ public actor DiscDrive {
             return try image.read(block: block, count: count)
         } catch {
             throw DriveError.image("Couldn't read the image: \(error)")
+        }
+    }
+
+    // MARK: - After a failed burn
+
+    public enum Recovery: Sendable, Equatable {
+        /// The disc was still blank or had been taken out, so it was left as it was.
+        case nothingNeeded
+        /// The rewritable disc was erased and is blank.
+        case erased
+        /// The disc was ejected. It may not read back.
+        case ejected
+    }
+
+    /// A burn that fails after changing the disc keeps the drive, so macOS never reads a disc
+    /// it may get stuck on. This puts the disc in a safe state and gives the drive back:
+    /// a rewritable disc is erased when `erase` is true, anything else is ejected.
+    public func settleAfterFailedBurn(erase: Bool,
+                                      progress: @escaping @Sendable (EraseProgress) -> Void = { _ in })
+        async throws -> Recovery {
+        guard holdingDrive else { return .nothingNeeded }
+        guard !isBusy else { throw DriveError.busy }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            guard case .disc(let disc) = try await readState(), disc.writability != .blank else {
+                await releaseDrive()
+                return .nothingNeeded
+            }
+            if erase && disc.profile.supportsBlank {
+                try await blankLocked(.quickThenFull, progress: progress)
+                await releaseDrive()
+                return .erased
+            }
+            _ = try await run(MMC.startStopUnit(load: false), "EJECT")
+            await releaseDrive()
+            return .ejected
+        } catch {
+            // Get the disc out before macOS can read it.
+            _ = try? await run(MMC.startStopUnit(load: false), "EJECT")
+            await releaseDrive()
+            throw error
         }
     }
 

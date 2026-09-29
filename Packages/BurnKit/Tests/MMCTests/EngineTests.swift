@@ -135,8 +135,37 @@ struct WriteTests {
         await #expect(throws: DriveError.verificationFailed(block: 42)) {
             try await drive.write(patternImage(blocks: 100))
         }
+        // The disc may not read back, so the drive stays out of macOS's hands until it's settled.
+        #expect(await drive.isHoldingDrive)
+        #expect(simulator.hasExclusiveAccess)
+        #expect(try await drive.settleAfterFailedBurn(erase: true) == .ejected)
+        #expect(!simulator.hasExclusiveAccess)
+        #expect(simulator.currentMedia == nil)
+    }
+
+    @Test func failedBurnOnARewritableDiscIsErased() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdRWSequential, capacityBlocks: 2_297_888))
+        simulator.corruptReadBlock = 5
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.verificationFailed(block: 5)) {
+            try await drive.write(patternImage(blocks: 100))
+        }
+        #expect(simulator.hasExclusiveAccess)
+        #expect(try await drive.settleAfterFailedBurn(erase: true) == .erased)
+        #expect(!simulator.hasExclusiveAccess)
+        #expect(try await discState(drive)?.writability == .blank)
+    }
+
+    @Test func failedBurnOnARewritableDiscCanBeEjectedInstead() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdRWSequential, capacityBlocks: 2_297_888))
+        simulator.corruptReadBlock = 5
+        let drive = DiscDrive(transport: simulator)
+        _ = try? await drive.write(patternImage(blocks: 100))
+        #expect(try await drive.settleAfterFailedBurn(erase: false) == .ejected)
+        #expect(simulator.currentMedia == nil)
         #expect(!simulator.hasExclusiveAccess)
     }
+
 
     @Test func tooBigForTheDisc() async throws {
         let simulator = SimulatedDrive(media: .init(profile: .cdR, capacityBlocks: 100))
@@ -161,6 +190,7 @@ struct WriteTests {
         await #expect(throws: DriveError.self) {
             try await drive.write(patternImage(blocks: 500))
         }
+        #expect(try await drive.settleAfterFailedBurn(erase: true) == .nothingNeeded)
         #expect(!simulator.hasExclusiveAccess)
         #expect(try await drive.state() == .noDisc)
     }
@@ -218,6 +248,8 @@ struct WriteTests {
         await #expect(throws: DriveError.cancelled) {
             try await task.value
         }
+        // Nothing reached the disc, so the drive goes straight back to macOS.
+        #expect(!(await drive.isHoldingDrive))
         #expect(!simulator.hasExclusiveAccess)
         #expect(!simulator.operationCodes.contains(0x2A))
     }

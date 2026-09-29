@@ -207,11 +207,14 @@ final class AppModel {
                                detail: String(localized: "\(ByteCountFormatter.string(fromByteCount: Int64(report.imageBlocks) * 2048, countStyle: .file)) written to \(report.profile.name) in \(Int(report.duration)) seconds.")),
                        log: engine.log)
             } catch DriveError.cancelled, is CancellationError {
+                let settled = await settleDisc(engine)
                 finish(Outcome(succeeded: false, title: String(localized: "Burn cancelled"),
-                               detail: String(localized: "A write-once disc can't be used after a cancelled burn.")),
+                               detail: settled ?? String(localized: "A write-once disc can't be used after a cancelled burn.")),
                        log: engine.log)
             } catch {
-                finish(Outcome(succeeded: false, title: String(localized: "The burn failed"), detail: "\(error)"),
+                let settled = await settleDisc(engine)
+                finish(Outcome(succeeded: false, title: String(localized: "The burn failed"),
+                               detail: ["\(error)", settled].compactMap { $0 }.joined(separator: "\n\n")),
                        log: engine.log)
             }
         }
@@ -219,6 +222,24 @@ final class AppModel {
 
     func cancel() {
         burnTask?.cancel()
+    }
+
+    /// A burn that fails after changing the disc leaves the engine holding the drive, so macOS
+    /// can't get stuck reading a broken disc. Erase a rewritable disc, eject anything else.
+    private func settleDisc(_ engine: DiscDrive) async -> String? {
+        guard await engine.isHoldingDrive else { return nil }
+        do {
+            switch try await engine.settleAfterFailedBurn(erase: true) {
+            case .erased:
+                return String(localized: "The disc was erased so it can be used again.")
+            case .ejected:
+                return String(localized: "The disc was ejected. Don't put it back in: macOS may get stuck reading it.")
+            case .nothingNeeded:
+                return nil
+            }
+        } catch {
+            return String(localized: "The disc couldn't be erased or ejected. Unplug the drive to take it out.")
+        }
     }
 
     var isWriteOnceBurn: Bool {
