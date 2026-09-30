@@ -77,7 +77,10 @@ public final class CommandLog: @unchecked Sendable {
             var line = "\(time)  CDB \(entry.cdb.hexString)  data \(entry.dataLength)"
             line += String(format: "  %.3fs", entry.duration)
             if let status = entry.status { line += "  status \(hex(status))" }
-            if let sense = entry.sense { line += "  sense \(sense)" }
+            if let sense = entry.sense {
+                line += "  sense \(sense)"
+                if let progress = sense.progress { line += String(format: " (progress %.1f%%)", progress * 100) }
+            }
             if let error = entry.error { line += "  error \(error)" }
             return line
         }.joined(separator: "\n")

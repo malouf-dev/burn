@@ -450,6 +450,15 @@ struct EraseTests {
         #expect(!simulator.hasExclusiveAccess)
     }
 
+    // Hardware run 13: the log showed the drive was busy but not how far it had got.
+    @Test func logShowsTheDrivesProgress() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176))
+        simulator.busyPollsAfterLongCommand = 4
+        let drive = DiscDrive(transport: simulator, pollInterval: .milliseconds(1))
+        try await drive.erase(.full)
+        #expect(drive.log.render().contains("(progress 50.0%)"))
+    }
+
     @Test func eraseRefusesWriteOnceDiscs() async throws {
         let simulator = SimulatedDrive(media: .written(profile: .dvdPlusR, capacityBlocks: 20_000, blockCount: 5))
         let drive = DiscDrive(transport: simulator)
