@@ -118,11 +118,11 @@ struct BurnView: View {
                         DisclosureGroup {
                             FolderContents(url: item.url)
                         } label: {
-                            ItemRow(name: item.name, isDirectory: true, size: item.size)
+                            ItemRow(item: item)
                         }
                         .tag(item.id)
                     } else {
-                        ItemRow(name: item.name, isDirectory: false, size: item.size)
+                        ItemRow(item: item)
                             .tag(item.id)
                     }
                 }
@@ -152,6 +152,15 @@ struct BurnView: View {
 
             CapacityView(model: model)
 
+            if let reason = model.burnBlocker, model.activity == .idle {
+                Text(reason)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .frame(maxWidth: 220, alignment: .trailing)
+                    .multilineTextAlignment(.trailing)
+            }
+
             Toggle("Eject when done", isOn: $model.ejectWhenDone)
                 .toggleStyle(.checkbox)
 
@@ -178,6 +187,7 @@ struct DiscHeader: View {
                 .font(.title3.weight(.semibold))
                 .frame(maxWidth: 260)
                 .accessibilityLabel("Disc name")
+                .help("Up to \(AppModel.discNameLimit) characters, the most this disc format holds for a name.")
             Spacer()
             Text("ISO 9660 + Joliet")
                 .font(.caption)
@@ -199,6 +209,23 @@ struct ItemRow: View {
     let isDirectory: Bool
     let size: Int64?
     var measuring = true
+    var problem: String?
+
+    init(name: String, isDirectory: Bool, size: Int64?, measuring: Bool = true) {
+        self.name = name
+        self.isDirectory = isDirectory
+        self.size = size
+        self.measuring = measuring
+    }
+
+    init(item: DiscItem) {
+        self.init(name: item.name, isDirectory: item.isDirectory, size: item.size)
+        if item.unreadable {
+            problem = String(localized: "Can't read")
+        } else if item.hasFileTooLarge {
+            problem = String(localized: "4 GB or larger")
+        }
+    }
 
     var body: some View {
         HStack {
@@ -209,7 +236,10 @@ struct ItemRow: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
             Spacer()
-            if let size {
+            if let problem {
+                Text(problem)
+                    .foregroundStyle(.red)
+            } else if let size {
                 Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
                     .foregroundStyle(.secondary)
                     .monospacedDigit()

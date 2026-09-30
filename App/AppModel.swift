@@ -11,9 +11,17 @@ struct DiscItem: Identifiable, Hashable {
     let id = UUID()
     let url: URL
     let isDirectory: Bool
+    /// Total bytes, or nil while it's being measured.
     var size: Int64?
+    /// The largest single file, which must be under 4 GB for ISO 9660.
+    var largestFile: Int64 = 0
+    /// True when the item couldn't be read to measure it.
+    var unreadable = false
 
     var name: String { url.lastPathComponent }
+
+    /// ISO 9660 and Joliet store a file's size in 32 bits.
+    var hasFileTooLarge: Bool { largestFile >= Int64(UInt32.max) }
 }
 
 struct DriveInfo: Identifiable, Hashable {
@@ -42,7 +50,24 @@ final class AppModel {
     var selectedDriveID: UInt64?
     private(set) var driveState: DriveState?
     private(set) var items: [DiscItem] = []
-    var discName = String(localized: "Untitled")
+    var discName = String(localized: "Untitled") {
+        didSet {
+            let trimmed = Self.trimmedDiscName(discName)
+            if trimmed != discName { discName = trimmed }
+        }
+    }
+
+    /// Joliet holds a disc name of up to 16 characters (UTF-16 code units).
+    static let discNameLimit = 16
+
+    static func trimmedDiscName(_ name: String) -> String {
+        var result = ""
+        for character in name {
+            if result.utf16.count + String(character).utf16.count > discNameLimit { break }
+            result.append(character)
+        }
+        return result
+    }
     var ejectWhenDone = false
     /// Put a hidden `.burn` folder with a checksum for every file on the disc (decision D12).
     var includeChecksums = true
@@ -122,7 +147,9 @@ final class AppModel {
     // MARK: - Items
 
     func add(_ urls: [URL]) {
-        for url in urls {
+        for original in urls {
+            // Add what an alias or symbolic link points to, not the link itself.
+            let url = ((try? URL(resolvingAliasFileAt: original)) ?? original).resolvingSymlinksInPath()
             guard !items.contains(where: { $0.url == url }) else { continue }
             let isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
             let item = DiscItem(url: url, isDirectory: isDirectory, size: nil)
@@ -132,10 +159,12 @@ final class AppModel {
             }
             let id = item.id
             Task.detached(priority: .utility) {
-                let size = Self.size(of: url)
+                let measured = Self.measure(url)
                 await MainActor.run {
                     if let index = self.items.firstIndex(where: { $0.id == id }) {
-                        self.items[index].size = size
+                        self.items[index].size = measured?.total ?? 0
+                        self.items[index].largestFile = measured?.largest ?? 0
+                        self.items[index].unreadable = measured == nil
                     }
                 }
             }
@@ -146,16 +175,25 @@ final class AppModel {
         items.removeAll { ids.contains($0.id) }
     }
 
-    nonisolated private static func size(of url: URL) -> Int64 {
-        let keys: [URLResourceKey] = [.fileSizeKey, .isDirectoryKey]
-        guard let values = try? url.resourceValues(forKeys: Set(keys)) else { return 0 }
-        guard values.isDirectory == true else { return Int64(values.fileSize ?? 0) }
+    /// Total bytes and the largest file, or nil if the item can't be read.
+    nonisolated private static func measure(_ url: URL) -> (total: Int64, largest: Int64)? {
+        let keys: [URLResourceKey] = [.fileSizeKey, .isDirectoryKey, .isRegularFileKey]
+        guard let values = try? url.resourceValues(forKeys: Set(keys)) else { return nil }
+        guard values.isDirectory == true else {
+            guard let size = values.fileSize else { return nil }
+            return (Int64(size), Int64(size))
+        }
         var total: Int64 = 0
+        var largest: Int64 = 0
         let enumerator = FileManager.default.enumerator(at: url, includingPropertiesForKeys: keys)
         while let child = enumerator?.nextObject() as? URL {
-            total += Int64((try? child.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+            guard let childValues = try? child.resourceValues(forKeys: Set(keys)),
+                  childValues.isRegularFile == true else { continue }
+            let size = Int64(childValues.fileSize ?? 0)
+            total += size
+            largest = max(largest, size)
         }
-        return total
+        return (total, largest)
     }
 
     /// File data, rounded up to whole blocks. The image adds a little for directories.
@@ -171,7 +209,33 @@ final class AppModel {
     }
 
     var canBurn: Bool {
-        activity == .idle && !items.isEmpty && sizesKnown && fits
+        activity == .idle && burnBlocker == nil
+    }
+
+    /// Why Burn is disabled, in a few words, or nil when it's ready.
+    var burnBlocker: String? {
+        guard hasDrive else { return String(localized: "Connect a disc burner.") }
+        switch driveState {
+        case nil, .becomingReady?:
+            return String(localized: "Reading the disc…")
+        case .noDisc?:
+            return String(localized: "Insert a blank disc.")
+        case .disc(let disc)?:
+            switch disc.writability {
+            case .blank: break
+            case .needsErase: return String(localized: "Erase the disc first.")
+            case .unsupported: return String(localized: "This version can't write \(disc.profile.name) discs yet.")
+            case .appendable, .notWritable: return String(localized: "Insert a blank disc.")
+            }
+        }
+        if items.isEmpty { return String(localized: "Add files to burn.") }
+        if let item = items.first(where: \.unreadable) { return String(localized: "Can't read “\(item.name)”.") }
+        if !sizesKnown { return String(localized: "Measuring the files…") }
+        if let item = items.first(where: \.hasFileTooLarge) {
+            return String(localized: "“\(item.name)” has a file of 4 GB or more, which needs UDF (coming next).")
+        }
+        if !fits { return String(localized: "Too much for this disc.") }
+        return nil
     }
 
     // MARK: - Burning
