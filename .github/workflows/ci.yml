@@ -41,9 +41,15 @@ jobs:
 
       - name: Build the app
         run: |
-          set -o pipefail
-          xcodebuild build -project Burn.xcodeproj -scheme Burn -destination 'platform=macOS' \
-            -derivedDataPath "$RUNNER_TEMP/DerivedData" | tail -40
+          LOG="$RUNNER_TEMP/xcodebuild.log"
+          if ! xcodebuild build -project Burn.xcodeproj -scheme Burn -destination 'platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" > "$LOG" 2>&1; then
+            # The compiler's messages are far from the end of the log, so show them first.
+            grep -E "(error|warning): " "$LOG" | sort -u || true
+            tail -40 "$LOG"
+            exit 1
+          fi
+          tail -20 "$LOG"
 
       - name: ISO round trip through macOS
         run: |
