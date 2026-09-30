@@ -261,6 +261,67 @@ static bool BKMMCCopyWholeMediaBSDName(uint64_t registryID, char *name, size_t l
     return found;
 }
 
+// Writes the BSD names of every IOMedia below the drive, the whole disc first, and returns how many.
+static int BKMMCCopyMediaBSDNames(uint64_t registryID, char names[][64], int maxCount) {
+    io_service_t service = IOServiceGetMatchingService(kIOMainPortDefault, IORegistryEntryIDMatching(registryID));
+    if (service == IO_OBJECT_NULL) return 0;
+    io_iterator_t iterator = IO_OBJECT_NULL;
+    kern_return_t result = IORegistryEntryCreateIterator(service, kIOServicePlane, kIORegistryIterateRecursively,
+                                                         &iterator);
+    IOObjectRelease(service);
+    if (result != KERN_SUCCESS) return 0;
+
+    int count = 0;
+    io_registry_entry_t entry;
+    while (count < maxCount && (entry = IOIteratorNext(iterator)) != IO_OBJECT_NULL) {
+        if (IOObjectConformsTo(entry, kIOMediaClass)) {
+            CFTypeRef bsdName = IORegistryEntryCreateCFProperty(entry, CFSTR(kIOBSDNameKey), kCFAllocatorDefault, 0);
+            if (bsdName != NULL && CFGetTypeID(bsdName) == CFStringGetTypeID()
+                && CFStringGetCString((CFStringRef)bsdName, names[count], 64, kCFStringEncodingUTF8)) {
+                count += 1;
+            }
+            if (bsdName != NULL) CFRelease(bsdName);
+        }
+        IOObjectRelease(entry);
+    }
+    IOObjectRelease(iterator);
+    return count;
+}
+
+bool BKMMCDeviceCopyMountedVolume(BKMMCDevice *device, char *name, size_t nameLength, char *path, size_t pathLength) {
+    if (name != NULL && nameLength > 0) name[0] = 0;
+    if (path != NULL && pathLength > 0) path[0] = 0;
+    if (device == NULL) return false;
+
+    char names[16][64];
+    int count = BKMMCCopyMediaBSDNames(device->registryID, names, 16);
+    if (count == 0) return false;
+    DASessionRef session = DASessionCreate(kCFAllocatorDefault);
+    if (session == NULL) return false;
+
+    bool found = false;
+    for (int index = 0; index < count && !found; index++) {
+        DADiskRef disk = DADiskCreateFromBSDName(kCFAllocatorDefault, session, names[index]);
+        if (disk == NULL) continue;
+        CFDictionaryRef description = DADiskCopyDescription(disk);
+        if (description != NULL) {
+            CFURLRef volumePath = CFDictionaryGetValue(description, kDADiskDescriptionVolumePathKey);
+            if (volumePath != NULL && path != NULL && pathLength > 0
+                && CFURLGetFileSystemRepresentation(volumePath, true, (UInt8 *)path, (CFIndex)pathLength)) {
+                found = true;
+                CFStringRef volumeName = CFDictionaryGetValue(description, kDADiskDescriptionVolumeNameKey);
+                if (volumeName != NULL && name != NULL && nameLength > 0) {
+                    CFStringGetCString(volumeName, name, (CFIndex)nameLength, kCFStringEncodingUTF8);
+                }
+            }
+            CFRelease(description);
+        }
+        CFRelease(disk);
+    }
+    CFRelease(session);
+    return found;
+}
+
 typedef struct {
     dispatch_semaphore_t done;
     int32_t status;
@@ -484,6 +545,13 @@ void BKMMCDeviceClose(BKMMCDevice *device) { (void)device; }
 void BKMMCDescribeDevice(uint64_t registryID, char *out, size_t length) {
     (void)registryID;
     if (out != NULL && length > 0) out[0] = 0;
+}
+
+bool BKMMCDeviceCopyMountedVolume(BKMMCDevice *device, char *name, size_t nameLength, char *path, size_t pathLength) {
+    (void)device;
+    if (name != NULL && nameLength > 0) name[0] = 0;
+    if (path != NULL && pathLength > 0) path[0] = 0;
+    return false;
 }
 
 int32_t BKMMCDeviceUnmountDisc(BKMMCDevice *device, char *reason, size_t reasonLength) {

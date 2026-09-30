@@ -161,4 +161,25 @@ public final class IOKitTransport: SCSITransport, @unchecked Sendable {
         default: String(format: "the command failed in transport (status %02Xh)", status)
         }
     }
+
+    /// A volume macOS has mounted from the disc in this drive.
+    public struct MountedVolume: Sendable, Equatable {
+        public let name: String
+        public let url: URL
+    }
+
+    /// The disc's mounted volume, if macOS has mounted it. Asks Disk Arbitration, not the drive.
+    public func mountedVolume() -> MountedVolume? {
+        var name = [CChar](repeating: 0, count: 256)
+        var path = [CChar](repeating: 0, count: 1024)
+        guard BKMMCDeviceCopyMountedVolume(device, &name, name.count, &path, path.count) else { return nil }
+        let url = URL(fileURLWithPath: Self.string(path), isDirectory: true)
+        let volumeName = Self.string(name)
+        return MountedVolume(name: volumeName.isEmpty ? url.lastPathComponent : volumeName, url: url)
+    }
+
+    private static func string(_ characters: [CChar]) -> String {
+        let bytes = characters.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
+        return String(decoding: bytes, as: UTF8.self)
+    }
 }

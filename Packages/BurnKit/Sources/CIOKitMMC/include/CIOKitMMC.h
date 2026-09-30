@@ -58,6 +58,10 @@ void BKMMCDeviceClose(BKMMCDevice *device);
 /// explanation, when there is one, into `reason`.
 int32_t BKMMCDeviceUnmountDisc(BKMMCDevice *device, char *reason, size_t reasonLength);
 
+/// Writes the name and mount point of a mounted volume on the disc in the drive, through Disk
+/// Arbitration, without sending the drive any commands. Returns false when nothing is mounted.
+bool BKMMCDeviceCopyMountedVolume(BKMMCDevice *device, char *name, size_t nameLength, char *path, size_t pathLength);
+
 /// Takes exclusive access. Fails while a disc in the drive is mounted.
 int32_t BKMMCDeviceObtainExclusiveAccess(BKMMCDevice *device);
 
