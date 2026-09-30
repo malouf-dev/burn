@@ -80,7 +80,9 @@ public struct MediaProfile: RawRepresentable, Hashable, Sendable, CustomStringCo
         case .dvdROM: return "DVD-ROM"
         case .dvdRSequential: return "DVD-R"
         case .dvdRAM: return "DVD-RAM"
-        case .dvdRWRestrictedOverwrite, .dvdRWSequential: return "DVD-RW"
+        case .dvdRWSequential: return "DVD-RW"
+        // A DVD-RW formatted for overwriting in place. Tell it apart, since erasing and burning differ.
+        case .dvdRWRestrictedOverwrite: return "DVD-RW (restricted overwrite)"
         case .dvdRDualLayerSequential, .dvdRDualLayerJump: return "DVD-R DL"
         case .dvdPlusRW: return "DVD+RW"
         case .dvdPlusR: return "DVD+R"
