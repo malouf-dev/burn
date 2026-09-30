@@ -17,6 +17,7 @@ struct BurnCtl {
       burnctl burn PATH... [--drive N] [--name NAME] [--simulate] [--no-verify] [--eject] [--yes] [--log FILE]
       burnctl erase [--drive N] [--full] [--yes] [--log FILE]
       burnctl inspect [--drive N] [--log FILE]
+      burnctl format [--drive N] [--yes] [--log FILE]
       burnctl eject [--drive N]
       burnctl simulate-burn PATH... [--profile cd-r|cd-rw|dvd-r|dvd+r|dvd+r-dl|bd-r] [--name NAME]
 
@@ -42,6 +43,7 @@ struct BurnCtl {
             case "burn": try await burn(&arguments)
             case "erase": try await erase(&arguments)
             case "inspect": try await inspect(&arguments)
+            case "format": try await format(&arguments)
             case "eject": try await eject(&arguments)
             case "simulate-burn": try await simulateBurn(&arguments)
             case "help", "-h", "--help":
@@ -224,6 +226,41 @@ struct BurnCtl {
             return
         }
         printStatusLine(label + " " + String(format: "%5.1f%%", fraction * 100))
+    }
+
+    /// Fully formats a DVD-RW, a way back for one that erasing can't fix.
+    static func format(_ arguments: inout Arguments) async throws {
+        let drive = try openDrive(arguments.option("--drive"))
+        let yes = arguments.flag("--yes")
+        let logPath = arguments.option("--log")
+        let state = try await discStateTakingDriveIfEmpty(drive, logPath: logPath)
+        print("Disc: \(describe(state))")
+        if !yes {
+            guard confirm("Format this DVD-RW? Everything on it will be lost, and it can take an hour. Type yes to continue: ") else {
+                await drive.releaseDrive()
+                print("Cancelled.")
+                return
+            }
+        }
+        do {
+            printStatusLine("Formatting…")
+            let profile = try await drive.formatDVDRW { fraction in
+                if let fraction {
+                    printStatusLine("Formatting " + String(format: "%5.1f%%", fraction * 100))
+                }
+            }
+            print("")
+            await drive.releaseDrive()
+            print("Formatted. The disc is now \(profile.name).")
+            if profile == .dvdRWRestrictedOverwrite {
+                print("burnctl writes DVD-RW in sequential mode. Run `burnctl erase` to switch the disc back.")
+            }
+            try writeLog(drive.log, to: logPath)
+        } catch {
+            print("")
+            await drive.releaseDrive()
+            try fail(error, drive: drive, logPath: logPath)
+        }
     }
 
     /// Prints everything the drive reports about the disc and tries to read a few key blocks.

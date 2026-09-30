@@ -62,6 +62,22 @@ public enum MMC {
         return SCSICommand(cdb: cdb, direction: .toDevice(parameters), timeout: 30)
     }
 
+    /// READ FORMAT CAPACITIES: the formats the drive can apply to the disc.
+    public static func readFormatCapacities(length: UInt16 = 252) -> SCSICommand {
+        var cdb = [UInt8](repeating: 0, count: 10)
+        cdb[0] = 0x23
+        cdb.put(length, at: 7)
+        return SCSICommand(cdb: cdb, direction: .fromDevice(length: Int(length)), timeout: 30)
+    }
+
+    /// FORMAT UNIT with one descriptor, as READ FORMAT CAPACITIES listed it. With `immediate`,
+    /// the drive answers at once and reports progress to TEST UNIT READY.
+    public static func formatUnit(_ descriptor: FormatDescriptor, immediate: Bool = false) -> SCSICommand {
+        let header: [UInt8] = [0x00, immediate ? 0x02 : 0x00, 0x00, 0x08]
+        return SCSICommand(cdb: [0x04, 0x11, 0, 0, 0, 0], direction: .toDevice(header + descriptor.bytes),
+                           timeout: immediate ? 60 : 3600)
+    }
+
     /// RESERVE TRACK for a size in blocks.
     public static func reserveTrack(blocks: UInt32) -> SCSICommand {
         var cdb = [UInt8](repeating: 0, count: 10)

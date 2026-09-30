@@ -459,6 +459,38 @@ struct EraseTests {
         #expect(drive.log.render().contains("(progress 50.0%)"))
     }
 
+    // Hardware runs 12 to 14: every erase of the DVD-RW from run 7 failed, drutil's too.
+    @Test func formatRecoversADVDRWThatWontErase() async throws {
+        var media = SimulatedDrive.Media.written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176)
+        media.closed = false
+        media.closeInterrupted = true
+        media.eraseFails = true
+        let simulator = SimulatedDrive(media: media)
+        simulator.busyPollsAfterLongCommand = 2
+        let drive = DiscDrive(transport: simulator, pollInterval: .milliseconds(1))
+        await #expect(throws: DriveError.self) { try await drive.erase() }
+
+        let recorder = ClosingRecorder()
+        let profile = try await drive.formatDVDRW { recorder.add($0) }
+        #expect(profile == .dvdRWRestrictedOverwrite)
+        #expect(recorder.values == [0, 0.5])
+        let format = try #require(simulator.commandHistory.first { $0.first == 0x04 })
+        #expect(format[1] == 0x11)
+        #expect(!simulator.hasExclusiveAccess)
+
+        // Erasing switches it back to sequential recording, which burnctl writes.
+        try await drive.erase()
+        let disc = try #require(try await discState(drive))
+        #expect(disc.profile == .dvdRWSequential)
+        #expect(disc.writability == .blank)
+    }
+
+    @Test func formatNeedsADVDRW() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.unsupportedMedia(.dvdPlusR)) { _ = try await drive.formatDVDRW() }
+    }
+
     @Test func eraseRefusesWriteOnceDiscs() async throws {
         let simulator = SimulatedDrive(media: .written(profile: .dvdPlusR, capacityBlocks: 20_000, blockCount: 5))
         let drive = DiscDrive(transport: simulator)

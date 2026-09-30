@@ -106,6 +106,25 @@ struct ParserTests {
         #expect(info?.lastSessionState == .complete)
     }
 
+    @Test func formatCapacities() {
+        let original = FormatCapacities(currentBlocks: 2_297_888, currentDescriptorType: 1, formats: [
+            FormatDescriptor(blocks: 2_297_888, formatType: 0x10, parameter: 16),
+            FormatDescriptor(blocks: 2_297_888, formatType: 0x15, parameter: 0),
+        ])
+        let parsed = FormatCapacities(bytes: original.bytes)
+        #expect(parsed == original)
+        #expect(original.bytes.count == 28)
+        #expect(original.bytes[12 + 4] == 0x40)
+
+        let command = MMC.formatUnit(original.formats[0], immediate: true)
+        #expect(command.cdb == [0x04, 0x11, 0, 0, 0, 0])
+        guard case .toDevice(let data) = command.direction else {
+            Issue.record("FORMAT UNIT should send data")
+            return
+        }
+        #expect(data == [0x00, 0x02, 0x00, 0x08] + original.formats[0].bytes)
+    }
+
     @Test func unfinishedDiscInformation() {
         var bytes = [UInt8](repeating: 0, count: 34)
         bytes[2] = 0x15 // erasable, last session incomplete, disc appendable

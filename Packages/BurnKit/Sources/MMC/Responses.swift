@@ -314,3 +314,77 @@ public enum ModePage {
         return header + page
     }
 }
+
+/// One format the drive can apply to the disc, from READ FORMAT CAPACITIES.
+public struct FormatDescriptor: Sendable, Equatable {
+    public var blocks: UInt32
+    /// Such as 10h, a full format of a DVD-RW.
+    public var formatType: UInt8
+    /// The format type's own parameter, 24 bits.
+    public var parameter: UInt32
+
+    public init(blocks: UInt32, formatType: UInt8, parameter: UInt32) {
+        self.blocks = blocks
+        self.formatType = formatType
+        self.parameter = parameter
+    }
+
+    public init?(bytes: [UInt8]) {
+        guard bytes.count >= 8 else { return nil }
+        blocks = bytes.uint32(at: 0)
+        formatType = bytes[4] >> 2
+        parameter = UInt32(bytes[5]) << 16 | UInt32(bytes[6]) << 8 | UInt32(bytes[7])
+    }
+
+    public var bytes: [UInt8] {
+        var result = [UInt8](repeating: 0, count: 8)
+        result.put(blocks, at: 0)
+        result[4] = formatType << 2
+        result[5] = UInt8(truncatingIfNeeded: parameter >> 16)
+        result[6] = UInt8(truncatingIfNeeded: parameter >> 8)
+        result[7] = UInt8(truncatingIfNeeded: parameter)
+        return result
+    }
+}
+
+/// READ FORMAT CAPACITIES: the disc's current capacity and the formats on offer.
+public struct FormatCapacities: Sendable, Equatable {
+    public var currentBlocks: UInt32
+    /// 1: unformatted or blank, 2: formatted, 3: no disc.
+    public var currentDescriptorType: UInt8
+    public var formats: [FormatDescriptor]
+
+    public init(currentBlocks: UInt32, currentDescriptorType: UInt8, formats: [FormatDescriptor]) {
+        self.currentBlocks = currentBlocks
+        self.currentDescriptorType = currentDescriptorType
+        self.formats = formats
+    }
+
+    public init?(bytes: [UInt8]) {
+        guard bytes.count >= 12 else { return nil }
+        let listLength = Int(bytes[3])
+        currentBlocks = bytes.uint32(at: 4)
+        currentDescriptorType = bytes[8] & 0x03
+        var formats: [FormatDescriptor] = []
+        var offset = 12
+        while offset + 8 <= min(bytes.count, 4 + listLength) {
+            if let descriptor = FormatDescriptor(bytes: Array(bytes[offset..<(offset + 8)])) {
+                formats.append(descriptor)
+            }
+            offset += 8
+        }
+        self.formats = formats
+    }
+
+    public var bytes: [UInt8] {
+        var result: [UInt8] = [0, 0, 0, UInt8(8 * (formats.count + 1))]
+        var current = [UInt8](repeating: 0, count: 8)
+        current.put(currentBlocks, at: 0)
+        current[4] = currentDescriptorType & 0x03
+        current[6] = 0x08 // 2,048-byte blocks
+        result += current
+        for format in formats { result += format.bytes }
+        return result
+    }
+}
+

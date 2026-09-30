@@ -17,6 +17,8 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         public var closeInterrupted = false
         /// The drive reports a quick erase of this disc as failed. A full erase works.
         public var quickEraseFails = false
+        /// The drive reports every erase of this disc as failed. Formatting works. Hardware runs 12 to 14.
+        public var eraseFails = false
         /// Written blocks that don't read back. macOS gets stuck reading a disc like this: it
         /// holds the drive, so exclusive access is refused as busy and eject isn't permitted,
         /// unless the drive was taken before the disc went in. Hardware run 9.
@@ -258,6 +260,8 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         case 0x35: return synchronizeCache()
         case 0x5B: return closeTrackSession(cdb)
         case 0xA1: return blank(cdb)
+        case 0x23: return readFormatCapacities(command)
+        case 0x04: return formatUnit(command)
         case 0x1B: return startStopUnit(cdb)
         case 0x1E: return .good()
         default: return .check(.invalidCommand)
@@ -447,16 +451,54 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         }
     }
 
+    private func readFormatCapacities(_ command: SCSICommand) -> SCSIResponse {
+        guard let media else { return .check(.mediumNotPresent) }
+        var formats: [FormatDescriptor] = []
+        if media.profile == .dvdRWSequential || media.profile == .dvdRWRestrictedOverwrite {
+            formats.append(FormatDescriptor(blocks: media.capacityBlocks, formatType: 0x10, parameter: 16))
+        }
+        let formatted = media.profile == .dvdRWRestrictedOverwrite
+        let capacities = FormatCapacities(currentBlocks: media.capacityBlocks,
+                                          currentDescriptorType: formatted ? 2 : 1, formats: formats)
+        return .good(Array(capacities.bytes.prefix(allocation(command))))
+    }
+
+    private func formatUnit(_ command: SCSICommand) -> SCSIResponse {
+        guard var media else { return .check(.mediumNotPresent) }
+        guard case .toDevice(let parameters) = command.direction, parameters.count >= 12,
+              command.cdb[1] & 0x17 == 0x11 else {
+            return .check(.invalidFieldInCDB)
+        }
+        guard let descriptor = FormatDescriptor(bytes: Array(parameters[4..<12])), descriptor.formatType == 0x10,
+              media.profile == .dvdRWSequential || media.profile == .dvdRWRestrictedOverwrite else {
+            return .check(SenseData(key: 0x05, asc: 0x26, ascq: 0x00))
+        }
+        media.profile = .dvdRWRestrictedOverwrite
+        media.blocks = [:]
+        media.nextWritable = 0
+        media.closed = true
+        media.reserved = nil
+        media.closeInterrupted = false
+        media.unreadable = false
+        media.quickEraseFails = false
+        media.eraseFails = false
+        self.media = media
+        if parameters[1] & 0x02 != 0 { busyPollsRemaining = _busyPollsAfterLongCommand }
+        return .good()
+    }
+
     private func blank(_ cdb: [UInt8]) -> SCSIResponse {
         guard var media else { return .check(.mediumNotPresent) }
         guard media.profile.supportsBlank else { return .check(.incompatibleMedium) }
         let quick = cdb[1] & 0x07 == 0x01
-        if quick && media.quickEraseFails {
+        if media.eraseFails || (quick && media.quickEraseFails) {
             // Like the real drive: the command is accepted and the failure shows up afterwards.
             pendingSense = .eraseFailure
             return .good()
         }
         media.quickEraseFails = false
+        // Blanking a restricted-overwrite DVD-RW returns it to sequential recording.
+        if media.profile == .dvdRWRestrictedOverwrite { media.profile = .dvdRWSequential }
         media.blocks = [:]
         media.nextWritable = 0
         media.closed = false
