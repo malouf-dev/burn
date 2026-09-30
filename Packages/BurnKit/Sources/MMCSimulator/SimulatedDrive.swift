@@ -86,6 +86,13 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     }
     private var _timesOutLongCommands = true
 
+    /// When true, long commands sent with the immediate bit are rejected as an invalid field.
+    public var rejectsImmediateBit: Bool {
+        get { withLock { _rejectsImmediateBit } }
+        set { withLock { _rejectsImmediateBit = newValue } }
+    }
+    private var _rejectsImmediateBit = false
+
     /// After a long command sent with the immediate bit, TEST UNIT READY reports "operation in
     /// progress" this many times, with progress, before the drive is ready.
     public var busyPollsAfterLongCommand: Int {
@@ -230,6 +237,9 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         }
 
         if let immediateBit = Self.longCommandImmediateBits[command.operationCode] {
+            if cdb[1] & immediateBit != 0 && _rejectsImmediateBit {
+                return .check(.invalidFieldInCDB)
+            }
             if cdb[1] & immediateBit == 0 && _timesOutLongCommands {
                 if command.operationCode != 0xA1, var media, media.nextWritable > 0 {
                     media.closeInterrupted = true

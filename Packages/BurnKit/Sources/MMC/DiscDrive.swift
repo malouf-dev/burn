@@ -302,8 +302,7 @@ public actor DiscDrive {
             progress(WriteProgress(phase: .closing, completedBlocks: writtenBlocks, totalBlocks: paddedBlocks,
                                    driveProgress: fraction))
         }
-        try await runLong(MMC.synchronizeCache(immediate: true), fallback: MMC.synchronizeCache(),
-                          "SYNCHRONIZE CACHE", progress: reportClosing)
+        try await runLong(MMC.synchronizeCache(immediate: true), "SYNCHRONIZE CACHE", progress: reportClosing)
         if cancelled {
             log.note("Cancelled after \(written) blocks")
             throw DriveError.cancelled
@@ -344,8 +343,7 @@ public actor DiscDrive {
             functions = [(.track, trackNumber, "CLOSE TRACK"), (.finaliseDisc, 0, "FINALISE")]
         }
         for (function, number, name) in functions {
-            try await runLong(MMC.closeTrackSession(function, track: number, immediate: true),
-                              fallback: MMC.closeTrackSession(function, track: number), name, progress: progress)
+            try await runLong(MMC.closeTrackSession(function, track: number, immediate: true), name, progress: progress)
         }
     }
 
@@ -551,8 +549,7 @@ public actor DiscDrive {
 
     private func blank(full: Bool, progress: @escaping @Sendable (EraseProgress) -> Void) async throws {
         if full { progress(EraseProgress(full: true, fraction: nil)) }
-        try await runLong(MMC.blank(quick: !full, immediate: true), fallback: MMC.blank(quick: !full),
-                          full ? "BLANK (full)" : "BLANK", timeout: full ? 4 * 3600 : 3600) { fraction in
+        try await runLong(MMC.blank(quick: !full, immediate: true), full ? "BLANK (full)" : "BLANK", timeout: full ? 4 * 3600 : 3600) { fraction in
             progress(EraseProgress(full: full, fraction: fraction))
         }
     }
@@ -590,10 +587,7 @@ public actor DiscDrive {
             guard let descriptor = capacities.formats.first(where: { $0.formatType == wanted }) else {
                 throw DriveError.formatNotOffered(wanted: wanted, offered: capacities.formats.map(\.formatType))
             }
-            // No fallback without the immediate bit: over USB a format that long would time out
-            // part-way, the kind of cut-off that left run 7's disc unusable.
-            try await runLong(MMC.formatUnit(descriptor, immediate: true), fallback: nil,
-                              "FORMAT UNIT", timeout: 4 * 3600, progress: progress)
+            try await runLong(MMC.formatUnit(descriptor, immediate: true), "FORMAT UNIT", timeout: 4 * 3600, progress: progress)
             await endExclusiveAccess()
         } catch {
             await endExclusiveAccess()
@@ -639,21 +633,20 @@ public actor DiscDrive {
 
     /// Runs a long operation without holding one command open for its whole length: the command
     /// goes with the immediate bit set, then TEST UNIT READY is polled until the drive is ready.
-    /// Drives that reject the immediate bit get `fallback` instead.
-    private func runLong(_ command: SCSICommand, fallback: SCSICommand?, _ operation: String,
-                         timeout: TimeInterval = 3600,
+    ///
+    /// A drive that rejects the immediate bit gets no plain retry. Over USB a plain command this
+    /// long times out part-way, and the reset that follows can cut the drive off mid-write, which
+    /// left run 7's DVD-RW unusable. Failing cleanly is safer.
+    private func runLong(_ command: SCSICommand, _ operation: String, timeout: TimeInterval = 3600,
                          progress: @escaping @Sendable (Double?) -> Void) async throws {
         do {
             _ = try await run(command, operation, notReadyRetries: 3000)
         } catch DriveError.commandFailed(_, _, let sense?)
                     where sense.key == 0x05 && (sense.asc == 0x24 || sense.asc == 0x26) {
-            guard let fallback else {
-                log.note("\(operation): the drive rejected the immediate bit")
-                throw DriveError.commandFailed(operation: operation, status: SCSIStatus.checkCondition.rawValue,
-                                               sense: sense)
-            }
-            log.note("\(operation): the drive rejected the immediate bit, sending it without")
-            _ = try await run(fallback, operation, notReadyRetries: 3000)
+            log.note("\(operation): the drive rejected the immediate bit. Not retrying without it, "
+                     + "since a long command could time out part-way.")
+            throw DriveError.commandFailed(operation: operation, status: SCSIStatus.checkCondition.rawValue,
+                                           sense: sense)
         }
         try await waitUntilReady(timeout: timeout, progress: progress)
     }

@@ -282,6 +282,26 @@ struct LongOperationTests {
         #expect(closes.allSatisfy { $0[1] & 0x01 != 0 })
     }
 
+    // Before hardware run 17: a plain retry of a long command could time out as in run 7.
+    @Test func aDriveThatRejectsTheImmediateBitGetsNoPlainRetry() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .dvdRWSequential, capacityBlocks: 2_297_888))
+        simulator.rejectsImmediateBit = true
+        let drive = DiscDrive(transport: simulator)
+        do {
+            _ = try await drive.write(patternImage(blocks: 176))
+            Issue.record("Expected the burn to fail")
+        } catch DriveError.commandFailed(let operation, _, let sense?) {
+            #expect(operation == "SYNCHRONIZE CACHE")
+            #expect(sense.asc == 0x24)
+        }
+        let syncs = simulator.commandHistory.filter { $0.first == 0x35 }
+        #expect(syncs.count == 1)
+        #expect(syncs.allSatisfy { $0[1] & 0x02 != 0 })
+        // The disc was written to, so the drive stays held until it's settled.
+        #expect(await drive.isHoldingDrive)
+        #expect(try await drive.settleAfterFailedBurn(erase: false) == .ejected)
+    }
+
     @Test func closingReportsTheDrivesProgress() async throws {
         let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
         simulator.busyPollsAfterLongCommand = 4
