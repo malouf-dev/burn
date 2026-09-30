@@ -10,6 +10,8 @@ struct Layout {
     private(set) var isoDirectories: [Node] = []
     private(set) var jolietDirectories: [Node] = []
     private(set) var files: [Node] = []
+    /// `.burn/SHA256SUMS`, when the image carries checksums.
+    private(set) var checksumsNode: Node?
     private(set) var isoPathTableSize = 0
     private(set) var jolietPathTableSize = 0
     private(set) var isoPathTableL: UInt32 = 0
@@ -29,6 +31,16 @@ struct Layout {
         for (index, directory) in isoDirectories.enumerated() { directory.isoNumber = index + 1 }
         for (index, directory) in jolietDirectories.enumerated() { directory.jolietNumber = index + 1 }
         collectFiles(root)
+        // Generated files go last, so every other file is hashed before SHA256SUMS is written.
+        files = files.filter { $0.generated == nil } + files.filter { $0.generated != nil }
+        checksumsNode = files.first { node in
+            if case .checksums? = node.generated { return true }
+            return false
+        }
+        if let checksumsNode {
+            checksumsNode.size = UInt64(files.filter { $0.generated == nil }
+                .reduce(0) { $0 + DiscChecksums.lineLength(path: jolietPath($1)) })
+        }
 
         isoPathTableSize = isoDirectories.reduce(0) { $0 + Self.pathRecordLength(identifierLength: $1 === root ? 1 : $1.isoName.utf8.count) }
         jolietPathTableSize = jolietDirectories.reduce(0) { $0 + Self.pathRecordLength(identifierLength: $1 === root ? 1 : Names.jolietIdentifier($1.jolietName, isDirectory: true).count) }
@@ -101,6 +113,18 @@ struct Layout {
             level = nextLevel
         }
         return order
+    }
+
+    /// A file's path from the root as it reads on the disc, through its Joliet names.
+    func jolietPath(_ node: Node) -> String {
+        var parts: [String] = []
+        var current = node
+        while current !== root {
+            parts.append(current.jolietName)
+            guard let parent = current.parent else { break }
+            current = parent
+        }
+        return parts.reversed().joined(separator: "/")
     }
 
     static func identifierOrder(_ lhs: String, _ rhs: String) -> Bool {

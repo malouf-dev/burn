@@ -13,8 +13,8 @@ struct BurnCtl {
       burnctl list
       burnctl diagnose
       burnctl status [--drive N]
-      burnctl make-iso PATH... --output FILE [--name NAME]
-      burnctl burn PATH... [--drive N] [--name NAME] [--simulate] [--no-verify] [--eject] [--yes] [--log FILE]
+      burnctl make-iso PATH... --output FILE [--name NAME] [--no-checksums]
+      burnctl burn PATH... [--drive N] [--name NAME] [--simulate] [--no-verify] [--no-checksums] [--eject] [--yes] [--log FILE]
       burnctl erase [--drive N] [--full] [--yes] [--log FILE]
       burnctl inspect [--drive N] [--log FILE]
       burnctl format [--drive N] [--quick] [--yes] [--log FILE]
@@ -24,6 +24,8 @@ struct BurnCtl {
     PATH is a file or folder to put on the disc, or a single .iso image to burn as it is.
     A single folder's contents go at the root of the disc, which is named after the folder.
     Drives are numbered from 1, in the order `burnctl list` shows them.
+    Discs get a hidden .burn folder with a SHA-256 checksum for every file. To check a mounted disc,
+    run `shasum -a 256 -c .burn/SHA256SUMS` from its root, such as /Volumes/Name.
     Run erase or inspect with the drive empty to take the drive first, then insert the disc
     when asked. macOS then never reads the disc, which reaches discs it gets stuck on.
     """
@@ -98,10 +100,11 @@ struct BurnCtl {
     static func makeISO(_ arguments: inout Arguments) throws {
         guard let output = arguments.option("--output") else { throw CLIError("make-iso needs --output FILE") }
         let nameOption = arguments.option("--name")
+        let checksums = !arguments.flag("--no-checksums")
         let paths = arguments.remaining()
         guard !paths.isEmpty else { throw CLIError("make-iso needs at least one file or folder") }
         let name = nameOption ?? defaultName(for: paths)
-        let blocks = try buildImage(paths: paths, name: name, output: URL(fileURLWithPath: output))
+        let blocks = try buildImage(paths: paths, name: name, checksums: checksums, output: URL(fileURLWithPath: output))
         print("Wrote \(output): \(blocks) blocks (\(formatBytes(Int64(blocks) * 2048)))")
     }
 
@@ -110,6 +113,7 @@ struct BurnCtl {
         let name = arguments.option("--name")
         let simulate = arguments.flag("--simulate")
         let verify = !arguments.flag("--no-verify")
+        let checksums = !arguments.flag("--no-checksums")
         let eject = arguments.flag("--eject")
         let yes = arguments.flag("--yes")
         let logPath = arguments.option("--log")
@@ -117,7 +121,7 @@ struct BurnCtl {
         guard !paths.isEmpty else { throw CLIError("burn needs at least one file or folder") }
 
         let drive = try openDrive(driveNumber)
-        let image = try prepareImage(paths: paths, name: name ?? defaultName(for: paths))
+        let image = try prepareImage(paths: paths, name: name ?? defaultName(for: paths), checksums: checksums)
         print("Image: \(image.blockCount) blocks (\(formatBytes(Int64(image.blockCount) * 2048)))")
 
         let state = try await drive.state()
@@ -359,20 +363,22 @@ struct BurnCtl {
         return DiscDrive(transport: try IOKitTransport(drives[index]))
     }
 
-    static func prepareImage(paths: [String], name: String) throws -> any ImageSource {
+    static func prepareImage(paths: [String], name: String, checksums: Bool = true) throws -> any ImageSource {
         if paths.count == 1, paths[0].lowercased().hasSuffix(".iso") {
             return try FileImageSource(url: URL(fileURLWithPath: paths[0]))
         }
         let output = FileManager.default.temporaryDirectory.appendingPathComponent("burnctl-\(UUID().uuidString).iso")
         print("Building the disc image…")
-        _ = try buildImage(paths: paths, name: name, output: output)
+        _ = try buildImage(paths: paths, name: name, checksums: checksums, output: output)
         return try FileImageSource(url: output)
     }
 
     /// A single folder's contents go at the root of the disc, as other disc tools do.
     /// Several paths are added as they are.
-    static func buildImage(paths: [String], name: String, output: URL) throws -> Int {
+    static func buildImage(paths: [String], name: String, checksums: Bool = true, output: URL) throws -> Int {
         var builder = ISOImageBuilder(volumeName: name)
+        builder.includesChecksums = checksums
+        builder.applicationName = "burnctl"
         var isDirectory: ObjCBool = false
         if paths.count == 1, FileManager.default.fileExists(atPath: paths[0], isDirectory: &isDirectory),
            isDirectory.boolValue {

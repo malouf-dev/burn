@@ -2,6 +2,8 @@
 """Compares two folders file by file. Names are compared in Unicode NFC form,
 because macOS can report the same name composed or decomposed.
 
+The hidden .burn checksum folder that Burn adds at a disc's root is skipped.
+
 Usage: compare-trees.py SOURCE COPY
 """
 import os
@@ -11,7 +13,9 @@ import unicodedata
 
 def files(root):
     result = {}
-    for folder, _, names in os.walk(root):
+    for folder, folders, names in os.walk(root):
+        if os.path.samefile(folder, root) and ".burn" in folders:
+            folders.remove(".burn")
         for name in names:
             if name == ".DS_Store":
                 continue

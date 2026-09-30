@@ -7,6 +7,7 @@ struct ISOReader {
         var size: UInt32
         var isDirectory: Bool
         var identifier: [UInt8]
+        var isHidden = false
     }
 
     let bytes: [UInt8]
@@ -28,7 +29,8 @@ struct ISOReader {
         guard length > 0 else { return nil }
         let nameLength = Int(bytes[offset + 32])
         return Record(extent: le32(offset + 2), size: le32(offset + 10), isDirectory: bytes[offset + 25] & 0x02 != 0,
-                      identifier: Array(bytes[(offset + 33)..<(offset + 33 + nameLength)]))
+                      identifier: Array(bytes[(offset + 33)..<(offset + 33 + nameLength)]),
+                      isHidden: bytes[offset + 25] & 0x01 != 0)
     }
 
     func rootRecord(descriptorSector: Int) -> Record {

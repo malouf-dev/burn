@@ -1,6 +1,12 @@
+import CryptoKit
 import Foundation
 import Testing
 @testable import ISOBuilder
+
+/// Files in the image other than the `.burn` checksum folder.
+func userFiles(_ files: [String: [UInt8]]) -> [String: [UInt8]] {
+    files.filter { !$0.key.hasPrefix(DiscChecksums.folderName + "/") }
+}
 
 /// Creates a folder of test files and returns it with the expected relative paths and contents.
 func makeSourceFolder() throws -> (URL, [String: [UInt8]]) {
@@ -57,7 +63,7 @@ struct ISOBuilderTests {
 
     @Test func jolietTreeMatchesSource() throws {
         let (reader, expected, _, _) = try build()
-        let files = reader.jolietFiles()
+        let files = userFiles(reader.jolietFiles())
         #expect(files.count == expected.count)
         for (path, bytes) in expected {
             #expect(files[path] == bytes, "\(path)")
@@ -93,8 +99,8 @@ struct ISOBuilderTests {
             offset += 8 + nameLength + nameLength % 2
             count += 1
         }
-        // Root, Holiday Photos, a, a/b, a/b/c, a/b/c/d, a/b/c/d/e, many
-        #expect(count == 8)
+        // Root, .burn, Holiday Photos, a, a/b, a/b/c, a/b/c/d, a/b/c/d/e, many
+        #expect(count == 9)
     }
 
     @Test func addContentsPutsFilesAtTheRoot() throws {
@@ -103,7 +109,7 @@ struct ISOBuilderTests {
         try builder.addContents(of: folder)
         let output = folder.deletingLastPathComponent().appendingPathComponent("contents.iso")
         try builder.write(to: output)
-        let files = try ISOReader(url: output).jolietFiles()
+        let files = userFiles(try ISOReader(url: output).jolietFiles())
         let prefix = "Holiday Photos/"
         #expect(files.count == expected.count)
         for (path, bytes) in expected {
@@ -114,10 +120,88 @@ struct ISOBuilderTests {
     @Test func largeDirectorySpansSectors() throws {
         let (reader, _, _, _) = try build()
         let root = reader.rootRecord(descriptorSector: 17)
-        let top = try #require(reader.children(of: root).first)
+        let top = try #require(reader.children(of: root).first { ISOReader.jolietName($0.identifier) == "Holiday Photos" })
         let many = try #require(reader.children(of: top).first { ISOReader.jolietName($0.identifier) == "many" })
         #expect(many.size > 2048)
         #expect(reader.children(of: many).count == 120)
+    }
+}
+
+@Suite("Checksum folder")
+struct ChecksumFolderTests {
+    func build(_ configure: (inout ISOImageBuilder) -> Void = { _ in }) throws -> (ISOReader, [String: [UInt8]], URL) {
+        let (folder, expected) = try makeSourceFolder()
+        var builder = ISOImageBuilder(volumeName: "My Test Disc")
+        configure(&builder)
+        try builder.add(folder)
+        let output = folder.deletingLastPathComponent().appendingPathComponent("image.iso")
+        let blocks = try builder.write(to: output)
+        #expect(blocks == builder.blockCount())
+        return (try ISOReader(url: output), expected, folder.deletingLastPathComponent())
+    }
+
+    static func sha256(_ bytes: [UInt8]) -> String {
+        SHA256.hash(data: Data(bytes)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    @Test func listsEveryFileWithItsSHA256() throws {
+        let (reader, expected, _) = try build()
+        let files = reader.jolietFiles()
+        let sums = try #require(files[".burn/SHA256SUMS"])
+        let entries = try DiscChecksums.parse(String(decoding: sums, as: UTF8.self))
+        #expect(entries.count == expected.count)
+        for entry in entries {
+            let bytes = try #require(expected[entry.path], "\(entry.path)")
+            #expect(entry.digest == Self.sha256(bytes), "\(entry.path)")
+        }
+        #expect(entries.map(\.path) == entries.map(\.path).sorted())
+    }
+
+    @Test func infoDescribesTheDisc() throws {
+        let (reader, expected, _) = try build { $0.applicationName = "Burn test" }
+        let data = try #require(reader.jolietFiles()[".burn/info.json"])
+        let info = try JSONDecoder().decode(DiscInfo.self, from: Data(data))
+        #expect(info.discName == "My Test Disc")
+        #expect(info.application == "Burn test")
+        #expect(info.fileCount == expected.count)
+        #expect(info.totalBytes == expected.values.reduce(0) { $0 + UInt64($1.count) })
+        #expect(info.algorithm == "SHA-256")
+        #expect(info.created.count == 20)
+    }
+
+    @Test func folderIsHiddenInBothTrees() throws {
+        let (reader, _, _) = try build()
+        let joliet = reader.children(of: reader.rootRecord(descriptorSector: 17))
+        let burn = try #require(joliet.first { ISOReader.jolietName($0.identifier) == ".burn" })
+        #expect(burn.isHidden)
+        #expect(burn.isDirectory)
+        let iso = reader.children(of: reader.rootRecord(descriptorSector: 16))
+        let isoBurn = try #require(iso.first { String(decoding: $0.identifier, as: UTF8.self) == "_BURN" })
+        #expect(isoBurn.isHidden)
+        #expect(joliet.filter(\.isHidden).count == 1)
+    }
+
+    @Test func checksumsCanBeLeftOut() throws {
+        let (reader, expected, _) = try build { $0.includesChecksums = false }
+        let files = reader.jolietFiles()
+        #expect(files.count == expected.count)
+        #expect(files.keys.allSatisfy { !$0.hasPrefix(".burn") })
+    }
+
+    @Test func aStaleBurnFolderIsReplaced() throws {
+        let (folder, expected) = try makeSourceFolder()
+        let stale = folder.appendingPathComponent(".burn")
+        try FileManager.default.createDirectory(at: stale, withIntermediateDirectories: true)
+        try Data("0000  old disc\n".utf8).write(to: stale.appendingPathComponent("SHA256SUMS"))
+        var builder = ISOImageBuilder(volumeName: "Copy")
+        try builder.addContents(of: folder)
+        let output = folder.deletingLastPathComponent().appendingPathComponent("copy.iso")
+        try builder.write(to: output)
+        let files = try ISOReader(url: output).jolietFiles()
+        let sums = String(decoding: try #require(files[".burn/SHA256SUMS"]), as: UTF8.self)
+        #expect(!sums.contains("old disc"))
+        #expect(try DiscChecksums.parse(sums).count == expected.count)
+        #expect(files.keys.filter { $0.hasPrefix(".burn") }.count == 2)
     }
 }
 

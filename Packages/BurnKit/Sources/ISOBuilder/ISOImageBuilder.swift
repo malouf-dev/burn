@@ -26,6 +26,10 @@ public struct ISOImageBuilder {
     public var paddingBlocks = 150
     /// Names skipped when adding folders.
     public var skippedNames: Set<String> = [".DS_Store"]
+    /// Adds the hidden `.burn` folder with a checksum for every file (decision D12).
+    public var includesChecksums = true
+    /// Recorded in `.burn/info.json`.
+    public var applicationName = "Burn"
 
     private let root = Node(name: "", source: nil, isDirectory: true, size: 0, date: Date())
 
@@ -55,19 +59,44 @@ public struct ISOImageBuilder {
         root.totalSize
     }
 
+    /// Number of files added so far.
+    public var fileCount: Int {
+        root.fileCount
+    }
+
     /// The image size in 2,048-byte blocks.
     public func blockCount() -> Int {
-        Layout(root: root, paddingBlocks: paddingBlocks).totalBlocks
+        Layout(root: imageRoot(date: Date()), paddingBlocks: paddingBlocks).totalBlocks
     }
 
     /// Writes the image and returns its size in blocks.
     @discardableResult
     public func write(to url: URL, date: Date = Date(), progress: ((Double) -> Void)? = nil) throws -> Int {
-        let layout = Layout(root: root, paddingBlocks: paddingBlocks)
+        let layout = Layout(root: imageRoot(date: date), paddingBlocks: paddingBlocks)
         let writer = try ImageWriter(url: url)
         defer { writer.close() }
         try layout.write(to: writer, volumeName: volumeName, date: date, progress: progress)
         return layout.totalBlocks
+    }
+
+    /// The tree to write: what was added, plus the `.burn` folder when checksums are on.
+    private func imageRoot(date: Date) -> Node {
+        guard includesChecksums else { return root }
+        let top = Node(name: "", source: nil, isDirectory: true, size: 0, date: root.date)
+        let folder = Node(name: DiscChecksums.folderName, source: nil, isDirectory: true, size: 0, date: date)
+        folder.isHidden = true
+        // Sized once the names on the disc are known, and written once every file is hashed.
+        let sums = Node(name: DiscChecksums.sumsName, source: nil, isDirectory: false, size: 0, date: date)
+        sums.generated = .checksums
+        let info = DiscInfo(discName: volumeName, created: date, application: applicationName,
+                            fileCount: root.fileCount, totalBytes: root.totalSize).encoded()
+        let infoNode = Node(name: DiscChecksums.infoName, source: nil, isDirectory: false,
+                            size: UInt64(info.count), date: date)
+        infoNode.generated = .content(info)
+        folder.children = [sums, infoNode]
+        // A `.burn` folder copied from an earlier disc would describe that disc, so ours replaces it.
+        top.children = [folder] + root.children.filter { $0.name != DiscChecksums.folderName }
+        return top
     }
 
     // MARK: - Scanning
@@ -96,13 +125,22 @@ public struct ISOImageBuilder {
 
 /// One file or folder in the image.
 final class Node {
+    /// Content made by the builder rather than read from a file.
+    enum Generated {
+        /// `.burn/SHA256SUMS`, written after every other file has been hashed.
+        case checksums
+        case content([UInt8])
+    }
+
     let name: String
     let source: URL?
     let isDirectory: Bool
-    let size: UInt64
+    var size: UInt64
     let date: Date
     var children: [Node] = []
     weak var parent: Node?
+    var generated: Generated?
+    var isHidden = false
 
     var isoName = ""
     var jolietName = ""
@@ -124,6 +162,10 @@ final class Node {
 
     var totalSize: UInt64 {
         isDirectory ? children.reduce(0) { $0 + $1.totalSize } : size
+    }
+
+    var fileCount: Int {
+        isDirectory ? children.reduce(0) { $0 + $1.fileCount } : 1
     }
 
     var blocks: Int {

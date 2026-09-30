@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Buffered sequential output for the image file.
@@ -77,17 +78,31 @@ extension Layout {
 
         let totalBytes = max(1, files.reduce(0) { $0 + $1.size })
         var copied: UInt64 = 0
+        var digests: [String: String] = [:]
         for file in files {
             try checkPosition(writer, file.fileExtent)
+            if let generated = file.generated {
+                let content: [UInt8]
+                switch generated {
+                case .checksums: content = Array(DiscChecksums.render(digests).utf8)
+                case .content(let bytes): content = bytes
+                }
+                precondition(content.count == Int(file.size), "Generated file \(file.name) changed size")
+                try writer.write(content)
+                try writer.padSector()
+                continue
+            }
             guard let source = file.source else { continue }
             guard let input = try? FileHandle(forReadingFrom: source) else {
                 throw ISOBuilderError.unreadable(source.path)
             }
             defer { try? input.close() }
+            var hasher: SHA256? = checksumsNode == nil ? nil : SHA256()
             var remaining = file.size
             while remaining > 0 {
                 let chunk = try input.read(upToCount: Int(min(remaining, 1024 * 1024))) ?? Data()
                 if chunk.isEmpty { throw ISOBuilderError.changedWhileWriting(source.path) }
+                hasher?.update(data: chunk)
                 try writer.write([UInt8](chunk))
                 remaining -= UInt64(chunk.count)
                 copied += UInt64(chunk.count)
@@ -96,6 +111,7 @@ extension Layout {
             if let extra = try input.read(upToCount: 1), !extra.isEmpty {
                 throw ISOBuilderError.changedWhileWriting(source.path)
             }
+            if let hasher { digests[jolietPath(file)] = DiscChecksums.hex(hasher.finalize()) }
             try writer.padSector()
         }
 
@@ -227,7 +243,7 @@ extension Layout {
                 size = UInt32(child.size)
             }
             records.append(directoryRecord(extent: extent, size: size, isDirectory: child.isDirectory,
-                                           identifier: identifier, stamp: Timestamp(child.date)))
+                                           identifier: identifier, stamp: Timestamp(child.date), hidden: child.isHidden))
         }
 
         var bytes: [UInt8] = []
@@ -243,13 +259,15 @@ extension Layout {
         return bytes
     }
 
-    private func directoryRecord(extent: UInt32, size: UInt32, isDirectory: Bool, identifier: [UInt8], stamp: Timestamp) -> [UInt8] {
+    private func directoryRecord(extent: UInt32, size: UInt32, isDirectory: Bool, identifier: [UInt8], stamp: Timestamp,
+                                 hidden: Bool = false) -> [UInt8] {
         var record = [UInt8](repeating: 0, count: Self.recordLength(identifierLength: identifier.count))
         record[0] = UInt8(record.count)
         bothEndian32(&record, extent, at: 2)
         bothEndian32(&record, size, at: 10)
         record.replaceSubrange(18..<25, with: stamp.shortForm)
-        record[25] = isDirectory ? 0x02 : 0x00
+        // Flag bit 0, "existence", hides the entry on systems that honour it, such as Windows.
+        record[25] = (isDirectory ? 0x02 : 0x00) | (hidden ? 0x01 : 0x00)
         bothEndian16(&record, 1, at: 28)
         record[32] = UInt8(identifier.count)
         record.replaceSubrange(33..<(33 + identifier.count), with: identifier)
