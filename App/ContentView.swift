@@ -21,7 +21,8 @@ struct ContentView: View {
             case .verify: VerifyView(model: verifier)
             }
         }
-        .frame(minWidth: 640, minHeight: 460)
+        .frame(minWidth: 560, minHeight: 480)
+        .toolbar(removing: .title)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Picker("Mode", selection: $mode) {
@@ -67,8 +68,11 @@ struct BurnView: View {
         .sheet(isPresented: .constant(model.activity != .idle)) {
             ProgressSheet(model: model, confirmingCancel: $confirmingCancel)
         }
-        .confirmationDialog("Burn this disc?", isPresented: $confirmingBurn) {
-            Button("Burn") { model.burn() }
+        .confirmationDialog(model.willOverwrite ? "Erase and burn this disc?" : "Burn this disc?",
+                            isPresented: $confirmingBurn) {
+            Button(model.willOverwrite ? "Erase and Burn" : "Burn", role: model.willOverwrite ? .destructive : nil) {
+                model.burn()
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(burnSummary)
@@ -96,8 +100,12 @@ struct BurnView: View {
 
     private var burnSummary: String {
         let size = ByteCountFormatter.string(fromByteCount: model.estimatedBytes, countStyle: .file)
-        let media = model.blankDisc?.profile.name ?? ""
-        let written = String(localized: "\(size) will be written to the \(media) as “\(model.discName)”, then checked block by block.")
+        let media = model.writableDisc?.profile.name ?? ""
+        var written = String(localized: "\(size) will be written to the \(media) as “\(model.discName)”, then checked block by block.")
+        if model.willOverwrite {
+            let current = model.discVolume.map { "“\($0.name)”" } ?? String(localized: "what's on it")
+            written = String(localized: "The disc is erased first, and \(current) is lost.") + " " + written
+        }
         guard model.includeChecksums else { return written }
         return written + " " + String(localized: "A checksum for every file goes on the disc too, so you can check it again in Verify years from now.")
     }
@@ -164,7 +172,7 @@ struct BurnView: View {
             Toggle("Eject when done", isOn: $model.ejectWhenDone)
                 .toggleStyle(.checkbox)
 
-            Button("Burn") { confirmingBurn = true }
+            Button(model.willOverwrite ? "Erase and Burn" : "Burn") { confirmingBurn = true }
                 .keyboardShortcut(.defaultAction)
                 .disabled(!model.canBurn)
         }
@@ -332,12 +340,20 @@ struct DriveHeader: View {
             return String(localized: "Reading the disc…")
         case .disc(let disc)?:
             let free = ByteCountFormatter.string(fromByteCount: disc.freeBytes, countStyle: .file)
+            let used = ByteCountFormatter.string(fromByteCount: disc.usedBytes, countStyle: .file)
+            let name = model.discVolume.map { "“\($0.name)”, " } ?? ""
+            let checksums = model.discHasChecksums ? " " + String(localized: "Has checksums: check it in Verify.") : ""
             switch disc.writability {
-            case .blank: return String(localized: "Blank \(disc.profile.name), \(free) free")
-            case .needsErase: return String(localized: "This \(disc.profile.name) has data on it.")
-            case .appendable: return String(localized: "This disc already has data on it. Adding to it comes later.")
-            case .unsupported: return String(localized: "This version can't write \(disc.profile.name) discs yet.")
-            case .notWritable: return String(localized: "This disc can't be written.")
+            case .blank:
+                return String(localized: "Blank \(disc.profile.name), \(free) free")
+            case .needsErase where disc.canOverwrite:
+                return String(localized: "\(disc.profile.name) with data: \(name)\(used). Burning erases it first.") + checksums
+            case .needsErase:
+                return String(localized: "This \(disc.profile.name) has data on it: \(name)\(used).") + checksums
+            case .appendable, .notWritable:
+                return String(localized: "\(disc.profile.name), already burned: \(name)\(used).") + checksums
+            case .unsupported:
+                return String(localized: "This version can't write \(disc.profile.name) discs yet.")
             }
         }
     }
@@ -349,21 +365,31 @@ struct CapacityView: View {
 
     var body: some View {
         if let disc = model.blankDisc, !model.items.isEmpty {
-            let fraction = min(1, Double(model.estimatedBytes) / Double(max(1, disc.freeBytes)))
-            let used = ByteCountFormatter.string(fromByteCount: model.estimatedBytes, countStyle: .file)
-            let free = ByteCountFormatter.string(fromByteCount: disc.freeBytes, countStyle: .file)
-            VStack(alignment: .trailing, spacing: 2) {
-                ProgressView(value: fraction)
-                    .tint(model.fits ? Color.accentColor : Color.red)
-                    .frame(width: 120)
-                Text("\(used) of \(free)")
-                    .font(.caption)
-                    .foregroundStyle(model.fits ? Color.secondary : Color.red)
-                    .monospacedDigit()
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(model.fits ? "\(used) of \(free) used" : "Too much for this disc: \(used) of \(free)")
+            capacity(disc)
+        } else if model.willOverwrite, !model.items.isEmpty {
+            Text(ByteCountFormatter.string(fromByteCount: model.estimatedBytes, countStyle: .file))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+                .help("The disc's free space is known once it's erased.")
         }
+    }
+
+    private func capacity(_ disc: DiscState) -> some View {
+        let fraction = min(1, Double(model.estimatedBytes) / Double(max(1, disc.freeBytes)))
+        let used = ByteCountFormatter.string(fromByteCount: model.estimatedBytes, countStyle: .file)
+        let free = ByteCountFormatter.string(fromByteCount: disc.freeBytes, countStyle: .file)
+        return VStack(alignment: .trailing, spacing: 2) {
+            ProgressView(value: fraction)
+                .tint(model.fits ? Color.accentColor : Color.red)
+                .frame(width: 120)
+            Text("\(used) of \(free)")
+                .font(.caption)
+                .foregroundStyle(model.fits ? Color.secondary : Color.red)
+                .monospacedDigit()
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(model.fits ? "\(used) of \(free) used" : "Too much for this disc: \(used) of \(free)")
     }
 }
 
@@ -426,6 +452,7 @@ struct ProgressSheet: View {
         case .burning(let progress):
             switch progress.phase {
             case .preparing: return String(localized: "Getting the drive ready…")
+            case .erasing: return String(localized: "Erasing the disc…")
             case .writing: return String(localized: "Writing…")
             case .closing: return String(localized: "Closing the disc…")
             case .verifying: return String(localized: "Verifying…")

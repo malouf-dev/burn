@@ -73,6 +73,11 @@ final class AppModel {
     var includeChecksums = true
     private(set) var activity: Activity = .idle
     var outcome: Outcome?
+    /// The volume macOS mounted from a disc that already has data, if any.
+    private(set) var discVolume: IOKitTransport.MountedVolume?
+    /// True when that volume carries a `.burn` checksum folder to check in Verify.
+    private(set) var discHasChecksums = false
+    private var transports: [UInt64: IOKitTransport] = [:]
     private(set) var lastLog = ""
 
     let isDemo: Bool
@@ -108,6 +113,7 @@ final class AppModel {
                 guard let transport = try? IOKitTransport(reference) else { continue }
                 let engine = DiscDrive(transport: transport)
                 engines[reference.id] = engine
+                transports[reference.id] = transport
                 let name: String
                 if let inquiry = try? await engine.identify() {
                     name = "\(inquiry.vendor) \(inquiry.product)"
@@ -119,6 +125,7 @@ final class AppModel {
                 }
             }
             engines = engines.filter { ids.contains($0.key) }
+            transports = transports.filter { ids.contains($0.key) }
             drives.removeAll { !ids.contains($0.id) }
         }
 
@@ -131,6 +138,15 @@ final class AppModel {
         if let state = try? await engine.state() {
             driveState = state
         }
+        // A disc with data: its name and whether it has checksums, from its mounted volume.
+        if case .disc(let disc)? = driveState, disc.writability != .blank,
+           let transport = selectedDriveID.flatMap({ transports[$0] }) {
+            discVolume = transport.mountedVolume()
+            discHasChecksums = discVolume.map { ChecksumVerifier.hasChecksums(at: $0.url) } ?? false
+        } else {
+            discVolume = nil
+            discHasChecksums = false
+        }
     }
 
     private var selectedEngine: DiscDrive? {
@@ -142,6 +158,17 @@ final class AppModel {
     var blankDisc: DiscState? {
         if case .disc(let disc) = driveState, disc.writability == .blank { return disc }
         return nil
+    }
+
+    /// A disc to burn to: a blank one, or a rewritable one with data that the burn erases first.
+    var writableDisc: DiscState? {
+        if case .disc(let disc) = driveState, disc.writability == .blank || disc.canOverwrite { return disc }
+        return nil
+    }
+
+    /// True when the burn will erase the disc first.
+    var willOverwrite: Bool {
+        writableDisc?.canOverwrite == true
     }
 
     // MARK: - Items
@@ -203,8 +230,10 @@ final class AppModel {
 
     var sizesKnown: Bool { items.allSatisfy { $0.size != nil } }
 
+    /// A rewritable disc's space is known only once it's erased, so the engine checks then.
     var fits: Bool {
-        guard let disc = blankDisc else { return false }
+        guard let disc = writableDisc else { return false }
+        if disc.canOverwrite { return true }
         return estimatedBytes + 1_000_000 <= disc.freeBytes
     }
 
@@ -223,9 +252,10 @@ final class AppModel {
         case .disc(let disc)?:
             switch disc.writability {
             case .blank: break
+            case .needsErase where disc.canOverwrite: break
             case .needsErase: return String(localized: "Erase the disc first.")
             case .unsupported: return String(localized: "This version can't write \(disc.profile.name) discs yet.")
-            case .appendable, .notWritable: return String(localized: "Insert a blank disc.")
+            case .appendable, .notWritable: return String(localized: "This disc is already burned. Insert a blank disc.")
             }
         }
         if items.isEmpty { return String(localized: "Add files to burn.") }
@@ -241,10 +271,10 @@ final class AppModel {
     // MARK: - Burning
 
     func burn() {
-        guard canBurn, let engine = selectedEngine, let disc = blankDisc else { return }
+        guard canBurn, let engine = selectedEngine, let disc = writableDisc else { return }
         let urls = items.map(\.url)
         let name = discName.isEmpty ? String(localized: "Untitled") : discName
-        let options = WriteOptions(verify: true, ejectWhenDone: ejectWhenDone)
+        let options = WriteOptions(verify: true, ejectWhenDone: ejectWhenDone, eraseFirst: disc.canOverwrite)
         let checksums = includeChecksums
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
         activity = .buildingImage(fraction: 0)
@@ -267,7 +297,7 @@ final class AppModel {
                 }.value
                 try Task.checkCancellation()
                 let image = try FileImageSource(url: imageURL)
-                guard image.blockCount <= Int(disc.freeBlocks) else {
+                guard disc.canOverwrite || image.blockCount <= Int(disc.freeBlocks) else {
                     throw DriveError.doesNotFit(neededBlocks: image.blockCount, freeBlocks: Int(disc.freeBlocks))
                 }
                 let report = try await engine.write(image, options: options) { progress in

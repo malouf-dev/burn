@@ -10,6 +10,7 @@ struct BurnApp: App {
         Window("Burn", id: "main") {
             ContentView(model: model, verifier: verifier)
         }
+        .defaultSize(width: 640, height: 620)
         .windowResizability(.contentMinSize)
     }
 }
