@@ -123,6 +123,7 @@ public struct SenseData: Sendable, Equatable, CustomStringConvertible {
         case (0x3A, _): return "There's no disc in the drive."
         case (0x44, _): return "The drive reported an internal failure."
         case (0x51, 0x01): return "An earlier erase of this disc didn't finish."
+        case (0x53, 0x02): return "The disc is locked in the drive."
         case (0x51, _): return "The drive couldn't erase the disc."
         case (0x63, _): return "The end of the disc's writable area was reached."
         case (0x64, _): return "The drive rejected the write mode for this disc."

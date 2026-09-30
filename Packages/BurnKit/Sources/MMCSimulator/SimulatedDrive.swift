@@ -110,6 +110,14 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     }
     private var _isMounted = false
 
+    /// True while the tray is locked, as macOS locks it for a mounted disc. The lock outlasts an
+    /// unmount, and eject is refused with 05/53/02 until PREVENT ALLOW MEDIUM REMOVAL unlocks it.
+    public var mediumRemovalPrevented: Bool {
+        get { withLock { _mediumRemovalPrevented } }
+        set { withLock { _mediumRemovalPrevented = newValue } }
+    }
+    private var _mediumRemovalPrevented = false
+
     /// When true, exclusive access is refused, as when a disc can't be unmounted.
     public var refusesExclusiveAccess: Bool {
         get { withLock { _refusesExclusiveAccess } }
@@ -279,7 +287,9 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         case 0x23: return readFormatCapacities(command)
         case 0x04: return formatUnit(command)
         case 0x1B: return startStopUnit(cdb)
-        case 0x1E: return .good()
+        case 0x1E:
+            _mediumRemovalPrevented = cdb[4] & 0x01 != 0
+            return .good()
         default: return .check(.invalidCommand)
         }
     }
@@ -532,6 +542,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         let loadEject = cdb[4] & 0x02 != 0
         let start = cdb[4] & 0x01 != 0
         if loadEject && !start {
+            if _mediumRemovalPrevented { return .check(SenseData(key: 0x05, asc: 0x53, ascq: 0x02)) }
             media = nil
         }
         return .good()

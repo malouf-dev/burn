@@ -476,12 +476,12 @@ public actor DiscDrive {
                 await releaseDrive()
                 return .erased
             }
-            _ = try await run(MMC.startStopUnit(load: false), "EJECT")
+            try await ejectLocked()
             await releaseDrive()
             return .ejected
         } catch {
             // Get the disc out before macOS can read it.
-            _ = try? await run(MMC.startStopUnit(load: false), "EJECT")
+            try? await ejectLocked()
             await releaseDrive()
             throw error
         }
@@ -667,12 +667,20 @@ public actor DiscDrive {
         }
         try await beginExclusiveAccess()
         do {
-            _ = try await run(MMC.startStopUnit(load: false), "EJECT")
+            try await ejectLocked()
             await endExclusiveAccess()
         } catch {
             await endExclusiveAccess()
             throw error
         }
+    }
+
+    /// Unlocks the tray, then ejects. macOS locks the tray while a disc is mounted, and the lock
+    /// outlasts the unmount, so without this the drive answers 05/53/02, medium removal
+    /// prevented (from the first eject in the app).
+    private func ejectLocked() async throws {
+        _ = try? await perform(MMC.preventAllowMediumRemoval(prevent: false))
+        _ = try await run(MMC.startStopUnit(load: false), "EJECT")
     }
 
     /// Closes the tray.

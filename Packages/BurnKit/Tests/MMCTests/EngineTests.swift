@@ -598,6 +598,21 @@ struct EraseTests {
         #expect(!simulator.hasExclusiveAccess)
     }
 
+    // First eject in the app: the unmounted CD-R stayed locked in the drive (05/53/02).
+    @Test func ejectUnlocksTheTrayMacOSLocked() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .cdR, capacityBlocks: 300_000, blockCount: 326))
+        simulator.isMounted = true
+        simulator.mediumRemovalPrevented = true
+        let drive = DiscDrive(transport: simulator)
+        try await drive.eject()
+        #expect(simulator.currentMedia == nil)
+        let codes = simulator.operationCodes
+        let unlock = try #require(codes.lastIndex(of: 0x1E))
+        let eject = try #require(codes.lastIndex(of: 0x1B))
+        #expect(unlock < eject)
+        #expect(!simulator.hasExclusiveAccess)
+    }
+
     // Hardware run 8: erasing a mounted DVD-RW failed because exclusive access was refused.
     @Test func eraseUnmountsAMountedDisc() async throws {
         let simulator = SimulatedDrive(media: .written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176))
