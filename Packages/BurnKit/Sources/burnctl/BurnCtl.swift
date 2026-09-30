@@ -413,7 +413,10 @@ struct BurnCtl {
         }
     }
 
+    private static let phaseClock = PhaseClock()
+
     static func printProgress(_ progress: WriteProgress) {
+        let elapsed = phaseClock.elapsed(in: progress.phase)
         let label: String
         switch progress.phase {
         case .preparing: label = "Preparing"
@@ -421,11 +424,14 @@ struct BurnCtl {
         case .closing: label = "Closing the disc"
         case .verifying: label = "Verifying"
         }
-        if progress.isIndeterminate {
-            printStatusLine("\(label)…")
-        } else {
-            printStatusLine("\(label) " + String(format: "%5.1f%%", progress.fraction * 100))
+        var text = progress.isIndeterminate ? "\(label)…" : "\(label) " + String(format: "%5.1f%%", progress.fraction * 100)
+        if progress.phase == .closing {
+            // Hardware run 17: a DVD-RW's progress reached 100% after 4 minutes, then the drive
+            // took 3 more to finish with no further progress.
+            if !progress.isIndeterminate && progress.fraction >= 1 { text = "Closing the disc: finishing up" }
+            text += String(format: "  %d:%02d", Int(elapsed) / 60, Int(elapsed) % 60)
         }
+        printStatusLine(text)
     }
 
     /// Rewrites the current terminal line, padding so nothing from a longer earlier line is left behind.
@@ -492,5 +498,22 @@ struct Arguments {
 
     func remaining() -> [String] {
         items
+    }
+}
+
+/// How long the current write phase has been running, for the status line.
+final class PhaseClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var phase: WritePhase?
+    private var started = Date()
+
+    func elapsed(in current: WritePhase) -> TimeInterval {
+        lock.lock()
+        defer { lock.unlock() }
+        if phase != current {
+            phase = current
+            started = Date()
+        }
+        return Date().timeIntervalSince(started)
     }
 }
