@@ -30,6 +30,13 @@ public struct ChecksumProgress: Sendable, Equatable {
     public var checkedBytes: UInt64
     public var totalBytes: UInt64
 
+    public init(checkedFiles: Int, totalFiles: Int, checkedBytes: UInt64, totalBytes: UInt64) {
+        self.checkedFiles = checkedFiles
+        self.totalFiles = totalFiles
+        self.checkedBytes = checkedBytes
+        self.totalBytes = totalBytes
+    }
+
     public var fraction: Double {
         totalBytes == 0 ? (totalFiles == 0 ? 1 : Double(checkedFiles) / Double(totalFiles))
                         : Double(checkedBytes) / Double(totalBytes)
