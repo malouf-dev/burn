@@ -44,6 +44,8 @@ final class AppModel {
     private(set) var items: [DiscItem] = []
     var discName = String(localized: "Untitled")
     var ejectWhenDone = false
+    /// Put a hidden `.burn` folder with a checksum for every file on the disc (decision D12).
+    var includeChecksums = true
     private(set) var activity: Activity = .idle
     var outcome: Outcome?
     private(set) var lastLog = ""
@@ -179,6 +181,8 @@ final class AppModel {
         let urls = items.map(\.url)
         let name = discName.isEmpty ? String(localized: "Untitled") : discName
         let options = WriteOptions(verify: true, ejectWhenDone: ejectWhenDone)
+        let checksums = includeChecksums
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
         activity = .buildingImage(fraction: 0)
         outcome = nil
 
@@ -188,6 +192,8 @@ final class AppModel {
             do {
                 try await Task.detached(priority: .userInitiated) {
                     var builder = ISOImageBuilder(volumeName: name)
+                    builder.includesChecksums = checksums
+                    builder.applicationName = "Burn \(version)"
                     for url in urls { try builder.add(url) }
                     try builder.write(to: imageURL) { fraction in
                         Task { @MainActor in
@@ -203,8 +209,11 @@ final class AppModel {
                 let report = try await engine.write(image, options: options) { progress in
                     Task { @MainActor in self.activity = .burning(progress) }
                 }
-                finish(Outcome(succeeded: true, title: String(localized: "Written and verified"),
-                               detail: String(localized: "\(ByteCountFormatter.string(fromByteCount: Int64(report.imageBlocks) * 2048, countStyle: .file)) written to \(report.profile.name) in \(Int(report.duration)) seconds.")),
+                var detail = String(localized: "\(ByteCountFormatter.string(fromByteCount: Int64(report.imageBlocks) * 2048, countStyle: .file)) written to \(report.profile.name) in \(Int(report.duration)) seconds.")
+                if checksums {
+                    detail += " " + String(localized: "The disc carries checksums, so you can check it again any time in Verify.")
+                }
+                finish(Outcome(succeeded: true, title: String(localized: "Written and verified"), detail: detail),
                        log: engine.log)
             } catch DriveError.cancelled, is CancellationError {
                 let settled = await settleDisc(engine)

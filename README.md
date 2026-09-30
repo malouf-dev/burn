@@ -6,6 +6,15 @@ Status: early development, working towards 0.1 alpha. See [docs/proposal.md](doc
 
 The original Objective-C Burn app is on the [`legacy`](../../tree/legacy) branch, kept as a reference.
 
+## What it does now
+
+- Burns files and folders to CD-R, DVD-R and DVD-RW as ISO 9660 with Joliet, then reads every block back to check it. DVD+R and BD-R are written by the same engine but not yet tested on a real drive. See [docs/hardware-testing.md](docs/hardware-testing.md).
+- Puts a hidden `.burn` folder on each disc with a SHA-256 checksum for every file. The app's Verify view checks a disc against it. Without Burn, run this from the disc's root:
+
+```sh
+shasum -a 256 -c .burn/SHA256SUMS
+```
+
 ## Layout
 
 - `App/` holds the SwiftUI app.

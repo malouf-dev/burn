@@ -2,7 +2,44 @@ import MMC
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// The two things the window does, chosen from the toolbar.
+enum Mode: String, CaseIterable, Identifiable {
+    case burn
+    case verify
+    var id: Self { self }
+}
+
 struct ContentView: View {
+    @Bindable var model: AppModel
+    let verifier: VerifyModel
+    @SceneStorage("mode") private var mode: Mode = .burn
+
+    var body: some View {
+        Group {
+            switch mode {
+            case .burn: BurnView(model: model)
+            case .verify: VerifyView(model: verifier)
+            }
+        }
+        .frame(minWidth: 640, minHeight: 460)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("Mode", selection: $mode) {
+                    Label("Burn", systemImage: "opticaldisc").tag(Mode.burn)
+                    Label("Verify", systemImage: "checkmark.seal").tag(Mode.verify)
+                }
+                .pickerStyle(.segmented)
+                .labelStyle(.titleAndIcon)
+                .accessibilityLabel("Mode")
+                // The burn's progress lives in the Burn view, so stay there until it's done.
+                .disabled(model.activity != .idle)
+            }
+        }
+    }
+}
+
+/// Burn's data view: the disc and what will go on it.
+struct BurnView: View {
     @Bindable var model: AppModel
     @State private var selection = Set<DiscItem.ID>()
     @State private var showingImporter = false
@@ -14,11 +51,11 @@ struct ContentView: View {
         VStack(spacing: 0) {
             DriveHeader(model: model, confirmingErase: $confirmingErase)
             Divider()
+            DiscHeader(model: model)
             fileList
             Divider()
             footer
         }
-        .frame(minWidth: 560, minHeight: 420)
         .fileImporter(isPresented: $showingImporter, allowedContentTypes: [.item, .folder],
                       allowsMultipleSelection: true) { result in
             if case .success(let urls) = result { model.add(urls) }
@@ -60,7 +97,9 @@ struct ContentView: View {
     private var burnSummary: String {
         let size = ByteCountFormatter.string(fromByteCount: model.estimatedBytes, countStyle: .file)
         let media = model.blankDisc?.profile.name ?? ""
-        return String(localized: "\(size) will be written to the \(media) as “\(model.discName)”, then checked block by block.")
+        let written = String(localized: "\(size) will be written to the \(media) as “\(model.discName)”, then checked block by block.")
+        guard model.includeChecksums else { return written }
+        return written + " " + String(localized: "A checksum for every file goes on the disc too, so you can check it again in Verify years from now.")
     }
 
     @ViewBuilder
@@ -75,23 +114,17 @@ struct ContentView: View {
         } else {
             List(selection: $selection) {
                 ForEach(model.items) { item in
-                    HStack {
-                        Image(systemName: item.isDirectory ? "folder" : "doc")
-                            .foregroundStyle(.secondary)
-                            .accessibilityHidden(true)
-                        Text(item.name)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        Spacer()
-                        if let size = item.size {
-                            Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
-                                .foregroundStyle(.secondary)
-                                .monospacedDigit()
-                        } else {
-                            ProgressView().controlSize(.small)
+                    if item.isDirectory {
+                        DisclosureGroup {
+                            FolderContents(url: item.url)
+                        } label: {
+                            ItemRow(name: item.name, isDirectory: true, size: item.size)
                         }
+                        .tag(item.id)
+                    } else {
+                        ItemRow(name: item.name, isDirectory: false, size: item.size)
+                            .tag(item.id)
                     }
-                    .accessibilityElement(children: .combine)
                 }
             }
             .onDeleteCommand { model.remove(selection) }
@@ -115,11 +148,6 @@ struct ContentView: View {
             }
             .disabled(selection.isEmpty)
 
-            TextField("Disc name", text: $model.discName)
-                .textFieldStyle(.roundedBorder)
-                .frame(maxWidth: 200)
-                .accessibilityLabel("Disc name")
-
             Spacer()
 
             CapacityView(model: model)
@@ -132,6 +160,91 @@ struct ContentView: View {
                 .disabled(!model.canBurn)
         }
         .padding(12)
+    }
+}
+
+/// The disc as the root of what's being burned, as in Burn: its name, format and options.
+struct DiscHeader: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "opticaldisc")
+                .font(.system(size: 22))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField("Disc name", text: $model.discName)
+                .textFieldStyle(.plain)
+                .font(.title3.weight(.semibold))
+                .frame(maxWidth: 260)
+                .accessibilityLabel("Disc name")
+            Spacer()
+            Text("ISO 9660 + Joliet")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .help("Readable on Mac, Windows and Linux. Files must be under 4 GB each.")
+            Toggle("Checksums", isOn: $model.includeChecksums)
+                .toggleStyle(.checkbox)
+                .help("Adds a hidden .burn folder with a checksum for every file, so the disc can be checked in Verify, or with shasum, years from now.")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.quaternary.opacity(0.4))
+    }
+}
+
+/// One file or folder in the list. With no size, a spinner shows while `measuring`.
+struct ItemRow: View {
+    let name: String
+    let isDirectory: Bool
+    let size: Int64?
+    var measuring = true
+
+    var body: some View {
+        HStack {
+            Image(systemName: isDirectory ? "folder" : "doc")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            Text(name)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Spacer()
+            if let size {
+                Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            } else if measuring {
+                ProgressView().controlSize(.small)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// What's inside an added folder, read when the folder is opened. For looking only.
+struct FolderContents: View {
+    let url: URL
+
+    var body: some View {
+        ForEach(children, id: \.self) { child in
+            let isDirectory = (try? child.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
+            if isDirectory {
+                DisclosureGroup {
+                    FolderContents(url: child)
+                } label: {
+                    ItemRow(name: child.lastPathComponent, isDirectory: true, size: nil, measuring: false)
+                }
+            } else {
+                let size = Int64((try? child.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+                ItemRow(name: child.lastPathComponent, isDirectory: false, size: size)
+            }
+        }
+    }
+
+    private var children: [URL] {
+        let contents = (try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
+                                                                     options: [.skipsHiddenFiles])) ?? []
+        return contents.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
     }
 }
 
