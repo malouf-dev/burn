@@ -47,6 +47,17 @@ struct ChecksumVerifierTests {
         #expect(report.matched.count == expected.count)
     }
 
+    @Test func eachFileIsReportedAsItsChecked() throws {
+        let (disc, expected) = try mountedCopy()
+        try Data("tampered".utf8).write(to: disc.appendingPathComponent("Holiday Photos/readme.txt"))
+        let results = FileResults()
+        _ = try ChecksumVerifier.verify(root: disc, file: { results.add($0, $1) })
+        #expect(results.all.count == expected.count)
+        #expect(results.all["Holiday Photos/readme.txt"] == .changed)
+        #expect(results.all.values.filter { $0 == .matched }.count == expected.count - 1)
+        #expect(try ChecksumVerifier.listedFiles(at: disc).count == expected.count)
+    }
+
     @Test func progressReachesTheEnd() throws {
         let (disc, expected) = try mountedCopy()
         let last = LastProgress()
@@ -86,5 +97,22 @@ final class LastProgress: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         return stored
+    }
+}
+
+final class FileResults: @unchecked Sendable {
+    private let lock = NSLock()
+    private var results: [String: FileCheck] = [:]
+
+    func add(_ path: String, _ check: FileCheck) {
+        lock.lock()
+        defer { lock.unlock() }
+        results[path] = check
+    }
+
+    var all: [String: FileCheck] {
+        lock.lock()
+        defer { lock.unlock() }
+        return results
     }
 }

@@ -24,6 +24,14 @@ public struct ChecksumReport: Sendable, Equatable {
     }
 }
 
+/// One listed file's result.
+public enum FileCheck: Sendable, Equatable {
+    case matched
+    case changed
+    case missing
+    case unreadable
+}
+
 public struct ChecksumProgress: Sendable, Equatable {
     public var checkedFiles: Int
     public var totalFiles: Int
@@ -57,15 +65,26 @@ public enum ChecksumVerifier {
         return try? JSONDecoder().decode(DiscInfo.self, from: data)
     }
 
-    /// Reads every listed file and compares its SHA-256 with the list. Blocks until done, so call
-    /// it off the main thread. Throws `CancellationError` if the calling task is cancelled.
-    public static func verify(root: URL,
-                              progress: @Sendable (ChecksumProgress) -> Void = { _ in }) throws -> ChecksumReport {
+    /// The paths in the disc's checksum list, in its order, for showing before a check.
+    public static func listedFiles(at root: URL) throws -> [String] {
+        try entries(at: root).map(\.path)
+    }
+
+    private static func entries(at root: URL) throws -> [(path: String, digest: String)] {
         guard hasChecksums(at: root) else { throw DiscChecksumsError.noChecksums }
         guard let data = try? Data(contentsOf: sumsURL(root)) else {
             throw DiscChecksumsError.unreadable(DiscChecksums.sumsName)
         }
-        let entries = try DiscChecksums.parse(String(decoding: data, as: UTF8.self))
+        return try DiscChecksums.parse(String(decoding: data, as: UTF8.self))
+    }
+
+    /// Reads every listed file and compares its SHA-256 with the list. Blocks until done, so call
+    /// it off the main thread. Throws `CancellationError` if the calling task is cancelled.
+    /// `file` hears each file's result as soon as it's known.
+    public static func verify(root: URL,
+                              progress: @Sendable (ChecksumProgress) -> Void = { _ in },
+                              file: @Sendable (String, FileCheck) -> Void = { _, _ in }) throws -> ChecksumReport {
+        let entries = try entries(at: root)
         var report = ChecksumReport(info: info(at: root))
 
         // Match names in composed (NFC) form: macOS can report a disc's names decomposed.
@@ -81,22 +100,26 @@ public enum ChecksumVerifier {
 
         for entry in entries {
             try Task.checkCancellation()
-            guard let file = onDisc[entry.path.precomposedStringWithCanonicalMapping] else {
+            guard let found = onDisc[entry.path.precomposedStringWithCanonicalMapping] else {
                 report.missing.append(entry.path)
+                file(entry.path, .missing)
                 state.checkedFiles += 1
                 progress(state)
                 continue
             }
-            switch hash(file.url, progress: { bytes in
+            switch hash(found.url, progress: { bytes in
                 state.checkedBytes += bytes
                 progress(state)
             }) {
             case .some(let digest) where digest == entry.digest:
                 report.matched.append(entry.path)
+                file(entry.path, .matched)
             case .some:
                 report.changed.append(entry.path)
+                file(entry.path, .changed)
             case .none:
                 report.unreadable.append(entry.path)
+                file(entry.path, .unreadable)
             }
             state.checkedFiles += 1
             progress(state)
