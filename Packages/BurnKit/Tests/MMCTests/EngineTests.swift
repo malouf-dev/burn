@@ -521,6 +521,57 @@ struct EraseTests {
         await #expect(throws: DriveError.unsupportedMedia(.dvdPlusR)) { _ = try await drive.formatDVDRW() }
     }
 
+    // From the first run of the app: a rewritable disc with data should be offered for burning,
+    // erased first.
+    @Test func overwriteErasesThenBurns() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 500))
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.notWritable(.needsErase)) {
+            try await drive.write(patternImage(blocks: 100))
+        }
+        let phases = PhaseRecorder()
+        let report = try await drive.write(patternImage(blocks: 100), options: WriteOptions(eraseFirst: true)) { progress in
+            phases.add(progress.phase)
+        }
+        #expect(report.verified)
+        #expect(phases.seen == [.preparing, .erasing, .writing, .closing, .verifying])
+        #expect(simulator.commandHistory.contains { $0.first == 0xA1 })
+        #expect(!simulator.hasExclusiveAccess)
+        #expect(!(await drive.isHoldingDrive))
+    }
+
+    @Test func overwriteLeavesWriteOnceDiscsAlone() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .dvdPlusR, capacityBlocks: 20_000, blockCount: 50))
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.notWritable(.notWritable)) {
+            try await drive.write(patternImage(blocks: 10), options: WriteOptions(eraseFirst: true))
+        }
+        #expect(!simulator.commandHistory.contains { $0.first == 0xA1 })
+        #expect(!simulator.hasExclusiveAccess)
+    }
+
+    @Test func overwriteThatDoesNotFitGivesTheDriveBack() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .cdRW, capacityBlocks: 300, blockCount: 50))
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.doesNotFit(neededBlocks: 400, freeBlocks: 300)) {
+            try await drive.write(patternImage(blocks: 400), options: WriteOptions(eraseFirst: true))
+        }
+        #expect(!simulator.hasExclusiveAccess)
+        #expect(!(await drive.isHoldingDrive))
+    }
+
+    @Test func burnedDiscsReportWhatTheyHold() async throws {
+        let written = SimulatedDrive(media: .written(profile: .cdR, capacityBlocks: 300_000, blockCount: 326))
+        let disc = try #require(try await discState(DiscDrive(transport: written)))
+        #expect(disc.usedBlocks == 326)
+        #expect(disc.usedBytes == 326 * 2048)
+        #expect(!disc.canOverwrite)
+        let rewritable = SimulatedDrive(media: .written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176))
+        #expect(try await discState(DiscDrive(transport: rewritable))?.canOverwrite == true)
+        let blank = SimulatedDrive(media: .init(profile: .cdR, capacityBlocks: 300_000))
+        #expect(try await discState(DiscDrive(transport: blank))?.usedBlocks == 0)
+    }
+
     @Test func eraseRefusesWriteOnceDiscs() async throws {
         let simulator = SimulatedDrive(media: .written(profile: .dvdPlusR, capacityBlocks: 20_000, blockCount: 5))
         let drive = DiscDrive(transport: simulator)

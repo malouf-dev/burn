@@ -14,7 +14,7 @@ struct BurnCtl {
       burnctl diagnose
       burnctl status [--drive N]
       burnctl make-iso PATH... --output FILE [--name NAME] [--no-checksums]
-      burnctl burn PATH... [--drive N] [--name NAME] [--simulate] [--no-verify] [--no-checksums] [--eject] [--yes] [--log FILE]
+      burnctl burn PATH... [--drive N] [--name NAME] [--overwrite] [--simulate] [--no-verify] [--no-checksums] [--eject] [--yes] [--log FILE]
       burnctl verify-files PATH
       burnctl erase [--drive N] [--full] [--yes] [--log FILE]
       burnctl inspect [--drive N] [--log FILE]
@@ -25,6 +25,8 @@ struct BurnCtl {
     PATH is a file or folder to put on the disc, or a single .iso image to burn as it is.
     A single folder's contents go at the root of the disc, which is named after the folder.
     Drives are numbered from 1, in the order `burnctl list` shows them.
+    burn --overwrite erases a rewritable disc that has data on it, then burns, keeping the drive
+    throughout.
     Discs get a hidden .burn folder with a SHA-256 checksum for every file. verify-files checks a
     mounted disc, such as /Volumes/Name, against it. So does `shasum -a 256 -c .burn/SHA256SUMS`
     run from the disc's root.
@@ -117,6 +119,7 @@ struct BurnCtl {
         let simulate = arguments.flag("--simulate")
         let verify = !arguments.flag("--no-verify")
         let checksums = !arguments.flag("--no-checksums")
+        let overwrite = arguments.flag("--overwrite")
         let eject = arguments.flag("--eject")
         let yes = arguments.flag("--yes")
         let logPath = arguments.option("--log")
@@ -129,11 +132,14 @@ struct BurnCtl {
 
         let state = try await drive.state()
         print("Disc:  \(describe(state))")
-        guard case .disc(let disc) = state, disc.writability == .blank else {
+        guard case .disc(let disc) = state, disc.writability == .blank || (overwrite && disc.canOverwrite) else {
+            if case .disc(let disc) = state, disc.canOverwrite {
+                throw CLIError("This \(disc.profile.name) has data on it. Add --overwrite to erase it and burn.")
+            }
             throw CLIError("The disc in the drive can't be written. Insert a blank disc.")
         }
         if !yes {
-            let action = simulate ? "Simulate burning" : "Burn"
+            let action = simulate ? "Simulate burning" : (disc.writability == .blank ? "Burn" : "Erase and burn")
             guard confirm("\(action) \(disc.profile.name)? This can't be undone on write-once discs. Type yes to continue: ") else {
                 print("Cancelled.")
                 return
@@ -142,8 +148,8 @@ struct BurnCtl {
 
         let started = Date()
         do {
-            let report = try await drive.write(image, options: WriteOptions(simulate: simulate, verify: verify,
-                                                                          ejectWhenDone: eject)) { progress in
+            let options = WriteOptions(simulate: simulate, verify: verify, ejectWhenDone: eject, eraseFirst: overwrite)
+            let report = try await drive.write(image, options: options) { progress in
                 printProgress(progress)
             }
             print("")
@@ -439,10 +445,10 @@ struct BurnCtl {
             }
             switch disc.writability {
             case .blank: return "blank \(disc.profile.name), \(free) free"
-            case .needsErase: return "\(disc.profile.name) with data on it (erase it to reuse it)"
+            case .needsErase: return "\(disc.profile.name) with \(formatBytes(disc.usedBytes)) of data on it (erase it, or burn with --overwrite)"
             case .appendable: return "\(disc.profile.name) with data on it and \(free) free (adding sessions comes later)"
             case .unsupported: return "blank \(disc.profile.name), which this version can't write yet"
-            case .notWritable: return "\(disc.profile.name), closed"
+            case .notWritable: return "\(disc.profile.name), already burned, \(formatBytes(disc.usedBytes)) used"
             }
         }
     }
@@ -454,6 +460,7 @@ struct BurnCtl {
         let label: String
         switch progress.phase {
         case .preparing: label = "Preparing"
+        case .erasing: label = "Erasing"
         case .writing: label = "Writing"
         case .closing: label = "Closing the disc"
         case .verifying: label = "Verifying"

@@ -16,19 +16,26 @@ public struct DiscState: Sendable, Equatable {
     public var isErasable: Bool
     /// Blocks still writable, in 2,048-byte blocks.
     public var freeBlocks: UInt32
+    /// Blocks already recorded.
+    public var usedBlocks: UInt32
     public var writability: Writability
 
     public init(profile: MediaProfile, status: DiscInformation.Status, lastSessionState: DiscInformation.SessionState? = nil,
-                isErasable: Bool, freeBlocks: UInt32, writability: Writability) {
+                isErasable: Bool, freeBlocks: UInt32, usedBlocks: UInt32 = 0, writability: Writability) {
         self.profile = profile
         self.status = status
         self.lastSessionState = lastSessionState ?? (status == .blank ? .empty : .complete)
         self.isErasable = isErasable
         self.freeBlocks = freeBlocks
+        self.usedBlocks = usedBlocks
         self.writability = writability
     }
 
     public var freeBytes: Int64 { Int64(freeBlocks) * Int64(MMC.blockSize) }
+    public var usedBytes: Int64 { Int64(usedBlocks) * Int64(MMC.blockSize) }
+
+    /// A rewritable disc with data that a burn can erase first (`WriteOptions.eraseFirst`).
+    public var canOverwrite: Bool { writability == .needsErase && profile.supportsBlank }
 
     /// True when a burn stopped before the disc was closed, so the disc may not read back.
     public var isUnfinished: Bool { lastSessionState == .incomplete || lastSessionState == .damaged }

@@ -6,16 +6,22 @@ public struct WriteOptions: Sendable {
     /// Read the disc back and compare it with the image. Always on in the app.
     public var verify: Bool
     public var ejectWhenDone: Bool
+    /// Erase a rewritable disc that has data on it, then burn. The drive is held throughout, so
+    /// macOS never reads the disc in between.
+    public var eraseFirst: Bool
 
-    public init(simulate: Bool = false, verify: Bool = true, ejectWhenDone: Bool = false) {
+    public init(simulate: Bool = false, verify: Bool = true, ejectWhenDone: Bool = false, eraseFirst: Bool = false) {
         self.simulate = simulate
         self.verify = verify
         self.ejectWhenDone = ejectWhenDone
+        self.eraseFirst = eraseFirst
     }
 }
 
 public enum WritePhase: Sendable, Equatable {
     case preparing
+    /// Erasing a rewritable disc before burning, with `WriteOptions.eraseFirst`.
+    case erasing
     case writing
     case closing
     case verifying
@@ -38,14 +44,14 @@ public struct WriteProgress: Sendable, Equatable {
     public var fraction: Double {
         switch phase {
         case .preparing: return 0
-        case .closing: return driveProgress ?? 0
+        case .closing, .erasing: return driveProgress ?? 0
         case .writing, .verifying: return totalBlocks == 0 ? 0 : Double(completedBlocks) / Double(totalBlocks)
         }
     }
 
     /// True when there is no meaningful fraction to show.
     public var isIndeterminate: Bool {
-        phase == .preparing || (phase == .closing && driveProgress == nil)
+        phase == .preparing || ((phase == .closing || phase == .erasing) && driveProgress == nil)
     }
 }
 
@@ -172,7 +178,19 @@ public actor DiscDrive {
         }
 
         var freeBlocks: UInt32 = 0
-        if info.status != .complete, info.lastTrackInLastSession > 0 {
+        var usedBlocks: UInt32 = 0
+        if info.status != .blank, info.lastTrackInLastSession > 0 {
+            // What's recorded in each track, and the space left in the last one.
+            for number in 1...min(info.lastTrackInLastSession, 99) {
+                let trackBytes = try await run(MMC.readTrackInformation(track: UInt32(number)), "READ TRACK INFORMATION")
+                guard let track = TrackInformation(bytes: trackBytes) else { continue }
+                usedBlocks += track.nextWritableValid ? track.nextWritable - min(track.nextWritable, track.start)
+                                                      : track.size
+                if number == info.lastTrackInLastSession && info.status != .complete {
+                    freeBlocks = track.freeBlocks
+                }
+            }
+        } else if info.lastTrackInLastSession > 0 {
             let trackBytes = try await run(MMC.readTrackInformation(track: UInt32(info.lastTrackInLastSession)),
                                            "READ TRACK INFORMATION")
             if let track = TrackInformation(bytes: trackBytes) {
@@ -185,7 +203,8 @@ public actor DiscDrive {
             log.note("The last session is \(info.lastSessionState): a burn didn't finish")
         }
         return .disc(DiscState(profile: profile, status: info.status, lastSessionState: info.lastSessionState,
-                               isErasable: info.isErasable, freeBlocks: freeBlocks, writability: writability))
+                               isErasable: info.isErasable, freeBlocks: freeBlocks, usedBlocks: usedBlocks,
+                               writability: writability))
     }
 
     // MARK: - Writing
@@ -197,9 +216,43 @@ public actor DiscDrive {
         isBusy = true
         defer { isBusy = false }
         let started = Date()
+        discTouched = false
 
         progress(WriteProgress(phase: .preparing, completedBlocks: 0, totalBlocks: image.blockCount))
-        guard case .disc(let disc) = try await readState() else { throw DriveError.noDisc }
+        guard case .disc(var disc) = try await readState() else { throw DriveError.noDisc }
+
+        // Erase first if asked. The drive stays held from here to the end of the burn.
+        var heldForErase = false
+        if disc.writability == .needsErase && options.eraseFirst && disc.profile.supportsBlank {
+            heldForErase = !holdingDrive
+            try await holdDrive()
+            do {
+                let total = image.blockCount
+                progress(WriteProgress(phase: .erasing, completedBlocks: 0, totalBlocks: total))
+                try await blankLocked(.quickThenFull) { erase in
+                    progress(WriteProgress(phase: .erasing, completedBlocks: 0, totalBlocks: total,
+                                           driveProgress: erase.fraction))
+                }
+                guard case .disc(let erased) = try await readState() else { throw DriveError.noDisc }
+                disc = erased
+            } catch {
+                if heldForErase { await releaseDrive() }
+                throw error
+            }
+        }
+        do {
+            let report = try await writeDisc(image, disc: disc, options: options, started: started, progress: progress)
+            if heldForErase { await releaseDrive() }
+            return report
+        } catch {
+            // A burn that changed the disc keeps the drive for settleAfterFailedBurn.
+            if heldForErase && !discTouched { await releaseDrive() }
+            throw error
+        }
+    }
+
+    private func writeDisc(_ image: any ImageSource, disc: DiscState, options: WriteOptions, started: Date,
+                           progress: @escaping @Sendable (WriteProgress) -> Void) async throws -> WriteReport {
         guard disc.writability == .blank else { throw DriveError.notWritable(disc.writability) }
         guard let method = disc.profile.writeMethod else { throw DriveError.unsupportedMedia(disc.profile) }
         if options.simulate && !disc.profile.supportsTestWrite {
@@ -214,7 +267,6 @@ public actor DiscDrive {
         }
         log.note("Writing \(imageBlocks) blocks (\(paddedBlocks) with padding) to \(disc.profile.name) using \(method)")
 
-        discTouched = false
         try await beginExclusiveAccess()
         do {
             let report = try await writeLocked(image, disc: disc, method: method, paddedBlocks: paddedBlocks,
@@ -226,7 +278,7 @@ public actor DiscDrive {
             if discTouched {
                 // The disc may not read back, and macOS can get stuck reading a disc like that
                 // (hardware run 9). Keep the drive until settleAfterFailedBurn.
-                if !holdingDrive { log.note("Keeping the drive: the burn failed after it changed the disc") }
+                log.note("Keeping the drive: the burn failed after it changed the disc")
                 holdingDrive = true
             } else {
                 await endExclusiveAccess()
