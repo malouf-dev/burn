@@ -211,9 +211,9 @@ An app that opens, sees a disc, and writes files to it with verification.
 2. MMC commands and parsers with tests, and the simulated drive. Done.
 3. The engine: drive status, write and verify, quick erase, against the simulated drive. Done.
 4. The ISO 9660 + Joliet builder, tested by mounting its output in CI with `hdiutil`. Done.
-5. The IOKit transport and `burnctl`. Written; untested on hardware.
-6. The SwiftUI app: drive and disc state, adding files, burning with progress, results. First version done.
-7. First hardware session on the owner's Mac: `burnctl list`, `burnctl status`, then a burn to CD-R and DVD+R.
+5. The IOKit transport and `burnctl`. Done, and tested on a Pioneer BDR-UD04 (runs 1 to 17).
+6. The SwiftUI app: drive and disc state, adding files, burning with progress, results. Done, and reworked after its first use on the owner's Mac: burn sheet, file table, log panel, Verify.
+7. First hardware sessions: CD-R, DVD-R and DVD-RW burned and verified. See `docs/hardware-testing.md`.
 8. Hardware test pass (section 10.3), fixes, then tag `v0.1.0-alpha`.
 
 ### 9.3 Media for 0.1
@@ -276,9 +276,30 @@ GitHub Actions on macOS runners builds the package and runs its tests on every p
 
 Hardware tests need the owner's Mac, a drive and blank media. The easiest way is to run Claude Code on that Mac, in the Claude Desktop app or with `claude remote-control` in a terminal in the repository folder. That session can build, run `burnctl` against the drive, and read the logs. The owner inserts and swaps discs. Record every run in `docs/hardware-testing.md`.
 
+### 9.7 Where things stand, 30 September 2026
+
+Done beyond the original 0.1 plan: a hidden `.burn` checksum folder on every disc (D12), the Verify view, erase-then-burn for rewritable discs, a full erase and DVD-RW format, keeping the drive after a failed burn, and taking the drive before a disc goes in.
+
+Left for 0.1:
+
+- Hardware: DVD+R (no media yet), BD-R, CD-RW erase, a failed burn going through the keep-the-drive path, and a burn from the app itself.
+- Acceptance criteria 8, 9 and 12 in 9.5 have simulator tests but no hardware or accessibility check yet.
+- D6, the final name and bundle identifier, is still open.
+
+### 9.8 Next: the UDF bridge (D11)
+
+The plan for large files and long names, for whoever picks it up:
+
+- Write UDF 2.01 alongside the existing ISO 9660 and Joliet trees, sharing the same file data, as a "bridge" disc. Old readers use ISO 9660, everything current uses UDF.
+- New structures: Anchor Volume Descriptor Pointer at block 256, the Volume Descriptor Sequence (Primary, Implementation Use, Partition, Logical Volume, Unallocated Space, Terminating) and its reserve copy, the Logical Volume Integrity Descriptor, the File Set Descriptor, and a File Entry plus File Identifier Descriptors for every file and folder. Each needs its descriptor tag, tag checksum and CRC.
+- Names are OSTA CS0 (compressed Unicode). Files over 1 GB need several allocation descriptors, since one extent holds under 1 GB.
+- Keep the ISO 9660 tree, but a file of 4 GB or more can only appear in UDF.
+- Test it the way ISO 9660 is tested: a reader written separately in the tests, then mount the image in CI with `hdiutil` and run `scripts/compare-trees.py` and `shasum -a 256 -c .burn/SHA256SUMS`.
+- Work from ECMA-167 and the OSTA UDF 2.01 specification. Rough size: one or two focused sessions, most of it getting macOS's UDF reader to accept the image.
+
 ## 11. Roadmap after 0.1
 
-- **0.2 Data discs done well.** UDF for large files. Editing the folder structure on the disc. Adding to discs that already have data. A file-by-file check after burning, and an optional checksum file on the disc. Notarised builds and Sparkle 2.
+- **0.2 Data discs done well.** UDF for large files (9.8). Editing the folder structure on the disc. Adding to discs that already have data. Notarised builds and Sparkle 2. (The per-file checksum file and check came early, in 0.1.)
 - **0.3 Disc images.** Burn ISO and cue/bin images. Save a disc layout as an ISO image.
 - **0.4 Audio CD.** Decoding, gaps and CD-Text, written disc-at-once with a cue sheet. Decoding may need ffmpeg as a helper tool built in CI.
 - **0.5 Disc copy.**

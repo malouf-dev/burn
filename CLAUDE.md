@@ -6,6 +6,8 @@
 - No DiscRecording. Only `Packages/BurnKit/Sources/CIOKitMMC` and `IOKitTransport` may touch IOKit.
 - Swift 6 language mode, complete concurrency checking, zero warnings.
 - Cloud sessions run Linux without Swift or Xcode. CI on macOS is the build and test signal. Don't report a change as working until CI passes.
+- Local sessions on the owner's Mac can build and test directly: `swift build` and `swift test --package-path Packages/BurnKit`, `scripts/run-app.sh` for the app, and `burnctl` against the drive. Run the tests before pushing, and still check CI.
+- Ask for logs by full path, such as `--log ~/Desktop/burn.log`. The app's Log panel can save one to the Desktop.
 - Engine logic must be testable with the simulated drive in `MMCSimulator`. When a hardware test fails, add a simulator test that reproduces it before fixing.
 - Hardware tests need the owner's Mac. Record results in docs/hardware-testing.md.
 - Commit to `main`. Keep each commit to one behaviour, and push only once CI would pass.
