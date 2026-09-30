@@ -17,7 +17,7 @@ struct BurnCtl {
       burnctl burn PATH... [--drive N] [--name NAME] [--simulate] [--no-verify] [--eject] [--yes] [--log FILE]
       burnctl erase [--drive N] [--full] [--yes] [--log FILE]
       burnctl inspect [--drive N] [--log FILE]
-      burnctl format [--drive N] [--yes] [--log FILE]
+      burnctl format [--drive N] [--quick] [--yes] [--log FILE]
       burnctl eject [--drive N]
       burnctl simulate-burn PATH... [--profile cd-r|cd-rw|dvd-r|dvd+r|dvd+r-dl|bd-r] [--name NAME]
 
@@ -232,6 +232,7 @@ struct BurnCtl {
     static func format(_ arguments: inout Arguments) async throws {
         let drive = try openDrive(arguments.option("--drive"))
         let yes = arguments.flag("--yes")
+        let quick = arguments.flag("--quick")
         let logPath = arguments.option("--log")
         let state = try await discStateTakingDriveIfEmpty(drive, logPath: logPath)
         print("Disc: \(describe(state))")
@@ -244,7 +245,7 @@ struct BurnCtl {
         }
         do {
             printStatusLine("Formatting…")
-            let profile = try await drive.formatDVDRW { fraction in
+            let profile = try await drive.formatDVDRW(quick: quick) { fraction in
                 if let fraction {
                     printStatusLine("Formatting " + String(format: "%5.1f%%", fraction * 100))
                 }

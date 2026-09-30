@@ -476,6 +476,7 @@ struct EraseTests {
         #expect(recorder.values == [0, 0.5])
         let format = try #require(simulator.commandHistory.first { $0.first == 0x04 })
         #expect(format[1] == 0x11)
+        #expect(simulator.lastFormatType == 0x10)
         #expect(!simulator.hasExclusiveAccess)
 
         // Erasing switches it back to sequential recording, which burnctl writes.
@@ -483,6 +484,15 @@ struct EraseTests {
         let disc = try #require(try await discState(drive))
         #expect(disc.profile == .dvdRWSequential)
         #expect(disc.writability == .blank)
+    }
+
+    @Test func quickFormatUsesType15() async throws {
+        let simulator = SimulatedDrive(media: .written(profile: .dvdRWSequential, capacityBlocks: 2_297_888, blockCount: 176))
+        let drive = DiscDrive(transport: simulator)
+        #expect(try await drive.formatDVDRW(quick: true) == .dvdRWRestrictedOverwrite)
+        let format = try #require(simulator.commandHistory.first { $0.first == 0x04 })
+        #expect(format == [0x04, 0x11, 0, 0, 0, 0])
+        #expect(simulator.lastFormatType == 0x15)
     }
 
     @Test func formatNeedsADVDRW() async throws {

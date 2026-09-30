@@ -89,8 +89,8 @@ public enum DriveError: Error, Sendable, Equatable, CustomStringConvertible {
     case doesNotFit(neededBlocks: Int, freeBlocks: Int)
     case verificationFailed(block: Int)
     case cancelled
-    /// The drive doesn't offer the format needed. `offered` lists the format types it does.
-    case formatNotOffered(offered: [UInt8])
+    /// The drive doesn't offer the format type wanted. `offered` lists the types it does.
+    case formatNotOffered(wanted: UInt8, offered: [UInt8])
     case image(String)
 
     public var description: String {
@@ -123,9 +123,9 @@ public enum DriveError: Error, Sendable, Equatable, CustomStringConvertible {
             return "Verification failed: block \(block) on the disc doesn't match."
         case .cancelled:
             return "The burn was cancelled."
-        case .formatNotOffered(let offered):
+        case .formatNotOffered(let wanted, let offered):
             let list = offered.map { hex($0) }.joined(separator: ", ")
-            return "The drive doesn't offer a full format for this disc. It offers: \(list.isEmpty ? "none" : list)."
+            return "The drive doesn't offer format type \(hex(wanted)) for this disc. It offers: \(list.isEmpty ? "none" : list)."
         case .image(let message):
             return message
         }

@@ -161,6 +161,12 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         withLock { exclusive }
     }
 
+    /// The format type of the last FORMAT UNIT received.
+    public var lastFormatType: UInt8? {
+        withLock { _lastFormatType }
+    }
+    private var _lastFormatType: UInt8?
+
     /// Operation codes of every command received, in order.
     public var operationCodes: [UInt8] {
         withLock { history.compactMap { $0.first } }
@@ -456,6 +462,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         var formats: [FormatDescriptor] = []
         if media.profile == .dvdRWSequential || media.profile == .dvdRWRestrictedOverwrite {
             formats.append(FormatDescriptor(blocks: media.capacityBlocks, formatType: 0x10, parameter: 16))
+            formats.append(FormatDescriptor(blocks: media.capacityBlocks, formatType: 0x15, parameter: 16))
         }
         let formatted = media.profile == .dvdRWRestrictedOverwrite
         let capacities = FormatCapacities(currentBlocks: media.capacityBlocks,
@@ -469,10 +476,12 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
               command.cdb[1] & 0x17 == 0x11 else {
             return .check(.invalidFieldInCDB)
         }
-        guard let descriptor = FormatDescriptor(bytes: Array(parameters[4..<12])), descriptor.formatType == 0x10,
+        guard let descriptor = FormatDescriptor(bytes: Array(parameters[4..<12])),
+              descriptor.formatType == 0x10 || descriptor.formatType == 0x15,
               media.profile == .dvdRWSequential || media.profile == .dvdRWRestrictedOverwrite else {
             return .check(SenseData(key: 0x05, asc: 0x26, ascq: 0x00))
         }
+        _lastFormatType = descriptor.formatType
         media.profile = .dvdRWRestrictedOverwrite
         media.blocks = [:]
         media.nextWritable = 0

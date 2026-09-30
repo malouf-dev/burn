@@ -557,13 +557,17 @@ public actor DiscDrive {
         }
     }
 
-    /// Formats a DVD-RW with a full format (type 10h), using the size and parameter the drive
-    /// lists for it, and returns the disc's profile afterwards. The disc ends up in restricted
+    /// Formats a DVD-RW with a full format (type 10h), or a quick one (type 15h), using the
+    /// size and parameter the drive lists for it, and returns the disc's profile afterwards. The disc ends up in restricted
     /// overwrite mode, and `erase` switches it back to sequential recording.
     ///
     /// Hardware runs 12 to 14: a DVD-RW left by run 7 failed every erase, from burnctl and
     /// drutil alike. Formatting takes a different route through the drive.
-    public func formatDVDRW(progress: @escaping @Sendable (Double?) -> Void = { _ in }) async throws -> MediaProfile {
+    ///
+    /// Hardware run 15: the full format failed with 03/31/01 at 13.8%, which may be where run 7's
+    /// cut-off write stopped. A quick format writes far less of the disc.
+    public func formatDVDRW(quick: Bool = false,
+                            progress: @escaping @Sendable (Double?) -> Void = { _ in }) async throws -> MediaProfile {
         guard !isBusy else { throw DriveError.busy }
         isBusy = true
         defer { isBusy = false }
@@ -582,12 +586,13 @@ public actor DiscDrive {
             log.note("Formats offered: " + capacities.formats.map {
                 "\(hex($0.formatType)) (\($0.blocks) blocks, parameter \($0.parameter))"
             }.joined(separator: ", "))
-            guard let full = capacities.formats.first(where: { $0.formatType == 0x10 }) else {
-                throw DriveError.formatNotOffered(offered: capacities.formats.map(\.formatType))
+            let wanted: UInt8 = quick ? 0x15 : 0x10
+            guard let descriptor = capacities.formats.first(where: { $0.formatType == wanted }) else {
+                throw DriveError.formatNotOffered(wanted: wanted, offered: capacities.formats.map(\.formatType))
             }
             // No fallback without the immediate bit: over USB a format that long would time out
             // part-way, the kind of cut-off that left run 7's disc unusable.
-            try await runLong(MMC.formatUnit(full, immediate: true), fallback: nil,
+            try await runLong(MMC.formatUnit(descriptor, immediate: true), fallback: nil,
                               "FORMAT UNIT", timeout: 4 * 3600, progress: progress)
             await endExclusiveAccess()
         } catch {
