@@ -32,6 +32,27 @@ It compares every file's contents, and compares names in composed Unicode form, 
 
 For each run: date, commit, macOS version, Mac model, drive vendor, model and firmware, connection, media brand and type, speed, result, duration, and the diagnostic log.
 
+## Where things stand
+
+On the Pioneer BD-RW BDR-UD04 (firmware 1.14, USB), as of 30 September 2026.
+
+| Media | Burn and verify | Mounts in Finder, files match | Erase | Runs |
+|---|---|---|---|---|
+| CD-R | Passed | Passed | n/a | 6 |
+| DVD-R | Passed | Passed | n/a | 4, 5 |
+| DVD-RW | Passed with the immediate-bit fix | Passed | Untested on a good disc | 17 |
+| BD-R | Not tested | Not tested | n/a | 3 read a closed disc only |
+| DVD+R, DVD+R DL | Not tested: no media | Not tested | n/a | |
+| CD-RW | Not tested | Not tested | Not tested | |
+| DVD+RW, BD-RE | Not supported yet | | | |
+
+Other findings:
+
+- A DVD-RW's close takes about 7 minutes, and a small DVD-R's about 4. USB times out any one command after 240 s. Long commands go with the immediate bit and are polled (runs 7 and 17).
+- Run 7's cut-off close left a TDK DVD-RW that this drive can't erase or format (runs 8 to 16). A failed burn now keeps the drive and erases or ejects the disc before macOS reads it.
+- Taking the drive while it is empty, then inserting the disc, stops macOS from reading a disc it would get stuck on (run 10).
+- Not yet seen on hardware: a failed burn going through the keep-the-drive path, the app itself.
+
 ## Results
 
 | Run | Date | Commit | Drive | Media | Operation | Result | Notes |

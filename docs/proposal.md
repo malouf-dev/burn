@@ -51,7 +51,9 @@ The first milestone, 0.1 alpha, is an app that opens, sees a disc, and writes fi
 | D8 | Drop VCD, SVCD, DivX and DVD-Audio. Keep data discs, audio CD, disc images, disc copy and DVD-Video. | Proposed |
 | D9 | No App Sandbox. The engine opens IOKit device interfaces, which the sandbox blocks. | Proposed, confirm on hardware |
 | D10 | Our own engine over IOKit's MMC interfaces. No DiscRecording. | Decided |
-| D11 | 0.1 disc format: ISO 9660 with Joliet, built by our own code. UDF comes in 0.2. | Proposed |
+| D11 | Data discs use ISO 9660 with Joliet, built by our own code, for now. Next comes a UDF bridge (UDF plus ISO 9660), which becomes the default once it passes the same hardware tests. | Decided |
+| D12 | Every data disc carries a hidden `.burn` folder at its root, on by default: `SHA256SUMS`, one line per file that `shasum -a 256 -c` can check without Burn, and `info.json` with the disc name, date, app version and file count. The app's Verify view checks any mounted disc that has one. | Decided |
+| D13 | The app is for data discs only for now, in one window modelled on Burn's data view. Audio, video and copy come later (D8). | Decided |
 
 ## 3. Background: Burn
 
