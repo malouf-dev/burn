@@ -127,8 +127,14 @@ public enum ChecksumVerifier {
         defer { try? input.close() }
         var hasher = SHA256()
         while true {
-            guard let chunk = try? input.read(upToCount: 1024 * 1024) else { return nil }
-            if chunk.isEmpty { break }
+            let chunk: Data?
+            do {
+                chunk = try input.read(upToCount: 1024 * 1024)
+            } catch {
+                return nil
+            }
+            // No data, or none left, means the end of the file.
+            guard let chunk, !chunk.isEmpty else { break }
             hasher.update(data: chunk)
             progress(UInt64(chunk.count))
         }

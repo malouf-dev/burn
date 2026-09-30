@@ -29,8 +29,8 @@ public enum DiscChecksums {
     /// Reads a list written by `render`, or by `shasum -a 256` itself.
     public static func parse(_ text: String) throws -> [(path: String, digest: String)] {
         var entries: [(path: String, digest: String)] = []
-        for (index, rawLine) in text.split(separator: "\n", omittingEmptySubsequences: true).enumerated() {
-            let line = rawLine.hasSuffix("\r") ? rawLine.dropLast() : rawLine
+        // Swift reads "\r\n" as one character, and isNewline covers it and "\n" alike.
+        for (index, line) in text.split(whereSeparator: \.isNewline).enumerated() {
             let hexDigits = Set("0123456789abcdefABCDEF")
             guard line.count > 66, line.prefix(64).allSatisfy({ hexDigits.contains($0) }) else {
                 throw DiscChecksumsError.badLine(index + 1)
