@@ -63,7 +63,7 @@ public enum DiscChecksumsError: Error, Sendable, Equatable, CustomStringConverti
 }
 
 /// `.burn/info.json`: details for Burn to show when checking a disc.
-public struct DiscInfo: Codable, Sendable, Equatable {
+public struct DiscInfo: Codable, Sendable, Hashable {
     public var format = "burn-checksums"
     public var formatVersion = 1
     public var discName: String
