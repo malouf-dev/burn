@@ -50,7 +50,8 @@ final class AppModel {
     var selectedDriveID: UInt64?
     private(set) var driveState: DriveState?
     private(set) var items: [DiscItem] = []
-    var discName = String(localized: "Untitled") {
+    /// Empty until the user names the disc, or adds a single folder, whose name is suggested.
+    var discName = "" {
         didSet {
             let trimmed = Self.trimmedDiscName(discName)
             if trimmed != discName { discName = trimmed }
@@ -181,8 +182,9 @@ final class AppModel {
             let isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
             let item = DiscItem(url: url, isDirectory: isDirectory, size: nil)
             items.append(item)
-            if discName == String(localized: "Untitled") && items.count == 1 {
-                discName = url.deletingPathExtension().lastPathComponent
+            // A single folder's name is a good suggestion. A file's name usually isn't.
+            if discName.isEmpty && items.count == 1 && isDirectory {
+                discName = url.lastPathComponent
             }
             let id = item.id
             Task.detached(priority: .utility) {
@@ -200,6 +202,20 @@ final class AppModel {
 
     func remove(_ ids: Set<DiscItem.ID>) {
         items.removeAll { ids.contains($0.id) }
+    }
+
+    /// Removes added items by URL. Rows inside an added folder can't be removed on their own.
+    func remove(urls: Set<URL>) {
+        items.removeAll { urls.contains($0.url) }
+    }
+
+    var rows: [FileRow] {
+        items.map(FileRow.init(item:))
+    }
+
+    /// The selected drive's command log, for the log panel.
+    var currentLog: CommandLog? {
+        selectedEngine?.log
     }
 
     /// Total bytes and the largest file, or nil if the item can't be read.

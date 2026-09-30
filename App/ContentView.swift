@@ -13,15 +13,20 @@ struct ContentView: View {
     @Bindable var model: AppModel
     let verifier: VerifyModel
     @SceneStorage("mode") private var mode: Mode = .burn
+    @AppStorage("showsLog") private var showsLog = false
 
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
             switch mode {
             case .burn: BurnView(model: model)
             case .verify: VerifyView(model: verifier)
             }
+            if showsLog {
+                Divider()
+                LogPanel(log: model.currentLog)
+            }
         }
-        .frame(minWidth: 560, minHeight: 480)
+        .frame(minWidth: 640, minHeight: 480)
         .toolbar(removing: .title)
         .toolbar {
             ToolbarItem(placement: .principal) {
@@ -35,6 +40,17 @@ struct ContentView: View {
                 // The burn's progress lives in the Burn view, so stay there until it's done.
                 .disabled(model.activity != .idle)
             }
+            ToolbarItem(placement: .primaryAction) {
+                Toggle(isOn: $showsLog) {
+                    Label("Log", systemImage: "text.alignleft")
+                }
+                .toggleStyle(.button)
+                .help("Show every command sent to the drive, with buttons to copy or save the log")
+            }
+        }
+        // Verify starts on the disc in the drive, when it has checksums.
+        .onChange(of: model.discVolume, initial: true) { _, volume in
+            verifier.prefer(model.discHasChecksums ? volume?.url : nil)
         }
     }
 }
@@ -42,9 +58,9 @@ struct ContentView: View {
 /// Burn's data view: the disc and what will go on it.
 struct BurnView: View {
     @Bindable var model: AppModel
-    @State private var selection = Set<DiscItem.ID>()
+    @State private var selection = Set<URL>()
     @State private var showingImporter = false
-    @State private var confirmingBurn = false
+    @State private var showingBurnSheet = false
     @State private var confirmingErase = false
     @State private var confirmingCancel = false
 
@@ -65,17 +81,11 @@ struct BurnView: View {
             model.add(urls)
             return true
         }
+        .sheet(isPresented: $showingBurnSheet) {
+            BurnSheet(model: model)
+        }
         .sheet(isPresented: .constant(model.activity != .idle)) {
             ProgressSheet(model: model, confirmingCancel: $confirmingCancel)
-        }
-        .confirmationDialog(model.willOverwrite ? "Erase and burn this disc?" : "Burn this disc?",
-                            isPresented: $confirmingBurn) {
-            Button(model.willOverwrite ? "Erase and Burn" : "Burn", role: model.willOverwrite ? .destructive : nil) {
-                model.burn()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(burnSummary)
         }
         .confirmationDialog("Erase this disc?", isPresented: $confirmingErase) {
             Button("Erase", role: .destructive) { model.erase() }
@@ -98,18 +108,6 @@ struct BurnView: View {
                 set: { if !$0 { model.outcome = nil } })
     }
 
-    private var burnSummary: String {
-        let size = ByteCountFormatter.string(fromByteCount: model.estimatedBytes, countStyle: .file)
-        let media = model.writableDisc?.profile.name ?? ""
-        var written = String(localized: "\(size) will be written to the \(media) as “\(model.discName)”, then checked block by block.")
-        if model.willOverwrite {
-            let current = model.discVolume.map { "“\($0.name)”" } ?? String(localized: "what's on it")
-            written = String(localized: "The disc is erased first, and \(current) is lost.") + " " + written
-        }
-        guard model.includeChecksums else { return written }
-        return written + " " + String(localized: "A checksum for every file goes on the disc too, so you can check it again in Verify years from now.")
-    }
-
     @ViewBuilder
     private var fileList: some View {
         if model.items.isEmpty {
@@ -120,22 +118,10 @@ struct BurnView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            List(selection: $selection) {
-                ForEach(model.items) { item in
-                    if item.isDirectory {
-                        DisclosureGroup {
-                            FolderContents(url: item.url)
-                        } label: {
-                            ItemRow(item: item)
-                        }
-                        .tag(item.id)
-                    } else {
-                        ItemRow(item: item)
-                            .tag(item.id)
-                    }
-                }
+            FileTable(rows: model.rows, selection: $selection) {
+                model.remove(urls: selection)
+                selection.removeAll()
             }
-            .onDeleteCommand { model.remove(selection) }
         }
     }
 
@@ -149,12 +135,12 @@ struct BurnView: View {
             .keyboardShortcut("o", modifiers: .command)
 
             Button {
-                model.remove(selection)
+                model.remove(urls: selection)
                 selection.removeAll()
             } label: {
                 Label("Remove", systemImage: "minus")
             }
-            .disabled(selection.isEmpty)
+            .disabled(selection.isEmpty || !model.items.contains { selection.contains($0.url) })
 
             Spacer()
 
@@ -169,10 +155,7 @@ struct BurnView: View {
                     .multilineTextAlignment(.trailing)
             }
 
-            Toggle("Eject when done", isOn: $model.ejectWhenDone)
-                .toggleStyle(.checkbox)
-
-            Button(model.willOverwrite ? "Erase and Burn" : "Burn") { confirmingBurn = true }
+            Button(model.willOverwrite ? "Erase and Burn…" : "Burn…") { showingBurnSheet = true }
                 .keyboardShortcut(.defaultAction)
                 .disabled(!model.canBurn)
         }
@@ -190,7 +173,7 @@ struct DiscHeader: View {
                 .font(.system(size: 22))
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
-            TextField("Disc name", text: $model.discName)
+            TextField("Disc name", text: $model.discName, prompt: Text("Untitled"))
                 .textFieldStyle(.plain)
                 .font(.title3.weight(.semibold))
                 .frame(maxWidth: 260)
@@ -208,81 +191,6 @@ struct DiscHeader: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(.quaternary.opacity(0.4))
-    }
-}
-
-/// One file or folder in the list. With no size, a spinner shows while `measuring`.
-struct ItemRow: View {
-    let name: String
-    let isDirectory: Bool
-    let size: Int64?
-    var measuring = true
-    var problem: String?
-
-    init(name: String, isDirectory: Bool, size: Int64?, measuring: Bool = true) {
-        self.name = name
-        self.isDirectory = isDirectory
-        self.size = size
-        self.measuring = measuring
-    }
-
-    init(item: DiscItem) {
-        self.init(name: item.name, isDirectory: item.isDirectory, size: item.size)
-        if item.unreadable {
-            problem = String(localized: "Can't read")
-        } else if item.hasFileTooLarge {
-            problem = String(localized: "4 GB or larger")
-        }
-    }
-
-    var body: some View {
-        HStack {
-            Image(systemName: isDirectory ? "folder" : "doc")
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-            Text(name)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Spacer()
-            if let problem {
-                Text(problem)
-                    .foregroundStyle(.red)
-            } else if let size {
-                Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-            } else if measuring {
-                ProgressView().controlSize(.small)
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// What's inside an added folder, read when the folder is opened. For looking only.
-struct FolderContents: View {
-    let url: URL
-
-    var body: some View {
-        ForEach(children, id: \.self) { child in
-            let isDirectory = (try? child.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
-            if isDirectory {
-                DisclosureGroup {
-                    FolderContents(url: child)
-                } label: {
-                    ItemRow(name: child.lastPathComponent, isDirectory: true, size: nil, measuring: false)
-                }
-            } else {
-                let size = Int64((try? child.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
-                ItemRow(name: child.lastPathComponent, isDirectory: false, size: size)
-            }
-        }
-    }
-
-    private var children: [URL] {
-        let contents = (try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
-                                                                     options: [.skipsHiddenFiles])) ?? []
-        return contents.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
     }
 }
 

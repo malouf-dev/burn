@@ -3,32 +3,64 @@ import Foundation
 import ISOBuilder
 import Observation
 
-/// The Verify view's state: mounted discs that carry a `.burn` checksum folder, and the check
-/// of the one selected (decision D12).
+/// The Verify view's state: one disc (or folder) with a `.burn` checksum folder at a time, and
+/// every file on it with its result (decision D12).
 @MainActor
 @Observable
 final class VerifyModel {
-    struct Volume: Identifiable, Hashable, Sendable {
+    /// Somewhere to check: a mounted disc, a mounted disc image, or a folder chosen by hand.
+    struct Source: Identifiable, Hashable, Sendable {
         let url: URL
         let name: String
         let info: DiscInfo?
         var id: URL { url }
     }
 
-    enum State: Equatable, Sendable {
+    enum Status: Sendable, Equatable {
+        case pending
+        case matched
+        case changed
+        case missing
+        case unreadable
+        /// On the disc but not in the checksum list.
+        case unexpected
+
+        init(_ check: FileCheck) {
+            switch check {
+            case .matched: self = .matched
+            case .changed: self = .changed
+            case .missing: self = .missing
+            case .unreadable: self = .unreadable
+            }
+        }
+    }
+
+    /// One listed file. `id` is its path from the disc's root.
+    struct Row: Identifiable, Sendable, Equatable {
+        let id: String
+        let size: Int64?
+        var status: Status
+
+        var name: String { (id as NSString).lastPathComponent }
+        var folder: String { (id as NSString).deletingLastPathComponent }
+    }
+
+    enum Phase: Sendable, Equatable {
         case idle
         case checking(ChecksumProgress)
         case finished(ChecksumReport)
         case failed(String)
     }
 
-    private(set) var volumes: [Volume] = []
+    private(set) var sources: [Source] = []
     var selectedID: URL? {
-        didSet { if oldValue != selectedID { cancel(); state = .idle } }
+        didSet { if oldValue != selectedID { cancel(); load() } }
     }
-    private(set) var state: State = .idle
-    /// Folders chosen by hand, such as a copy of a disc, checked as if they were discs.
+    private(set) var rows: [Row] = []
+    private(set) var phase: Phase = .idle
+    private var rowIndex: [String: Int] = [:]
     private var chosen: [URL] = []
+    private var preferred: URL?
     private var task: Task<Void, Never>?
 
     init() {
@@ -41,69 +73,129 @@ final class VerifyModel {
         }
     }
 
-    var selected: Volume? {
-        volumes.first { $0.id == selectedID }
+    var selected: Source? {
+        sources.first { $0.id == selectedID }
     }
 
     var isChecking: Bool {
-        if case .checking = state { return true }
+        if case .checking = phase { return true }
         return false
     }
 
-    /// Finds mounted discs and chosen folders that have checksums to check against.
+    /// Prefers the disc in the drive when it has checksums.
+    func prefer(_ url: URL?) {
+        preferred = url
+        refresh()
+        if let url, sources.contains(where: { $0.url == url }), !isChecking { selectedID = url }
+    }
+
+    /// Finds mounted discs, disc images and chosen folders that have checksums.
     func refresh() {
         let mounted = FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: [.volumeNameKey],
                                                             options: [.skipHiddenVolumes]) ?? []
-        var found: [Volume] = []
+        var found: [Source] = []
         for url in mounted + chosen where ChecksumVerifier.hasChecksums(at: url) {
             guard !found.contains(where: { $0.url == url }) else { continue }
             let name = (try? url.resourceValues(forKeys: [.volumeNameKey]).volumeName) ?? url.lastPathComponent
-            found.append(Volume(url: url, name: name, info: ChecksumVerifier.info(at: url)))
+            found.append(Source(url: url, name: name, info: ChecksumVerifier.info(at: url)))
         }
-        volumes = found
+        sources = found
         if let selectedID, !found.contains(where: { $0.id == selectedID }) {
             self.selectedID = nil
         }
-        if selectedID == nil { selectedID = found.first?.id }
+        if selectedID == nil {
+            selectedID = found.first { $0.url == preferred }?.id ?? found.first?.id
+        }
     }
 
     func choose(_ url: URL) {
         if !chosen.contains(url) { chosen.append(url) }
         refresh()
-        if volumes.contains(where: { $0.url == url }) { selectedID = url }
+        if sources.contains(where: { $0.url == url }) { selectedID = url }
+    }
+
+    /// Lists the selected disc's files, not yet checked.
+    private func load() {
+        phase = .idle
+        guard let root = selected?.url else {
+            setRows([])
+            return
+        }
+        do {
+            let paths = try ChecksumVerifier.listedFiles(at: root)
+            setRows(paths.map { Row(id: $0, size: Self.size(root.appendingPathComponent($0)), status: .pending) })
+        } catch {
+            setRows([])
+            phase = .failed("\(error)")
+        }
     }
 
     func check() {
-        guard let volume = selected, !isChecking else { return }
-        let root = volume.url
-        state = .checking(ChecksumProgress(checkedFiles: 0, totalFiles: volume.info?.fileCount ?? 0,
-                                           checkedBytes: 0, totalBytes: volume.info?.totalBytes ?? 0))
+        guard let source = selected, !isChecking else { return }
+        let root = source.url
+        setRows(rows.filter { $0.status != .unexpected }.map { Row(id: $0.id, size: $0.size, status: .pending) })
+        phase = .checking(ChecksumProgress(checkedFiles: 0, totalFiles: rows.count, checkedBytes: 0,
+                                           totalBytes: source.info?.totalBytes ?? 0))
         let throttle = ProgressThrottle()
         task = Task.detached(priority: .userInitiated) { [weak self] in
-            let result: State
+            let result: Phase
             do {
-                let report = try ChecksumVerifier.verify(root: root) { progress in
+                let report = try ChecksumVerifier.verify(root: root, progress: { progress in
                     guard throttle.shouldReport(progress) else { return }
-                    Task { @MainActor in
-                        if case .checking = self?.state { self?.state = .checking(progress) }
-                    }
-                }
+                    Task { @MainActor in self?.update(progress, root: root) }
+                }, file: { path, check in
+                    Task { @MainActor in self?.update(path, Status(check), root: root) }
+                })
                 result = .finished(report)
             } catch is CancellationError {
                 result = .idle
             } catch {
                 result = .failed("\(error)")
             }
-            await MainActor.run {
-                guard let self, self.selectedID == root else { return }
-                self.state = result
-            }
+            await MainActor.run { self?.finish(result, root: root) }
         }
     }
 
     func cancel() {
         task?.cancel()
         task = nil
+    }
+
+    // MARK: - Updates
+
+    private func update(_ progress: ChecksumProgress, root: URL) {
+        guard selectedID == root, case .checking = phase else { return }
+        phase = .checking(progress)
+    }
+
+    private func update(_ path: String, _ status: Status, root: URL) {
+        guard selectedID == root, let index = rowIndex[path] else { return }
+        rows[index].status = status
+    }
+
+    private func finish(_ result: Phase, root: URL) {
+        guard selectedID == root else { return }
+        if case .finished(let report) = result {
+            // Settle every row from the report, in case a file's update arrived late.
+            for path in report.matched { update(path, .matched, root: root) }
+            for path in report.changed { update(path, .changed, root: root) }
+            for path in report.missing { update(path, .missing, root: root) }
+            for path in report.unreadable { update(path, .unreadable, root: root) }
+            setRows(rows + report.unexpected.map { Row(id: $0, size: Self.size(root.appendingPathComponent($0)),
+                                                       status: .unexpected) })
+        } else if case .idle = result {
+            setRows(rows.map { Row(id: $0.id, size: $0.size, status: .pending) })
+        }
+        phase = result
+    }
+
+    private func setRows(_ newRows: [Row]) {
+        rows = newRows
+        rowIndex = Dictionary(newRows.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    private static func size(_ url: URL) -> Int64? {
+        (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init)
     }
 }
 
