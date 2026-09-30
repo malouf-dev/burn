@@ -106,6 +106,14 @@ struct ParserTests {
         #expect(info?.lastSessionState == .complete)
     }
 
+    // Hardware run 17: reads of a blank DVD-RW came back as "KEY 08h: Drive error".
+    @Test func blankCheckIsExplained() {
+        let sense = SenseData(key: 0x08, asc: 0x00, ascq: 0x00)
+        #expect(sense.keyName == "BLANK CHECK")
+        #expect(sense.explanation == "That part of the disc hasn't been written.")
+        #expect(SenseData(key: 0x03, asc: 0x51, ascq: 0x01).explanation == "An earlier erase of this disc didn't finish.")
+    }
+
     @Test func formatCapacities() {
         let original = FormatCapacities(currentBlocks: 2_297_888, currentDescriptorType: 1, formats: [
             FormatDescriptor(blocks: 2_297_888, formatType: 0x10, parameter: 16),

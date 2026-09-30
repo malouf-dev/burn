@@ -93,6 +93,7 @@ public struct SenseData: Sendable, Equatable, CustomStringConvertible {
         case 0x5: return "ILLEGAL REQUEST"
         case 0x6: return "UNIT ATTENTION"
         case 0x7: return "DATA PROTECT"
+        case 0x8: return "BLANK CHECK"
         case 0xB: return "ABORTED COMMAND"
         default: return "KEY \(hex(key))"
         }
@@ -100,6 +101,8 @@ public struct SenseData: Sendable, Equatable, CustomStringConvertible {
 
     /// A plain explanation for the common additional sense codes.
     public var explanation: String {
+        // Reading an unwritten part of the disc, which is normal on a blank one.
+        if key == 0x8 { return "That part of the disc hasn't been written." }
         switch (asc, ascq) {
         case (0x04, 0x01): return "The drive is getting ready."
         case (0x04, 0x04), (0x04, 0x07): return "The drive is busy with an operation."
@@ -116,7 +119,11 @@ public struct SenseData: Sendable, Equatable, CustomStringConvertible {
         case (0x29, _): return "The drive was reset."
         case (0x2C, _): return "The drive received commands in an unexpected order."
         case (0x30, _): return "The disc isn't compatible with this operation."
+        case (0x31, _): return "The drive couldn't format the disc."
         case (0x3A, _): return "There's no disc in the drive."
+        case (0x44, _): return "The drive reported an internal failure."
+        case (0x51, 0x01): return "An earlier erase of this disc didn't finish."
+        case (0x51, _): return "The drive couldn't erase the disc."
         case (0x63, _): return "The end of the disc's writable area was reached."
         case (0x64, _): return "The drive rejected the write mode for this disc."
         case (0x72, _): return "The drive couldn't close the session."
