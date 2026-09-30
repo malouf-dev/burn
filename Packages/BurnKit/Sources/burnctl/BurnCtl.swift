@@ -15,6 +15,7 @@ struct BurnCtl {
       burnctl status [--drive N]
       burnctl make-iso PATH... --output FILE [--name NAME] [--no-checksums]
       burnctl burn PATH... [--drive N] [--name NAME] [--simulate] [--no-verify] [--no-checksums] [--eject] [--yes] [--log FILE]
+      burnctl verify-files PATH
       burnctl erase [--drive N] [--full] [--yes] [--log FILE]
       burnctl inspect [--drive N] [--log FILE]
       burnctl format [--drive N] [--quick] [--yes] [--log FILE]
@@ -24,8 +25,9 @@ struct BurnCtl {
     PATH is a file or folder to put on the disc, or a single .iso image to burn as it is.
     A single folder's contents go at the root of the disc, which is named after the folder.
     Drives are numbered from 1, in the order `burnctl list` shows them.
-    Discs get a hidden .burn folder with a SHA-256 checksum for every file. To check a mounted disc,
-    run `shasum -a 256 -c .burn/SHA256SUMS` from its root, such as /Volumes/Name.
+    Discs get a hidden .burn folder with a SHA-256 checksum for every file. verify-files checks a
+    mounted disc, such as /Volumes/Name, against it. So does `shasum -a 256 -c .burn/SHA256SUMS`
+    run from the disc's root.
     Run erase or inspect with the drive empty to take the drive first, then insert the disc
     when asked. macOS then never reads the disc, which reaches discs it gets stuck on.
     """
@@ -47,6 +49,7 @@ struct BurnCtl {
             case "inspect": try await inspect(&arguments)
             case "format": try await format(&arguments)
             case "eject": try await eject(&arguments)
+            case "verify-files": try verifyFiles(&arguments)
             case "simulate-burn": try await simulateBurn(&arguments)
             case "help", "-h", "--help":
                 print(usage)
@@ -230,6 +233,31 @@ struct BurnCtl {
             return
         }
         printStatusLine(label + " " + String(format: "%5.1f%%", fraction * 100))
+    }
+
+    /// Checks a mounted disc's files against its `.burn/SHA256SUMS`.
+    static func verifyFiles(_ arguments: inout Arguments) throws {
+        guard let path = arguments.remaining().first else { throw CLIError("verify-files needs the disc's path, such as /Volumes/Name") }
+        let root = URL(fileURLWithPath: path)
+        if let info = ChecksumVerifier.info(at: root) {
+            print("Disc: \(info.discName), made \(info.created) by \(info.application), \(info.fileCount) files")
+        }
+        let report = try ChecksumVerifier.verify(root: root) { progress in
+            printStatusLine("Checking " + String(format: "%5.1f%%", progress.fraction * 100)
+                            + "  \(progress.checkedFiles) of \(progress.totalFiles) files")
+        }
+        print("")
+        for path in report.changed { print("Changed: \(path)") }
+        for path in report.missing { print("Missing: \(path)") }
+        for path in report.unreadable { print("Couldn't read: \(path)") }
+        for path in report.unexpected { print("Not in the list: \(path)") }
+        if report.isIntact {
+            print("All \(report.matched.count) files match their checksums.")
+        } else {
+            let problems = report.changed.count + report.missing.count + report.unreadable.count
+            print("\(problems) of \(report.checkedCount) files don't match.")
+            exit(1)
+        }
     }
 
     /// Fully formats a DVD-RW, a way back for one that erasing can't fix.

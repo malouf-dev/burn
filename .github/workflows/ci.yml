@@ -66,6 +66,7 @@ jobs:
           # The checksum folder must check out with plain shasum, as it will years from now.
           (cd "$MNT" && shasum -a 256 -c .burn/SHA256SUMS)
           cat "$MNT/.burn/info.json"
+          swift run --package-path Packages/BurnKit burnctl verify-files "$MNT"
           hdiutil detach "$MNT"
 
       - name: Simulated burn of the same files
