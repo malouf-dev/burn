@@ -19,7 +19,7 @@ shasum -a 256 -c .burn/SHA256SUMS
 
 - `App/` holds the SwiftUI app.
 - `Packages/BurnKit` holds the engine, the disc image builder, the IOKit transport and the `burnctl` command-line tool.
-- `docs/` holds the plan and the hardware test log.
+- `docs/` holds the plan (`proposal.md`), the hardware test log (`hardware-testing.md`), and the development notes (`development-notes.md`): why it's built this way and what we learned.
 
 ## Building
 

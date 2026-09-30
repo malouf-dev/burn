@@ -1,6 +1,7 @@
 # Working in this repository
 
 - Read docs/proposal.md first. Section 2 lists decisions; don't start work that depends on an Open one without asking.
+- Read docs/development-notes.md for what past sessions learned, especially about drives, USB timeouts and macOS holding discs.
 - This branch (`main`) is the new Swift app. The old Objective-C Burn is on `legacy`, a reference for behaviour only.
 - Licence is MIT. Never copy or translate code from Burn (GPL v2), libburn (GPL) or cdrecord (CDDL). Work from the MMC and ISO 9660 standards.
 - No DiscRecording. Only `Packages/BurnKit/Sources/CIOKitMMC` and `IOKitTransport` may touch IOKit.

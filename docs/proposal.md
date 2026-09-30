@@ -46,7 +46,7 @@ The first milestone, 0.1 alpha, is an app that opens, sees a disc, and writes fi
 | D3 | Swift 6 language mode. SwiftUI first, AppKit only where SwiftUI falls short. | Decided |
 | D4 | Minimum macOS follows a rolling policy: the current version and the two before it. Today that means macOS 15. | Decided |
 | D5 | Licence: MIT. Burn (GPL v2), libburn (GPL) and cdrecord (CDDL) are references for behaviour only. None of their code is copied or translated. | Decided |
-| D6 | Final app name and bundle identifier. The working name is Burn and the placeholder bundle ID is `com.example.burn`. | Open |
+| D6 | Final app name and bundle identifier. The app stays Burn. The repository name is open: `burn-macos` is recommended, `burn-swift` the alternative. See `docs/development-notes.md`. The placeholder bundle ID is `com.example.burn`. | Open |
 | D7 | Distribution: Developer ID signing, notarisation and Sparkle 2 updates. Not needed for 0.1. | Proposed |
 | D8 | Drop VCD, SVCD, DivX and DVD-Audio. Keep data discs, audio CD, disc images, disc copy and DVD-Video. | Proposed |
 | D9 | No App Sandbox. The engine opens IOKit device interfaces, which the sandbox blocks. | Proposed, confirm on hardware |
