@@ -37,7 +37,14 @@ jobs:
         run: swift build --package-path Packages/BurnKit -Xswiftc -warnings-as-errors
 
       - name: Test
-        run: swift test --package-path Packages/BurnKit -Xswiftc -warnings-as-errors
+        run: |
+          set -o pipefail
+          if ! swift test --package-path Packages/BurnKit -Xswiftc -warnings-as-errors 2>&1 | tee "$RUNNER_TEMP/test.log"; then
+            # One annotation with every failing line, so failures show without the full log.
+            FAILURES="$(grep -E "✘|error:|recorded an issue|Expectation failed|Fatal error|Precondition failed" "$RUNNER_TEMP/test.log" | head -60 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
+            echo "::error title=Failing tests::$FAILURES"
+            exit 1
+          fi
 
       - name: Build the app
         run: |
