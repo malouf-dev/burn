@@ -1,23 +1,25 @@
 #!/bin/bash
 # Builds the Burn app with xcodebuild and opens it, without opening Xcode.
 #
-# Usage: scripts/run-app.sh [--demo] [--release]
+# Usage: scripts/run-app.sh [--demo] [--debug]
 #   --demo     use a simulated drive with a blank DVD+R, so no real drive is needed
-#   --release  build the Release configuration instead of Debug
+#   --debug    build the Debug configuration. Release is the default, since a Debug build
+#              makes recovery data many times more slowly.
 #
 # Needs Xcode installed (xcodebuild comes with it), not running.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-configuration=Debug
+configuration=Release
 app_arguments=()
 for argument in "$@"; do
     case "$argument" in
         --demo) app_arguments+=(-demo) ;;
+        --debug) configuration=Debug ;;
         --release) configuration=Release ;;
         -h|--help)
-            sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *)

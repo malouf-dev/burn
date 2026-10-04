@@ -28,7 +28,7 @@ shasum -a 256 -c .burn/SHA256SUMS
 
 Requires macOS 15 or later and Xcode 26 or later.
 
-- The app, without opening Xcode: `scripts/run-app.sh` builds it with `xcodebuild` and opens it. Add `--demo` to use a simulated drive. Xcode must be installed, but needn't be open.
+- The app, without opening Xcode: `scripts/run-app.sh` builds a Release build with `xcodebuild` and opens it. Add `--demo` to use a simulated drive, or `--debug` for a Debug build, which makes recovery data far more slowly. Xcode must be installed, but needn't be open.
 - The app in Xcode: open `Burn.xcodeproj` and run the Burn scheme. To try it without a drive, turn on the `-demo` launch argument in the scheme (Product > Scheme > Edit Scheme > Run > Arguments). It uses a simulated drive with a blank DVD+R.
 - The engine and its tests:
 
