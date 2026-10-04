@@ -79,11 +79,9 @@ final class VerifyModel {
         let center = NSWorkspace.shared.notificationCenter
         for name in [NSWorkspace.didMountNotification, NSWorkspace.didUnmountNotification] {
             _ = center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated {
-                    Task {
-                        guard let self else { return }
-                        await self.refresh()
-                    }
+                _ = Task { @MainActor in
+                    guard let self else { return }
+                    await self.refresh()
                 }
             }
         }
