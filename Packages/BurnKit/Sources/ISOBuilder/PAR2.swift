@@ -1,3 +1,4 @@
+import CGF16
 import CryptoKit
 import Foundation
 
@@ -188,6 +189,30 @@ enum GF16 {
         exp(inputLog * exponent % 65535)
     }
 
+    /// The tables `bk_gf16_muladd` uses for one factor: for each 4-bit piece of a word, the
+    /// product's low and high bytes for all 16 values. Products of single bits are powers of 2
+    /// times the factor, and the rest follow by XOR, so no multiplication is needed.
+    static func fillTables(factor: UInt16, into buffer: inout [UInt8], at offset: Int) {
+        guard factor != 0 else {
+            for index in offset..<(offset + Int(BK_GF16_TABLE_BYTES)) { buffer[index] = 0 }
+            return
+        }
+        let log = Int(tables.log[Int(factor)])
+        for piece in 0..<4 {
+            let low = offset + piece * 32
+            let high = low + 16
+            buffer[low] = 0
+            buffer[high] = 0
+            for value in 1..<16 {
+                let bit = value.trailingZeroBitCount
+                let rest = value & (value - 1)
+                let product = (UInt16(buffer[low + rest]) | UInt16(buffer[high + rest]) << 8) ^ tables.exp[log + 4 * piece + bit]
+                buffer[low + value] = UInt8(product & 0xFF)
+                buffer[high + value] = UInt8(product >> 8)
+            }
+        }
+    }
+
     /// `destination ^= factor × source`, word by word, words little-endian. `source` may be shorter
     /// than `destination`; the rest counts as zeros, as a padded last slice does.
     static func multiplyAdd(_ factor: UInt16, _ source: UnsafeRawBufferPointer,
@@ -215,47 +240,94 @@ enum GF16 {
 }
 
 /// Recovery slices for a set of exponents, made by adding input slices one at a time in any order.
+///
+/// Input slices are gathered eight at a time, then added to every recovery slice in 64 KB pieces,
+/// so the inputs stay in the processor's cache while each recovery slice is read and written once.
+/// The work is shared across the processor's cores by exponent.
 final class PAR2Encoder: @unchecked Sendable {
+    static let batch = 8
+    static let chunk = 64 * 1024
+
     let sliceSize: Int
     let exponents: [Int]
     private let position: [Int: Int]
-    /// One buffer of `sliceSize / 2` words per exponent.
-    private var recovery: [[UInt16]]
+    private var recovery: [[UInt8]]
+    /// Up to `batch` input slices, each padded to `sliceSize`, end to end.
+    private var pending: [UInt8]
+    private var pendingLogs: [Int] = []
 
     init(sliceSize: Int, exponents: [Int]) {
         precondition(sliceSize % 4 == 0, "PAR2 slices are whole 4-byte words")
         self.sliceSize = sliceSize
         self.exponents = exponents
         position = Dictionary(uniqueKeysWithValues: exponents.enumerated().map { ($1, $0) })
-        recovery = Array(repeating: [UInt16](repeating: 0, count: sliceSize / 2), count: exponents.count)
+        recovery = Array(repeating: [UInt8](repeating: 0, count: sliceSize), count: exponents.count)
+        pending = [UInt8](repeating: 0, count: Self.batch * sliceSize)
     }
 
-    /// Adds input slice data, which may be short for a file's last slice, spreading the work over
-    /// the processor's cores.
+    /// Adds input slice data, which may be short for a file's last slice; the rest counts as zeros.
     func add(_ data: UnsafeRawBufferPointer, inputLog: Int) {
         precondition(data.count <= sliceSize, "Input slice larger than the slice size")
-        let count = exponents.count
-        let workers = max(1, min(count, ProcessInfo.processInfo.activeProcessorCount))
-        let exponents = exponents
-        recovery.withUnsafeMutableBufferPointer { buffers in
-            // Each worker takes its own exponents, so no two touch the same buffer.
-            nonisolated(unsafe) let base = buffers.baseAddress!
-            nonisolated(unsafe) let source = data
-            DispatchQueue.concurrentPerform(iterations: workers) { worker in
-                var index = worker
-                while index < count {
-                    base[index].withUnsafeMutableBufferPointer { destination in
-                        GF16.multiplyAdd(GF16.coefficient(inputLog: inputLog, exponent: exponents[index]), source,
-                                         into: destination)
-                    }
-                    index += workers
-                }
-            }
+        let offset = pendingLogs.count * sliceSize
+        let sliceSize = sliceSize
+        pending.withUnsafeMutableBytes { buffer in
+            let slot = UnsafeMutableRawBufferPointer(rebasing: buffer[offset..<(offset + sliceSize)])
+            slot.copyMemory(from: data)
+            for index in data.count..<sliceSize { slot[index] = 0 }
         }
+        pendingLogs.append(inputLog)
+        if pendingLogs.count == Self.batch { flush() }
     }
 
     /// Recovery slice data for one of this encoder's exponents, words little-endian.
     func slice(exponent: Int) -> [UInt8] {
-        recovery[position[exponent]!].withUnsafeBytes { Array($0) }
+        flush()
+        return recovery[position[exponent]!]
+    }
+
+    private func flush() {
+        let count = pendingLogs.count
+        guard count > 0 else { return }
+        let logs = pendingLogs
+        let exponents = exponents
+        let sliceSize = sliceSize
+        let total = exponents.count
+        let workers = max(1, min(total, ProcessInfo.processInfo.activeProcessorCount))
+        let tableBytes = Int(BK_GF16_TABLE_BYTES)
+        pending.withUnsafeBytes { sourceBuffer in
+            recovery.withUnsafeMutableBufferPointer { buffers in
+                // Each worker takes its own exponents, so no two touch the same recovery slice.
+                nonisolated(unsafe) let base = buffers.baseAddress!
+                nonisolated(unsafe) let sources = sourceBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                DispatchQueue.concurrentPerform(iterations: workers) { worker in
+                    let mine = Array(stride(from: worker, to: total, by: workers))
+                    var tables = [UInt8](repeating: 0, count: mine.count * count * tableBytes)
+                    for (slot, index) in mine.enumerated() {
+                        for source in 0..<count {
+                            let factor = GF16.coefficient(inputLog: logs[source], exponent: exponents[index])
+                            GF16.fillTables(factor: factor, into: &tables, at: (slot * count + source) * tableBytes)
+                        }
+                    }
+                    var pointers = [UnsafePointer<UInt8>?](repeating: nil, count: count)
+                    tables.withUnsafeBufferPointer { tables in
+                        var start = 0
+                        while start < sliceSize {
+                            let length = min(Self.chunk, sliceSize - start)
+                            for source in 0..<count { pointers[source] = UnsafePointer(sources + source * sliceSize + start) }
+                            pointers.withUnsafeBufferPointer { pointers in
+                                for (slot, index) in mine.enumerated() {
+                                    base[index].withUnsafeMutableBufferPointer { destination in
+                                        bk_gf16_muladd(destination.baseAddress! + start, pointers.baseAddress!,
+                                                       tables.baseAddress! + slot * count * tableBytes, count, length)
+                                    }
+                                }
+                            }
+                            start += length
+                        }
+                    }
+                }
+            }
+        }
+        pendingLogs.removeAll(keepingCapacity: true)
     }
 }

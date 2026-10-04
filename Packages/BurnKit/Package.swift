@@ -18,7 +18,9 @@ let package = Package(
         .target(name: "MMCSimulator", dependencies: ["MMC"]),
         // Plain Swift: the disc image builder (UDF bridge with ISO 9660 and Joliet), checksums and
         // the checksum verifier. Depends on MMC only for the ImageSource protocol it serves.
-        .target(name: "ISOBuilder", dependencies: ["MMC"]),
+        .target(name: "ISOBuilder", dependencies: ["MMC", "CGF16"]),
+        // C: multiply-add in GF(2^16) for PAR2 recovery data, with NEON on ARM.
+        .target(name: "CGF16"),
         // C wrapper over IOKit's MMC and SCSI task interfaces. Compiles to nothing off macOS.
         .target(
             name: "CIOKitMMC",

@@ -83,6 +83,27 @@ struct PAR2Tests {
         #expect(rest.map { GF16.divide($0, factor) } == words(padded[2]))
     }
 
+    @Test func batchesAndPiecesAddUpLikeOneAtATime() {
+        // Nine inputs cross a batch of eight, and slices over 64 KB cross a piece.
+        let size = PAR2Encoder.chunk + 64
+        let inputs: [[UInt8]] = (0..<9).map { number in (0..<size).map { UInt8(truncatingIfNeeded: $0 &* 13 &+ number &* 101) } }
+        let logs = GF16.inputLogs(count: inputs.count)
+        let encoder = PAR2Encoder(sliceSize: size, exponents: [3, 200])
+        for (index, input) in inputs.enumerated() {
+            input.withUnsafeBytes { encoder.add($0, inputLog: logs[index]) }
+        }
+        for exponent in [3, 200] {
+            var expected = [UInt16](repeating: 0, count: size / 2)
+            for (index, input) in inputs.enumerated() {
+                let factor = GF16.coefficient(inputLog: logs[index], exponent: exponent)
+                for word in 0..<(size / 2) {
+                    expected[word] ^= GF16.multiply(factor, UInt16(input[2 * word]) | UInt16(input[2 * word + 1]) << 8)
+                }
+            }
+            #expect(encoder.slice(exponent: exponent) == expected.withUnsafeBytes { Array($0) })
+        }
+    }
+
     @Test func slicesSuitTheDisc() throws {
         let cd = try #require(PAR2.plan(sizes: [700_000_000], percent: 10))
         #expect(cd.recoveryCount == 2000)
