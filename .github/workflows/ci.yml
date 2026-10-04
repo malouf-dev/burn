@@ -122,6 +122,36 @@ jobs:
             python3 scripts/compare-trees.py "$RUNNER_TEMP/src/Test Data" "$COPY"
           }
 
+      - name: Repair with burnctl
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/src/Test Data"
+          damage() {
+            dd if=/dev/zero of="$1/sub dir/random.bin" bs=1024 seek=1000 count=100 conv=notrunc 2> /dev/null
+            rm "$1/hello.txt"
+          }
+          # Our own recovery data.
+          MNT="$RUNNER_TEMP/mnt"
+          hdiutil attach -readonly -nobrowse -mountpoint "$MNT" "$RUNNER_TEMP/test.iso"
+          DISC="$RUNNER_TEMP/damaged"
+          cp -R "$MNT" "$DISC"
+          hdiutil detach "$MNT"
+          chmod -R u+w "$DISC"
+          damage "$DISC"
+          swift run --package-path Packages/BurnKit burnctl repair "$DISC" --output "$RUNNER_TEMP/repaired"
+          (cd "$RUNNER_TEMP/repaired" && shasum -a 256 -c .burn/SHA256SUMS)
+          python3 scripts/compare-trees.py "$SRC" "$RUNNER_TEMP/repaired"
+
+          # Recovery data made by par2 itself, so the repair is checked against another encoder.
+          REF="$RUNNER_TEMP/reference"
+          cp -R "$SRC" "$REF"
+          mkdir "$REF/.burn"
+          (cd "$REF" && find . -type f ! -path "./.burn/*" | sed 's|^\./||' | sort | while IFS= read -r f; do shasum -a 256 "$f"; done > .burn/SHA256SUMS)
+          (cd "$REF" && find . -type f ! -path "./.burn/*" -print0 | xargs -0 par2 create -q -s4096 -r20 "-B$REF" .burn/recovery.par2)
+          damage "$REF"
+          swift run --package-path Packages/BurnKit burnctl repair "$REF" --output "$RUNNER_TEMP/reference-repaired"
+          (cd "$RUNNER_TEMP/reference-repaired" && shasum -a 256 -c .burn/SHA256SUMS)
+
       - name: Recovery data speed
         run: |
           set -euo pipefail

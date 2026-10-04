@@ -58,7 +58,7 @@ struct PAR2Tests {
         let size = 64
         let slices: [[UInt8]] = (0..<5).map { number in (0..<size).map { UInt8(truncatingIfNeeded: $0 * 31 + number * 7) } }
         let logs = GF16.inputLogs(count: slices.count)
-        let encoder = PAR2Encoder(sliceSize: size, exponents: 0..<2)
+        let encoder = PAR2Encoder(sliceSize: size, exponents: [0, 1])
         for (index, slice) in slices.enumerated() {
             // The last slice is short, as a file's last slice is, and counts as padded with zeros.
             let data = index == 4 ? Array(slice.prefix(10)) : slice
@@ -192,5 +192,76 @@ struct PAR2Tests {
             return
         }
         #expect(path.hasSuffix("/readme.txt"))
+    }
+
+    // MARK: - Repair
+
+    /// The image's files written out as a mounted disc would show them, and what they should hold.
+    func disc(percent: Int) throws -> (URL, [String: [UInt8]]) {
+        let (image, expected, base) = try image { $0.recoveryPercent = percent }
+        let files = try files(image, at: base, name: "disc.iso")
+        let disc = base.appendingPathComponent("disc")
+        for (path, bytes) in files {
+            let url = disc.appendingPathComponent(path)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try Data(bytes).write(to: url)
+        }
+        return (disc, expected)
+    }
+
+    @Test func damagedAndMissingFilesAreRepaired() throws {
+        let (disc, expected) = try disc(percent: 100)
+        #expect(RecoveryRepair.hasRecovery(at: disc))
+        let deep = disc.appendingPathComponent("Holiday Photos/a/b/c/d/e/deep.bin")
+        var bytes = try Data(contentsOf: deep)
+        bytes[100] ^= 0xFF
+        try bytes.write(to: deep)
+        try FileManager.default.removeItem(at: disc.appendingPathComponent("Holiday Photos/readme.txt"))
+
+        let output = disc.deletingLastPathComponent().appendingPathComponent("repaired")
+        let report = try RecoveryRepair.repair(root: disc, into: output)
+        #expect(report.isComplete)
+        #expect(report.damagedSlices == 2)
+        #expect(Set(report.repaired) == ["Holiday Photos/a/b/c/d/e/deep.bin", "Holiday Photos/readme.txt"])
+        for (path, bytes) in expected where !bytes.isEmpty {
+            #expect([UInt8](try Data(contentsOf: output.appendingPathComponent(path))) == bytes, "\(path)")
+        }
+        // The copy has every file and the .burn folder, so it checks out on its own.
+        let check = try ChecksumVerifier.verify(root: output)
+        #expect(check.isIntact)
+        #expect(check.matched.count == expected.count)
+    }
+
+    @Test func tooMuchDamageIsReportedNotGuessed() throws {
+        let (disc, _) = try disc(percent: 10)
+        try FileManager.default.removeItem(at: disc.appendingPathComponent("Holiday Photos/readme.txt"))
+        try FileManager.default.removeItem(at: disc.appendingPathComponent("Holiday Photos/Report.PDF"))
+        let output = disc.deletingLastPathComponent().appendingPathComponent("repaired")
+        let report = try RecoveryRepair.repair(root: disc, into: output)
+        #expect(!report.isComplete)
+        #expect(report.recoverySlices == 1)
+        #expect(Set(report.unrepairable) == ["Holiday Photos/readme.txt", "Holiday Photos/Report.PDF"])
+        #expect(report.repaired.isEmpty)
+    }
+
+    @Test func anIntactDiscNeedsNoRepair() throws {
+        let (disc, expected) = try disc(percent: 10)
+        let output = disc.deletingLastPathComponent().appendingPathComponent("copy")
+        let report = try RecoveryRepair.repair(root: disc, into: output)
+        #expect(report.isComplete)
+        #expect(report.damagedSlices == 0)
+        #expect(report.intact.count == expected.values.filter { !$0.isEmpty }.count)
+    }
+
+    @Test func matrixInverse() throws {
+        let matrix: [[UInt16]] = [[1, 2, 3], [4, 5, 6], [7, 8, 10]]
+        let inverse = try #require(GF16.invert(matrix))
+        for row in 0..<3 {
+            for column in 0..<3 {
+                let sum = (0..<3).reduce(UInt16(0)) { $0 ^ GF16.multiply(matrix[row][$1], inverse[$1][column]) }
+                #expect(sum == (row == column ? 1 : 0))
+            }
+        }
+        #expect(GF16.invert([[1, 2], [1, 2]]) == nil)
     }
 }

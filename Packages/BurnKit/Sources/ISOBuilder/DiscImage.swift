@@ -365,7 +365,7 @@ private extension DiscImage {
         var index: [UInt8] = []
 
         for (pass, batch) in batches.enumerated() {
-            let encoder = PAR2Encoder(sliceSize: sliceSize, exponents: batch)
+            let encoder = PAR2Encoder(sliceSize: sliceSize, exponents: Array(batch))
             for (number, file) in files.enumerated() {
                 let handle = try self.handle(for: file)
                 try handle.seek(toOffset: 0)

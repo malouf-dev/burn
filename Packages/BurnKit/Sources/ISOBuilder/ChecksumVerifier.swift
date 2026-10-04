@@ -134,7 +134,7 @@ public enum ChecksumVerifier {
     }
 
     /// Every file under `root` except the `.burn` folder, keyed by its NFC path from the root.
-    private static func filesOnDisc(_ root: URL) -> [String: (url: URL, size: UInt64)] {
+    static func filesOnDisc(_ root: URL) -> [String: (url: URL, size: UInt64)] {
         var result: [String: (url: URL, size: UInt64)] = [:]
         guard let enumerator = FileManager.default.enumerator(atPath: root.path) else { return result }
         while let relative = enumerator.nextObject() as? String {

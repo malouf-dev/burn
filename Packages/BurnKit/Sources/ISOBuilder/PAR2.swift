@@ -214,17 +214,19 @@ enum GF16 {
     }
 }
 
-/// Recovery slices for a range of exponents, made by adding input slices one at a time in any order.
+/// Recovery slices for a set of exponents, made by adding input slices one at a time in any order.
 final class PAR2Encoder: @unchecked Sendable {
     let sliceSize: Int
-    let exponents: Range<Int>
+    let exponents: [Int]
+    private let position: [Int: Int]
     /// One buffer of `sliceSize / 2` words per exponent.
     private var recovery: [[UInt16]]
 
-    init(sliceSize: Int, exponents: Range<Int>) {
+    init(sliceSize: Int, exponents: [Int]) {
         precondition(sliceSize % 4 == 0, "PAR2 slices are whole 4-byte words")
         self.sliceSize = sliceSize
         self.exponents = exponents
+        position = Dictionary(uniqueKeysWithValues: exponents.enumerated().map { ($1, $0) })
         recovery = Array(repeating: [UInt16](repeating: 0, count: sliceSize / 2), count: exponents.count)
     }
 
@@ -234,7 +236,7 @@ final class PAR2Encoder: @unchecked Sendable {
         precondition(data.count <= sliceSize, "Input slice larger than the slice size")
         let count = exponents.count
         let workers = max(1, min(count, ProcessInfo.processInfo.activeProcessorCount))
-        let first = exponents.lowerBound
+        let exponents = exponents
         recovery.withUnsafeMutableBufferPointer { buffers in
             // Each worker takes its own exponents, so no two touch the same buffer.
             nonisolated(unsafe) let base = buffers.baseAddress!
@@ -243,7 +245,7 @@ final class PAR2Encoder: @unchecked Sendable {
                 var index = worker
                 while index < count {
                     base[index].withUnsafeMutableBufferPointer { destination in
-                        GF16.multiplyAdd(GF16.coefficient(inputLog: inputLog, exponent: first + index), source,
+                        GF16.multiplyAdd(GF16.coefficient(inputLog: inputLog, exponent: exponents[index]), source,
                                          into: destination)
                     }
                     index += workers
@@ -252,8 +254,8 @@ final class PAR2Encoder: @unchecked Sendable {
         }
     }
 
-    /// Recovery slice data for an exponent in this encoder's range, words little-endian.
+    /// Recovery slice data for one of this encoder's exponents, words little-endian.
     func slice(exponent: Int) -> [UInt8] {
-        recovery[exponent - exponents.lowerBound].withUnsafeBytes { Array($0) }
+        recovery[position[exponent]!].withUnsafeBytes { Array($0) }
     }
 }

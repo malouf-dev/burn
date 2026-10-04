@@ -16,6 +16,7 @@ struct BurnCtl {
       burnctl make-iso PATH... --output FILE [--name NAME] [--no-checksums] [--no-udf] [--recovery PERCENT]
       burnctl burn PATH... [--drive N] [--name NAME] [--overwrite] [--simulate] [--no-verify] [--no-checksums] [--no-udf] [--recovery PERCENT] [--eject] [--yes] [--log FILE]
       burnctl verify-files PATH
+      burnctl repair PATH --output FOLDER
       burnctl erase [--drive N] [--full] [--yes] [--log FILE]
       burnctl inspect [--drive N] [--log FILE]
       burnctl format [--drive N] [--quick] [--yes] [--log FILE]
@@ -30,6 +31,8 @@ struct BurnCtl {
     Discs get a hidden .burn folder with a SHA-256 checksum for every file. verify-files checks a
     mounted disc, such as /Volumes/Name, against it. So does `shasum -a 256 -c .burn/SHA256SUMS`
     run from the disc's root.
+    Discs also get PAR2 recovery data in .burn. repair copies a disc's files into FOLDER and
+    rebuilds damaged ones from it. Any PAR2 tool can do the same with .burn/recovery.par2.
     Run erase or inspect with the drive empty to take the drive first, then insert the disc
     when asked. macOS then never reads the disc, which reaches discs it gets stuck on.
     """
@@ -52,6 +55,7 @@ struct BurnCtl {
             case "format": try await format(&arguments)
             case "eject": try await eject(&arguments)
             case "verify-files": try verifyFiles(&arguments)
+            case "repair": try repair(&arguments)
             case "simulate-burn": try await simulateBurn(&arguments)
             case "help", "-h", "--help":
                 print(usage)
@@ -250,6 +254,17 @@ struct BurnCtl {
     }
 
     /// Checks a mounted disc's files against its `.burn/SHA256SUMS`.
+    static func repair(_ arguments: inout Arguments) throws {
+        guard let output = arguments.option("--output") else { throw CLIError("repair needs --output FOLDER") }
+        guard let path = arguments.remaining().first else { throw CLIError("repair needs the disc's path, such as /Volumes/Name") }
+        let report = try RecoveryRepair.repair(root: URL(fileURLWithPath: path), into: URL(fileURLWithPath: output))
+        print("\(report.damagedSlices) damaged slices, \(report.recoverySlices) recovery slices.")
+        for name in report.repaired { print("Repaired:       \(name)") }
+        for name in report.unrepairable { print("Not repairable: \(name)") }
+        print("\(report.intact.count) files were intact, \(report.repaired.count) repaired, \(report.unrepairable.count) not repairable.")
+        if !report.isComplete { throw CLIError("Some files couldn't be repaired.") }
+    }
+
     static func verifyFiles(_ arguments: inout Arguments) throws {
         guard let path = arguments.remaining().first else { throw CLIError("verify-files needs the disc's path, such as /Volumes/Name") }
         let root = URL(fileURLWithPath: path)
