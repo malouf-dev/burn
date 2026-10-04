@@ -35,6 +35,22 @@ struct UDFTests {
         #expect(reader.integrity.nextUniqueID == UInt64(15 + expected.count + 4 + 9))
     }
 
+    @Test func longDiscNamesKeepTheirWholeNameInUDF() throws {
+        let (folder, _) = try makeSourceFolder()
+        let name = "Better Off Ted (Season 1 & 2)"
+        var builder = ISOImageBuilder(volumeName: name)
+        try builder.add(folder)
+        let output = folder.deletingLastPathComponent().appendingPathComponent("named.iso")
+        try builder.write(to: output)
+        #expect(try UDFReader(url: output).volumeName == name)
+        // Joliet's descriptor holds 16 characters, big-endian, padded with spaces.
+        let joliet = try ISOReader(url: output)
+        let units = stride(from: 17 * 2048 + 40, to: 17 * 2048 + 72, by: 2).map {
+            UInt16(joliet.bytes[$0]) << 8 | UInt16(joliet.bytes[$0 + 1])
+        }
+        #expect(String(decoding: units, as: UTF16.self).trimmingCharacters(in: .whitespaces) == "Better Off Ted (")
+    }
+
     @Test func isoAndUDFShareTheFileData() throws {
         let (reader, iso, _) = try build()
         let jolietTop = try #require(iso.children(of: iso.rootRecord(descriptorSector: 17))

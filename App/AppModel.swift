@@ -59,8 +59,9 @@ final class AppModel {
         }
     }
 
-    /// Joliet holds a disc name of up to 16 characters (UTF-16 code units).
-    static let discNameLimit = 16
+    /// UDF holds a disc name of up to 63 characters (UTF-16 code units), or more when every
+    /// character fits in 8 bits; 63 always fits. Joliet keeps only the first 16 for older systems.
+    static let discNameLimit = 63
 
     static func trimmedDiscName(_ name: String) -> String {
         var result = ""

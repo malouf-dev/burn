@@ -178,7 +178,7 @@ struct DiscHeader: View {
                 .font(.title3.weight(.semibold))
                 .frame(maxWidth: 260)
                 .accessibilityLabel("Disc name")
-                .help("Up to \(AppModel.discNameLimit) characters, the most this disc format holds for a name.")
+                .help("Up to \(AppModel.discNameLimit) characters. Older systems that read only Joliet see the first 16.")
             Spacer()
             Text("UDF + ISO 9660")
                 .font(.caption)
