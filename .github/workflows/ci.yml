@@ -51,7 +51,11 @@ jobs:
           LOG="$RUNNER_TEMP/xcodebuild.log"
           if ! xcodebuild build -project Burn.xcodeproj -scheme Burn -destination 'platform=macOS' \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" > "$LOG" 2>&1; then
-            # The compiler's messages are far from the end of the log, so show them first.
+            # The compiler's messages are far from the end of the log, so show them first, and as
+            # annotations, which can be read without the log.
+            grep -E "(error|warning): " "$LOG" | sort -u | head -20 | while IFS= read -r line; do
+              echo "::error title=App build::$line"
+            done || true
             grep -E "(error|warning): " "$LOG" | sort -u || true
             tail -40 "$LOG"
             exit 1
