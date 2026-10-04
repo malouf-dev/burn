@@ -105,6 +105,7 @@ A cloud session. The owner asked for Blu-ray data discs in the best format, with
 - **Plain Swift was too slow for recovery data.** 256 MB took 90 to 160 seconds on CI. A C kernel with NEON table lookups brought it to 27. It was tested here first, under an ARM emulator, against a plain multiply.
 - **Keep a log on disk from the start.** The app kept its log only in memory, so when it stopped during a test there was nothing to read, and macOS had saved no crash report. Each run now writes `~/Library/Logs/Burn/Burn <date>.log` line by line, with standard error, and keeps the last five.
 - **Don't read files with FileHandle's methods in a long loop.** On macOS they return autoreleased data, and a background thread running one long synchronous loop, such as making recovery data inside a detached task, never drains a pool. Every byte read stayed in memory: 19 GB at 10% of a 36 GB disc, until macOS killed the app with no crash report. Use `readBytes` and `writeBytes` from MMC, which call read(2) and write(2). CI's memory step catches a return of the problem.
+- **A verify mismatch isn't proof of a bad disc.** The BD-R drive twice handed back data from the wrong place during verify, with good status, while the disc was correct. Check the disc another way, by reading the file through macOS or with `par2 verify`, before blaming the write.
 - **Watch for names that hide the method you mean.** `let handle = try handle(for: node)` doesn't compile in Swift; the new constant shadows the method. Use `self.handle(for:)`.
 
 ## Open items
