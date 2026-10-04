@@ -98,6 +98,7 @@ final class AppModel {
 
     init(demo: Bool) {
         isDemo = demo
+        SessionLog.events.note(demo ? "Started with a simulated drive" : "Started")
         Task { await self.pollDrives() }
     }
 
@@ -115,7 +116,7 @@ final class AppModel {
         if isDemo {
             if engines.isEmpty {
                 let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 2_295_104))
-                engines[1] = DiscDrive(transport: simulator)
+                engines[1] = DiscDrive(transport: simulator, log: SessionLog.driveLog())
                 drives = [DriveInfo(id: 1, name: "Simulated DVD burner")]
             }
         } else {
@@ -123,7 +124,7 @@ final class AppModel {
             let ids = Set(references.map(\.id))
             for reference in references where engines[reference.id] == nil {
                 guard let transport = try? IOKitTransport(reference) else { continue }
-                let engine = DiscDrive(transport: transport)
+                let engine = DiscDrive(transport: transport, log: SessionLog.driveLog())
                 engines[reference.id] = engine
                 transports[reference.id] = transport
                 let name: String
@@ -314,6 +315,9 @@ final class AppModel {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
         activity = .buildingImage(fraction: 0)
         outcome = nil
+        let log = engine.log
+        log.note("Burn requested: \"\(name)\", \(urls.count) items, checksums \(checksums ? "on" : "off"), "
+            + "recovery \(recovery)%, onto \(disc.profile.name) with \(disc.freeBlocks) free blocks")
 
         burnTask = Task {
             do {
@@ -326,15 +330,21 @@ final class AppModel {
                     for url in urls { try builder.add(url) }
                     return try builder.image()
                 }.value
+                log.note("Image laid out: \(image.blockCount) blocks")
                 try Task.checkCancellation()
                 // Recovery data needs every file read first, before the drive is taken.
                 if image.needsPreparing {
                     activity = .preparingRecovery(fraction: 0)
+                    log.note("Making recovery data")
+                    let started = Date()
                     try await withTaskCancellationHandler {
                         try await Task.detached(priority: .userInitiated) {
                             try image.prepare { fraction in
                                 Task { @MainActor in
-                                    if case .preparingRecovery = self.activity {
+                                    if case .preparingRecovery(let previous) = self.activity {
+                                        if Int(fraction * 10) > Int(previous * 10) {
+                                            log.note("Recovery data \(Int(fraction * 10) * 10)% made")
+                                        }
                                         self.activity = .preparingRecovery(fraction: fraction)
                                     }
                                 }
@@ -343,6 +353,7 @@ final class AppModel {
                     } onCancel: {
                         image.cancelPreparing()
                     }
+                    log.note("Recovery data made in \(Int(Date().timeIntervalSince(started))) seconds")
                 }
                 guard disc.canOverwrite || image.blockCount <= Int(disc.freeBlocks) else {
                     throw DriveError.doesNotFit(neededBlocks: image.blockCount, freeBlocks: Int(disc.freeBlocks))
@@ -425,6 +436,7 @@ final class AppModel {
     }
 
     private func finish(_ result: Outcome, log: CommandLog) {
+        log.note("\(result.title). \(result.detail)")
         lastLog = log.render()
         activity = .idle
         outcome = result

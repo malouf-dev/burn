@@ -23,6 +23,10 @@ struct LogPanel: View {
                     .disabled(log == nil)
                 Button("Save to Desktop") { save() }
                     .disabled(log == nil)
+                Button("Show Log Files") {
+                    NSWorkspace.shared.activateFileViewerSelecting([SessionLog.file])
+                }
+                .help("Each run of the app keeps its log in ~/Library/Logs/Burn. The last \(SessionLog.kept) are kept.")
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)

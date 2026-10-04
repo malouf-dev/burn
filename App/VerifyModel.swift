@@ -107,6 +107,7 @@ final class VerifyModel {
         }
         let target = destination
         phase = .repairing(0)
+        SessionLog.events.note("Repair started: \(root.path) into \(target.path)")
         task = Task.detached(priority: .userInitiated) { [weak self] in
             let result: Phase
             do {
@@ -117,10 +118,15 @@ final class VerifyModel {
                     }
                 }
                 result = .repaired(report, target)
+                SessionLog.events.note("Repair finished: \(report.intact.count) intact, \(report.repaired.count) repaired, "
+                    + "\(report.unrepairable.count) unrepairable, \(report.damagedSlices) damaged slices, "
+                    + "\(report.recoverySlices) recovery slices")
             } catch is CancellationError {
                 result = .idle
+                SessionLog.events.note("Repair stopped")
             } catch {
                 result = .failed("\(error)")
+                SessionLog.events.note("Repair failed: \(error)")
             }
             await MainActor.run {
                 guard let self, self.selectedID == root else { return }
@@ -184,6 +190,7 @@ final class VerifyModel {
         phase = .checking(ChecksumProgress(checkedFiles: 0, totalFiles: rows.count, checkedBytes: 0,
                                            totalBytes: source.info?.totalBytes ?? 0))
         let throttle = ProgressThrottle()
+        SessionLog.events.note("Check started: \(root.path), \(rows.count) files")
         task = Task.detached(priority: .userInitiated) { [weak self] in
             let result: Phase
             do {
@@ -194,10 +201,14 @@ final class VerifyModel {
                     Task { @MainActor in self?.update(path, Status(check), root: root) }
                 })
                 result = .finished(report)
+                SessionLog.events.note("Check finished: \(report.matched.count) match, \(report.changed.count) changed, "
+                    + "\(report.missing.count) missing, \(report.unreadable.count) unreadable")
             } catch is CancellationError {
                 result = .idle
+                SessionLog.events.note("Check stopped")
             } catch {
                 result = .failed("\(error)")
+                SessionLog.events.note("Check failed: \(error)")
             }
             await MainActor.run { self?.finish(result, root: root) }
         }

@@ -20,9 +20,25 @@ public final class CommandLog: @unchecked Sendable {
     private var repeatStart: Date?
     private var repeatDuration: TimeInterval = 0
     private let limit: Int
+    /// A file every line is appended to as it's logged, so a crash or a hang leaves the log behind.
+    private let mirror: FileHandle?
+    private var lastMirrorLine = Date.distantPast
+    private let formatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
 
-    public init(limit: Int = 20_000) {
+    /// - Parameter mirror: a file to append each line to as it's logged. It's created if needed
+    ///   and opened for appending, so several logs can share one file.
+    public init(limit: Int = 20_000, mirror: URL? = nil) {
         self.limit = limit
+        if let mirror {
+            let descriptor = open(mirror.path, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0o644)
+            self.mirror = descriptor >= 0 ? FileHandle(fileDescriptor: descriptor, closeOnDealloc: true) : nil
+        } else {
+            self.mirror = nil
+        }
     }
 
     public func record(_ entry: Entry) {
@@ -35,12 +51,18 @@ public final class CommandLog: @unchecked Sendable {
             repeatedTransfers += 1
             if repeatStart == nil { repeatStart = entry.time }
             repeatDuration += entry.duration
+            // The file gets a line now and then during a long run, so a hang shows where it stopped.
+            if mirror != nil, entry.time.timeIntervalSince(lastMirrorLine) >= 30 {
+                write(Entry(time: entry.time, cdb: [], dataLength: 0, status: nil, sense: nil,
+                            error: "… \(repeatedTransfers) transfers of the same kind so far", duration: 0))
+            }
             return
         }
         flushRepeats()
         if entries.count < limit {
             entries.append(entry)
         }
+        write(entry)
     }
 
     public func note(_ text: String) {
@@ -48,15 +70,19 @@ public final class CommandLog: @unchecked Sendable {
         defer { lock.unlock() }
         flushRepeats()
         notes.append((Date(), text))
-        entries.append(Entry(time: Date(), cdb: [], dataLength: 0, status: nil, sense: nil, error: text, duration: 0))
+        let entry = Entry(time: Date(), cdb: [], dataLength: 0, status: nil, sense: nil, error: text, duration: 0)
+        entries.append(entry)
+        write(entry)
     }
 
     private func flushRepeats() {
         if repeatedTransfers > 0 {
             let summary = "… \(repeatedTransfers) more transfers of the same kind succeeded, "
                 + String(format: "%.3fs in total", repeatDuration)
-            entries.append(Entry(time: repeatStart ?? Date(), cdb: [], dataLength: 0, status: nil, sense: nil,
-                                 error: summary, duration: 0))
+            let entry = Entry(time: repeatStart ?? Date(), cdb: [], dataLength: 0, status: nil, sense: nil,
+                              error: summary, duration: 0)
+            entries.append(entry)
+            write(entry)
             repeatedTransfers = 0
             repeatStart = nil
             repeatDuration = 0
@@ -67,22 +93,29 @@ public final class CommandLog: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         flushRepeats()
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return entries.map { entry in
-            let time = formatter.string(from: entry.time)
-            if entry.cdb.isEmpty {
-                return "\(time)  \(entry.error ?? "")"
-            }
-            var line = "\(time)  CDB \(entry.cdb.hexString)  data \(entry.dataLength)"
-            line += String(format: "  %.3fs", entry.duration)
-            if let status = entry.status { line += "  status \(hex(status))" }
-            if let sense = entry.sense {
-                line += "  sense \(sense)"
-                if let progress = sense.progress { line += String(format: " (progress %.1f%%)", progress * 100) }
-            }
-            if let error = entry.error { line += "  error \(error)" }
-            return line
-        }.joined(separator: "\n")
+        return entries.map(line).joined(separator: "\n")
+    }
+
+    /// One write per line, straight to the file, so nothing waits in a buffer if the app dies.
+    private func write(_ entry: Entry) {
+        guard let mirror else { return }
+        try? mirror.write(contentsOf: Data((line(entry) + "\n").utf8))
+        lastMirrorLine = entry.time
+    }
+
+    private func line(_ entry: Entry) -> String {
+        let time = formatter.string(from: entry.time)
+        if entry.cdb.isEmpty {
+            return "\(time)  \(entry.error ?? "")"
+        }
+        var line = "\(time)  CDB \(entry.cdb.hexString)  data \(entry.dataLength)"
+        line += String(format: "  %.3fs", entry.duration)
+        if let status = entry.status { line += "  status \(hex(status))" }
+        if let sense = entry.sense {
+            line += "  sense \(sense)"
+            if let progress = sense.progress { line += String(format: " (progress %.1f%%)", progress * 100) }
+        }
+        if let error = entry.error { line += "  error \(error)" }
+        return line
     }
 }

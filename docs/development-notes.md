@@ -103,6 +103,7 @@ A cloud session. The owner asked for Blu-ray data discs in the best format, with
 - **This cloud session can't download CI artifacts or logs.** The built-in `gh` only talks to api.github.com, and artifacts come from another host. CI now puts failing test lines, par2's output on failure, and timings into annotations, which the API returns. Checking an image with Linux tools such as `udfinfo` needs a local session.
 - **PAR2 also passed par2cmdline on the first run**, both ways. The one bug was ours alone: the packet reader dropped each recovery slice's exponent along with its data. The repair test caught it.
 - **Plain Swift was too slow for recovery data.** 256 MB took 90 to 160 seconds on CI. A C kernel with NEON table lookups brought it to 27. It was tested here first, under an ARM emulator, against a plain multiply.
+- **Keep a log on disk from the start.** The app kept its log only in memory, so when it stopped during a test there was nothing to read, and macOS had saved no crash report. Each run now writes `~/Library/Logs/Burn/Burn <date>.log` line by line, with standard error, and keeps the last five.
 - **Watch for names that hide the method you mean.** `let handle = try handle(for: node)` doesn't compile in Swift; the new constant shadows the method. Use `self.handle(for:)`.
 
 ## Open items
