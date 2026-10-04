@@ -34,6 +34,7 @@ final class AppModel {
     enum Activity: Equatable {
         case idle
         case buildingImage(fraction: Double)
+        case preparingRecovery(fraction: Double)
         case burning(WriteProgress)
         case erasing
     }
@@ -70,6 +71,9 @@ final class AppModel {
     var ejectWhenDone = false
     /// Put a hidden `.burn` folder with a checksum for every file on the disc (decision D12).
     var includeChecksums = true
+    /// Add PAR2 recovery data to the `.burn` folder, a tenth the size of the files (decision D15).
+    var includeRecovery = true
+    static let recoveryPercent = 10
     private(set) var activity: Activity = .idle
     var outcome: Outcome?
     /// The volume macOS mounted from a disc that already has data, if any.
@@ -242,9 +246,11 @@ final class AppModel {
     }
 
     /// The image's size, near enough: the files and their entries, plus about 1 MB of volume
-    /// structures and padding. Folder listings add a little more.
+    /// structures and padding, plus the recovery data. Folder listings add a little more.
     var estimatedBytes: Int64 {
-        items.reduce(1_000_000) { $0 + $1.imageBytes }
+        let files = items.reduce(1_000_000) { $0 + $1.imageBytes }
+        let data = items.reduce(0) { $0 + ($1.size ?? 0) }
+        return files + (includeChecksums && includeRecovery ? data * Int64(Self.recoveryPercent) / 100 : 0)
     }
 
     var sizesKnown: Bool { items.allSatisfy { $0.size != nil } }
@@ -292,6 +298,7 @@ final class AppModel {
         let name = discName.isEmpty ? String(localized: "Untitled") : discName
         let options = WriteOptions(verify: true, ejectWhenDone: ejectWhenDone, eraseFirst: disc.canOverwrite)
         let checksums = includeChecksums
+        let recovery = includeChecksums && includeRecovery ? Self.recoveryPercent : 0
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
         activity = .buildingImage(fraction: 0)
         outcome = nil
@@ -302,11 +309,29 @@ final class AppModel {
                 let image = try await Task.detached(priority: .userInitiated) {
                     var builder = ISOImageBuilder(volumeName: name)
                     builder.includesChecksums = checksums
+                    builder.recoveryPercent = recovery
                     builder.applicationName = "Burn \(version)"
                     for url in urls { try builder.add(url) }
                     return try builder.image()
                 }.value
                 try Task.checkCancellation()
+                // Recovery data needs every file read first, before the drive is taken.
+                if image.needsPreparing {
+                    activity = .preparingRecovery(fraction: 0)
+                    try await withTaskCancellationHandler {
+                        try await Task.detached(priority: .userInitiated) {
+                            try image.prepare { fraction in
+                                Task { @MainActor in
+                                    if case .preparingRecovery = self.activity {
+                                        self.activity = .preparingRecovery(fraction: fraction)
+                                    }
+                                }
+                            }
+                        }.value
+                    } onCancel: {
+                        image.cancelPreparing()
+                    }
+                }
                 guard disc.canOverwrite || image.blockCount <= Int(disc.freeBlocks) else {
                     throw DriveError.doesNotFit(neededBlocks: image.blockCount, freeBlocks: Int(disc.freeBlocks))
                 }

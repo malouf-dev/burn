@@ -27,6 +27,9 @@ struct BurnSheet: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Toggle("Add checksums, so the disc can be checked years from now", isOn: $model.includeChecksums)
+                Toggle("Add recovery data, so damaged files can be repaired", isOn: $model.includeRecovery)
+                    .disabled(!model.includeChecksums)
+                    .help("PAR2 recovery data in the hidden .burn folder, about \(AppModel.recoveryPercent)% of the files' size. Any PAR2 tool can use it.")
                 Toggle("Eject when done", isOn: $model.ejectWhenDone)
             }
 

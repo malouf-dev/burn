@@ -346,7 +346,7 @@ struct ProgressSheet: View {
 
     private var canCancel: Bool {
         switch model.activity {
-        case .buildingImage: return true
+        case .buildingImage, .preparingRecovery: return true
         case .burning(let progress): return progress.phase == .writing || progress.phase == .verifying
         default: return false
         }
@@ -356,6 +356,7 @@ struct ProgressSheet: View {
         switch model.activity {
         case .idle: return ""
         case .buildingImage: return String(localized: "Preparing the files…")
+        case .preparingRecovery: return String(localized: "Making recovery data…")
         case .erasing: return String(localized: "Erasing the disc…")
         case .burning(let progress):
             switch progress.phase {
@@ -370,7 +371,7 @@ struct ProgressSheet: View {
 
     private var fraction: Double? {
         switch model.activity {
-        case .buildingImage(let fraction): return fraction
+        case .buildingImage(let fraction), .preparingRecovery(let fraction): return fraction
         case .burning(let progress) where !progress.isIndeterminate:
             return progress.fraction
         default: return nil
