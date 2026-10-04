@@ -22,13 +22,7 @@ struct FileRow: Identifiable, Hashable {
         let values = try? item.url.resourceValues(forKeys: [.contentModificationDateKey, .localizedTypeDescriptionKey])
         modified = values?.contentModificationDate
         kind = values?.localizedTypeDescription ?? ""
-        if item.unreadable {
-            problem = String(localized: "Can't read")
-        } else if item.hasFileTooLarge {
-            problem = String(localized: "4 GB or larger")
-        } else {
-            problem = nil
-        }
+        problem = item.unreadable ? String(localized: "Can't read") : nil
     }
 
     init(url: URL) {

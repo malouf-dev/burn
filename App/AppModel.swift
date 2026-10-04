@@ -13,15 +13,13 @@ struct DiscItem: Identifiable, Hashable {
     let isDirectory: Bool
     /// Total bytes, or nil while it's being measured.
     var size: Int64?
-    /// The largest single file, which must be under 4 GB for ISO 9660.
-    var largestFile: Int64 = 0
+    /// Space it takes in the image: each file rounded up to whole blocks, plus a block per file
+    /// and folder for its UDF File Entry.
+    var imageBytes: Int64 = 0
     /// True when the item couldn't be read to measure it.
     var unreadable = false
 
     var name: String { url.lastPathComponent }
-
-    /// ISO 9660 and Joliet store a file's size in 32 bits.
-    var hasFileTooLarge: Bool { largestFile >= Int64(UInt32.max) }
 }
 
 struct DriveInfo: Identifiable, Hashable {
@@ -192,7 +190,7 @@ final class AppModel {
                 await MainActor.run {
                     if let index = self.items.firstIndex(where: { $0.id == id }) {
                         self.items[index].size = measured?.total ?? 0
-                        self.items[index].largestFile = measured?.largest ?? 0
+                        self.items[index].imageBytes = measured?.imageBytes ?? 0
                         self.items[index].unreadable = measured == nil
                     }
                 }
@@ -218,30 +216,35 @@ final class AppModel {
         selectedEngine?.log
     }
 
-    /// Total bytes and the largest file, or nil if the item can't be read.
-    nonisolated private static func measure(_ url: URL) -> (total: Int64, largest: Int64)? {
+    /// Total bytes, and the space it takes in the image, or nil if the item can't be read.
+    nonisolated private static func measure(_ url: URL) -> (total: Int64, imageBytes: Int64)? {
         let keys: [URLResourceKey] = [.fileSizeKey, .isDirectoryKey, .isRegularFileKey]
+        func inImage(_ size: Int64) -> Int64 { (size + 2047) / 2048 * 2048 + 2048 }
         guard let values = try? url.resourceValues(forKeys: Set(keys)) else { return nil }
         guard values.isDirectory == true else {
             guard let size = values.fileSize else { return nil }
-            return (Int64(size), Int64(size))
+            return (Int64(size), inImage(Int64(size)))
         }
         var total: Int64 = 0
-        var largest: Int64 = 0
+        var imageBytes: Int64 = 2048
         let enumerator = FileManager.default.enumerator(at: url, includingPropertiesForKeys: keys)
         while let child = enumerator?.nextObject() as? URL {
-            guard let childValues = try? child.resourceValues(forKeys: Set(keys)),
-                  childValues.isRegularFile == true else { continue }
-            let size = Int64(childValues.fileSize ?? 0)
-            total += size
-            largest = max(largest, size)
+            guard let childValues = try? child.resourceValues(forKeys: Set(keys)) else { continue }
+            if childValues.isDirectory == true {
+                imageBytes += 2048
+            } else if childValues.isRegularFile == true {
+                let size = Int64(childValues.fileSize ?? 0)
+                total += size
+                imageBytes += inImage(size)
+            }
         }
-        return (total, largest)
+        return (total, imageBytes)
     }
 
-    /// File data, rounded up to whole blocks. The image adds a little for directories.
+    /// The image's size, near enough: the files and their entries, plus about 1 MB of volume
+    /// structures and padding. Folder listings add a little more.
     var estimatedBytes: Int64 {
-        items.reduce(0) { $0 + (($1.size ?? 0) + 2047) / 2048 * 2048 }
+        items.reduce(1_000_000) { $0 + $1.imageBytes }
     }
 
     var sizesKnown: Bool { items.allSatisfy { $0.size != nil } }
@@ -277,9 +280,6 @@ final class AppModel {
         if items.isEmpty { return String(localized: "Add files to burn.") }
         if let item = items.first(where: \.unreadable) { return String(localized: "Can't read “\(item.name)”.") }
         if !sizesKnown { return String(localized: "Measuring the files…") }
-        if let item = items.first(where: \.hasFileTooLarge) {
-            return String(localized: "“\(item.name)” has a file of 4 GB or more, which needs UDF (coming next).")
-        }
         if !fits { return String(localized: "Too much for this disc.") }
         return nil
     }
