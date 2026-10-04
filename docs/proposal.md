@@ -54,6 +54,8 @@ The first milestone, 0.1 alpha, is an app that opens, sees a disc, and writes fi
 | D11 | Data discs use ISO 9660 with Joliet, built by our own code, for now. Next comes a UDF bridge (UDF plus ISO 9660), which becomes the default once it passes the same hardware tests. | Decided |
 | D12 | Every data disc carries a hidden `.burn` folder at its root, on by default: `SHA256SUMS`, one line per file that `shasum -a 256 -c` can check without Burn, and `info.json` with the disc name, date, app version and file count. The app's Verify view checks any mounted disc that has one. | Decided |
 | D13 | The app is for data discs only for now, in one window modelled on Burn's data view. Audio, video and copy come later (D8). | Decided |
+| D14 | Data discs use a UDF 2.01 bridge: UDF 2.01 with ISO 9660 and Joliet alongside, sharing the file data, on CD, DVD and Blu-ray alike. Files of 4 GB or more appear in UDF only. The `.burn` checksum paths follow the UDF names. Images are generated as they're written, with no temporary file, so Blu-ray sizes work. | Decided |
+| D15 | Every data disc carries PAR2 recovery data in `.burn/`, 10% of the data by default, adjustable or off per burn. It's written by our own encoder from the published PAR2 2.0 specification (par2cmdline is GPL), so any PAR2 tool can repair the disc without Burn. Verify gains a Repair step. | Decided |
 
 ## 3. Background: Burn
 
