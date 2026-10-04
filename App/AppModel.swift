@@ -16,6 +16,8 @@ struct DiscItem: Identifiable, Hashable {
     /// Space it takes in the image: each file rounded up to whole blocks, plus a block per file
     /// and folder for its UDF File Entry.
     var imageBytes: Int64 = 0
+    /// Files with data, which PAR2 recovery data covers up to a limit.
+    var dataFileCount = 0
     /// True when the item couldn't be read to measure it.
     var unreadable = false
 
@@ -74,6 +76,12 @@ final class AppModel {
     /// Add PAR2 recovery data to the `.burn` folder, a tenth the size of the files (decision D15).
     var includeRecovery = true
     static let recoveryPercent = 10
+
+    /// True when recovery data is on but the files are too many for it.
+    var recoveryOmitted: Bool {
+        includeChecksums && includeRecovery
+            && items.reduce(0) { $0 + $1.dataFileCount } > ISOImageBuilder.recoveryFileLimit
+    }
     private(set) var activity: Activity = .idle
     var outcome: Outcome?
     /// The volume macOS mounted from a disc that already has data, if any.
@@ -195,6 +203,7 @@ final class AppModel {
                     if let index = self.items.firstIndex(where: { $0.id == id }) {
                         self.items[index].size = measured?.total ?? 0
                         self.items[index].imageBytes = measured?.imageBytes ?? 0
+                        self.items[index].dataFileCount = measured?.dataFiles ?? 0
                         self.items[index].unreadable = measured == nil
                     }
                 }
@@ -221,16 +230,17 @@ final class AppModel {
     }
 
     /// Total bytes, and the space it takes in the image, or nil if the item can't be read.
-    nonisolated private static func measure(_ url: URL) -> (total: Int64, imageBytes: Int64)? {
+    nonisolated private static func measure(_ url: URL) -> (total: Int64, imageBytes: Int64, dataFiles: Int)? {
         let keys: [URLResourceKey] = [.fileSizeKey, .isDirectoryKey, .isRegularFileKey]
         func inImage(_ size: Int64) -> Int64 { (size + 2047) / 2048 * 2048 + 2048 }
         guard let values = try? url.resourceValues(forKeys: Set(keys)) else { return nil }
         guard values.isDirectory == true else {
             guard let size = values.fileSize else { return nil }
-            return (Int64(size), inImage(Int64(size)))
+            return (Int64(size), inImage(Int64(size)), size > 0 ? 1 : 0)
         }
         var total: Int64 = 0
         var imageBytes: Int64 = 2048
+        var dataFiles = 0
         let enumerator = FileManager.default.enumerator(at: url, includingPropertiesForKeys: keys)
         while let child = enumerator?.nextObject() as? URL {
             guard let childValues = try? child.resourceValues(forKeys: Set(keys)) else { continue }
@@ -240,9 +250,10 @@ final class AppModel {
                 let size = Int64(childValues.fileSize ?? 0)
                 total += size
                 imageBytes += inImage(size)
+                if size > 0 { dataFiles += 1 }
             }
         }
-        return (total, imageBytes)
+        return (total, imageBytes, dataFiles)
     }
 
     /// The image's size, near enough: the files and their entries, plus about 1 MB of volume
@@ -250,7 +261,7 @@ final class AppModel {
     var estimatedBytes: Int64 {
         let files = items.reduce(1_000_000) { $0 + $1.imageBytes }
         let data = items.reduce(0) { $0 + ($1.size ?? 0) }
-        return files + (includeChecksums && includeRecovery ? data * Int64(Self.recoveryPercent) / 100 : 0)
+        return files + (includeChecksums && includeRecovery && !recoveryOmitted ? data * Int64(Self.recoveryPercent) / 100 : 0)
     }
 
     var sizesKnown: Bool { items.allSatisfy { $0.size != nil } }

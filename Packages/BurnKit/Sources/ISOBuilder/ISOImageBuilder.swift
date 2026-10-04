@@ -39,6 +39,16 @@ public struct ISOImageBuilder {
     /// 0 leaves it out. It needs checksums on, since it lives in the same folder.
     public var recoveryPercent = 10
 
+    /// PAR2 allows this many files with data in one recovery set. A disc with more gets no
+    /// recovery data, though its checksums still cover every file.
+    public static let recoveryFileLimit = PAR2.maxInputSlices
+
+    /// True when recovery data is asked for but the files are too many for it.
+    public var recoveryOmitted: Bool {
+        includesChecksums && recoveryPercent > 0
+            && root.fileSizes.filter { $0 > 0 }.count > Self.recoveryFileLimit
+    }
+
     private let root = Node(name: "", source: nil, isDirectory: true, size: 0, date: Date())
 
     public init(volumeName: String) {

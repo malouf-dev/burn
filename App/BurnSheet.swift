@@ -1,4 +1,5 @@
 import MMC
+import ISOBuilder
 import SwiftUI
 
 /// Asks for the disc's name and confirms the burn, with the options that go with it.
@@ -30,6 +31,13 @@ struct BurnSheet: View {
                 Toggle("Add recovery data, so damaged files can be repaired", isOn: $model.includeRecovery)
                     .disabled(!model.includeChecksums)
                     .help("PAR2 recovery data in the hidden .burn folder, about \(AppModel.recoveryPercent)% of the files' size. Any PAR2 tool can use it.")
+                if model.recoveryOmitted {
+                    Label(String(localized: "More than \(ISOImageBuilder.recoveryFileLimit.formatted()) files, so this disc can't carry recovery data. Checksums still cover every file."),
+                          systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Toggle("Eject when done", isOn: $model.ejectWhenDone)
             }
 

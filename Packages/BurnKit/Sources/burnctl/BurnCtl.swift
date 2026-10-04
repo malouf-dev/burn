@@ -116,6 +116,7 @@ struct BurnCtl {
         guard !paths.isEmpty else { throw CLIError("make-iso needs at least one file or folder") }
         let name = nameOption ?? defaultName(for: paths)
         let builder = try makeBuilder(paths: paths, name: name, checksums: checksums, udf: udf, recovery: recovery)
+        warnIfRecoveryOmitted(builder)
         let started = Date()
         let blocks = try builder.write(to: URL(fileURLWithPath: output))
         print(String(format: "Made the image in %.1f seconds.", Date().timeIntervalSince(started)))
@@ -253,10 +254,11 @@ struct BurnCtl {
         printStatusLine(label + " " + String(format: "%5.1f%%", fraction * 100))
     }
 
-    /// Checks a mounted disc's files against its `.burn/SHA256SUMS`.
+    /// Copies a disc's files into a folder, rebuilding damaged ones from its recovery data.
     static func repair(_ arguments: inout Arguments) throws {
         guard let output = arguments.option("--output") else { throw CLIError("repair needs --output FOLDER") }
         guard let path = arguments.remaining().first else { throw CLIError("repair needs the disc's path, such as /Volumes/Name") }
+        guard FileManager.default.fileExists(atPath: path) else { throw CLIError("\(path) doesn't exist.") }
         let report = try RecoveryRepair.repair(root: URL(fileURLWithPath: path), into: URL(fileURLWithPath: output))
         print("\(report.damagedSlices) damaged slices, \(report.recoverySlices) recovery slices.")
         for name in report.repaired { print("Repaired:       \(name)") }
@@ -265,8 +267,12 @@ struct BurnCtl {
         if !report.isComplete { throw CLIError("Some files couldn't be repaired.") }
     }
 
+    /// Checks a mounted disc's files against its `.burn/SHA256SUMS`.
     static func verifyFiles(_ arguments: inout Arguments) throws {
         guard let path = arguments.remaining().first else { throw CLIError("verify-files needs the disc's path, such as /Volumes/Name") }
+        guard FileManager.default.fileExists(atPath: path) else {
+            throw CLIError("\(path) doesn't exist. Use the disc's path as Finder shows it, such as /Volumes/Name.")
+        }
         let root = URL(fileURLWithPath: path)
         if let info = ChecksumVerifier.info(at: root) {
             print("Disc: \(info.discName), made \(info.created) by \(info.application), \(info.fileCount) files")
@@ -427,7 +433,9 @@ struct BurnCtl {
         }
         // Made as the drive asks for it, with no file in between. Recovery data needs every
         // file read first, so that's done now, before the drive is taken.
-        let image = try makeBuilder(paths: paths, name: name, checksums: checksums, udf: udf, recovery: recovery).image()
+        let builder = try makeBuilder(paths: paths, name: name, checksums: checksums, udf: udf, recovery: recovery)
+        warnIfRecoveryOmitted(builder)
+        let image = try builder.image()
         if image.needsPreparing {
             print("Making recovery data…")
             var shown = -1
@@ -440,6 +448,12 @@ struct BurnCtl {
             }
         }
         return image
+    }
+
+    static func warnIfRecoveryOmitted(_ builder: ISOImageBuilder) {
+        guard builder.recoveryOmitted else { return }
+        print("Warning: more than \(ISOImageBuilder.recoveryFileLimit) files, so this disc gets no recovery data."
+              + " Checksums still cover every file.")
     }
 
     /// `--recovery PERCENT`: PAR2 recovery data as a share of the file data, 0 for none.
