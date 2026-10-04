@@ -99,6 +99,11 @@ final class AppModel {
     init(demo: Bool) {
         isDemo = demo
         SessionLog.events.note(demo ? "Started with a simulated drive" : "Started")
+        // A quit says so; a log that stops without this line means the app was killed.
+        _ = NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification,
+                                                   object: nil, queue: nil) { _ in
+            SessionLog.events.note("Quitting, peak memory \(SessionLog.peakMemory)")
+        }
         Task { await self.pollDrives() }
     }
 
@@ -320,6 +325,9 @@ final class AppModel {
             + "recovery \(recovery)%, onto \(disc.profile.name) with \(disc.freeBlocks) free blocks")
 
         burnTask = Task {
+            // A burn can't be paused, so macOS mustn't end the app or let the Mac sleep during one.
+            let hold = SessionLog.Hold("Burning a disc")
+            defer { hold.release() }
             do {
                 // The image is made as the drive asks for it, so nothing is written to disk first.
                 let image = try await Task.detached(priority: .userInitiated) {
@@ -343,7 +351,8 @@ final class AppModel {
                                 Task { @MainActor in
                                     if case .preparingRecovery(let previous) = self.activity {
                                         if Int(fraction * 10) > Int(previous * 10) {
-                                            log.note("Recovery data \(Int(fraction * 10) * 10)% made")
+                                            log.note("Recovery data \(Int(fraction * 10) * 10)% made, "
+                                                + "peak memory \(SessionLog.peakMemory)")
                                         }
                                         self.activity = .preparingRecovery(fraction: fraction)
                                     }

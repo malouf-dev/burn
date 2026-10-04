@@ -22,6 +22,30 @@ enum SessionLog {
         CommandLog(mirror: file)
     }
 
+    /// The most memory the app has held at once so far, for the log.
+    static var peakMemory: String {
+        var usage = rusage()
+        guard getrusage(RUSAGE_SELF, &usage) == 0 else { return "unknown" }
+        // macOS gives the maximum resident size in bytes.
+        return ByteCountFormatter.string(fromByteCount: Int64(usage.ru_maxrss), countStyle: .memory)
+    }
+
+    /// Keeps macOS from ending the app, napping it or letting the Mac sleep, until `release`.
+    final class Hold {
+        private let activity: any NSObjectProtocol
+
+        init(_ reason: String) {
+            activity = ProcessInfo.processInfo.beginActivity(
+                options: [.userInitiated, .idleSystemSleepDisabled, .suddenTerminationDisabled,
+                          .automaticTerminationDisabled],
+                reason: reason)
+        }
+
+        func release() {
+            ProcessInfo.processInfo.endActivity(activity)
+        }
+    }
+
     private static func start() -> URL {
         let manager = FileManager.default
         try? manager.createDirectory(at: folder, withIntermediateDirectories: true)

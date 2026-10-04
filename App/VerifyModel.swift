@@ -109,6 +109,8 @@ final class VerifyModel {
         phase = .repairing(0)
         SessionLog.events.note("Repair started: \(root.path) into \(target.path)")
         task = Task.detached(priority: .userInitiated) { [weak self] in
+            let hold = SessionLog.Hold("Repairing files")
+            defer { hold.release() }
             let result: Phase
             do {
                 let report = try RecoveryRepair.repair(root: root, into: target) { fraction in
@@ -192,6 +194,8 @@ final class VerifyModel {
         let throttle = ProgressThrottle()
         SessionLog.events.note("Check started: \(root.path), \(rows.count) files")
         task = Task.detached(priority: .userInitiated) { [weak self] in
+            let hold = SessionLog.Hold("Checking a disc")
+            defer { hold.release() }
             let result: Phase
             do {
                 let report = try ChecksumVerifier.verify(root: root, progress: { progress in
