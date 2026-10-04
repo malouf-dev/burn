@@ -50,6 +50,9 @@ final class VerifyModel {
         case checking(ChecksumProgress)
         case finished(ChecksumReport)
         case failed(String)
+        case repairing(Double)
+        /// What the repair did, and the folder it wrote the files to.
+        case repaired(RepairReport, URL)
     }
 
     private(set) var sources: [Source] = []
@@ -78,8 +81,52 @@ final class VerifyModel {
     }
 
     var isChecking: Bool {
-        if case .checking = phase { return true }
-        return false
+        switch phase {
+        case .checking, .repairing: return true
+        default: return false
+        }
+    }
+
+    /// True when a check found damage and the disc has PAR2 recovery data to repair it from.
+    var canRepair: Bool {
+        guard case .finished(let report) = phase, !report.isIntact, let source = selected else { return false }
+        return RecoveryRepair.hasRecovery(at: source.url)
+    }
+
+    /// Copies the disc's files into a new folder inside `folder`, rebuilding damaged ones from the
+    /// disc's recovery data. The disc itself is never written to.
+    func repair(into folder: URL) {
+        guard let source = selected, !isChecking else { return }
+        let root = source.url
+        let name = source.info?.discName ?? source.name
+        var destination = folder.appendingPathComponent(String(localized: "\(name) (repaired)"))
+        var number = 2
+        while FileManager.default.fileExists(atPath: destination.path) {
+            destination = folder.appendingPathComponent(String(localized: "\(name) (repaired \(number))"))
+            number += 1
+        }
+        let target = destination
+        phase = .repairing(0)
+        task = Task.detached(priority: .userInitiated) { [weak self] in
+            let result: Phase
+            do {
+                let report = try RecoveryRepair.repair(root: root, into: target) { fraction in
+                    Task { @MainActor in
+                        guard let self, self.selectedID == root, case .repairing = self.phase else { return }
+                        self.phase = .repairing(fraction)
+                    }
+                }
+                result = .repaired(report, target)
+            } catch is CancellationError {
+                result = .idle
+            } catch {
+                result = .failed("\(error)")
+            }
+            await MainActor.run {
+                guard let self, self.selectedID == root else { return }
+                self.phase = result
+            }
+        }
     }
 
     /// Prefers the disc in the drive when it has checksums.

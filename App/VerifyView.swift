@@ -1,3 +1,4 @@
+import AppKit
 import ISOBuilder
 import SwiftUI
 import UniformTypeIdentifiers
@@ -122,7 +123,18 @@ struct VerifyView: View {
             case .checking:
                 Button("Stop") { model.cancel() }
                     .keyboardShortcut(.cancelAction)
+            case .repairing:
+                Button("Stop") { model.cancel() }
+                    .keyboardShortcut(.cancelAction)
+            case .repaired(_, let folder):
+                Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([folder]) }
+                Button("Check Again") { model.check() }
+                    .keyboardShortcut(.defaultAction)
             case .finished:
+                if model.canRepair {
+                    Button("Repair…") { chooseRepairFolder() }
+                        .help("Copies the disc's files to a folder you choose, rebuilding damaged ones from the disc's recovery data")
+                }
                 Button("Check Again") { model.check() }
                     .keyboardShortcut(.defaultAction)
             default:
@@ -165,6 +177,36 @@ struct VerifyView: View {
         case .failed(let message):
             Label(message, systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.red)
+        case .repairing(let fraction):
+            HStack(spacing: 8) {
+                ProgressView(value: fraction)
+                    .frame(width: 160)
+                Text("Repairing…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case .repaired(let report, let folder):
+            if report.isComplete {
+                Label(String(localized: "Repaired \(report.repaired.count) files. Every file is in “\(folder.lastPathComponent)”."),
+                      systemImage: "checkmark.seal.fill")
+                    .foregroundStyle(.green)
+            } else {
+                Label(String(localized: "\(report.unrepairable.count) files are too damaged for the recovery data. The rest are in “\(folder.lastPathComponent)”."),
+                      systemImage: "xmark.seal.fill")
+                    .foregroundStyle(.red)
+            }
+        }
+    }
+
+    private func chooseRepairFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.prompt = String(localized: "Repair Here")
+        panel.message = String(localized: "Choose where to put the repaired copy of the disc. The disc itself isn't changed.")
+        if panel.runModal() == .OK, let url = panel.url {
+            model.repair(into: url)
         }
     }
 
