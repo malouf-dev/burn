@@ -185,7 +185,7 @@ public final class DiscImage: @unchecked Sendable {
         var block = 0
         while block < blockCount {
             let count = min(512, blockCount - block)
-            try handle.write(contentsOf: Data(read(block: block, count: count)))
+            try handle.writeBytes(read(block: block, count: count))
             block += count
             progress?(Double(block) / Double(max(1, blockCount)))
         }
@@ -242,7 +242,7 @@ public final class DiscImage: @unchecked Sendable {
         guard let source = node.source else { throw ISOBuilderError.notFound(node.name) }
         let handle = try self.handle(for: node)
         try handle.seek(toOffset: offset)
-        let data = try handle.readFully(length)
+        let data = try handle.readBytes(length)
         guard data.count == length else { throw ISOBuilderError.changedWhileWriting(source.path) }
 
         // Hash the file when it's read in order from the start, as a burn does.
@@ -253,7 +253,7 @@ public final class DiscImage: @unchecked Sendable {
             state.position += UInt64(length)
             hashing = state
             if state.position == node.size {
-                if let extra = try handle.read(upToCount: 1), !extra.isEmpty {
+                if try !handle.readBytes(1).isEmpty {
                     throw ISOBuilderError.changedWhileWriting(source.path)
                 }
                 // A file that changed since the image was prepared no longer matches its checksum.
@@ -310,12 +310,12 @@ public final class DiscImage: @unchecked Sendable {
         var hasher = SHA256()
         var remaining = node.size
         while remaining > 0 {
-            let chunk = try handle.read(upToCount: Int(min(remaining, 1024 * 1024))) ?? Data()
+            let chunk = try handle.readBytes(Int(min(remaining, 1024 * 1024)))
             if chunk.isEmpty { throw ISOBuilderError.changedWhileWriting(source.path) }
             hasher.update(data: chunk)
             remaining -= UInt64(chunk.count)
         }
-        if let extra = try handle.read(upToCount: 1), !extra.isEmpty {
+        if try !handle.readBytes(1).isEmpty {
             throw ISOBuilderError.changedWhileWriting(source.path)
         }
         return DiscChecksums.hex(hasher.finalize())
@@ -340,7 +340,7 @@ private extension DiscImage {
         for file in files {
             let handle = try self.handle(for: file)
             try handle.seek(toOffset: 0)
-            let head = [UInt8](try handle.read(upToCount: 16384) ?? Data())
+            let head = try handle.readBytes(16384)
             guard head.count == Int(min(16384, file.size)) else { throw changed(file) }
             let name = Array(layout.discPath(file).utf8)
             let hash = PAR2.md5(head[...])
@@ -391,7 +391,7 @@ private extension DiscImage {
                 while remaining > 0 {
                     if cancelled.load(ordering: .relaxed) { throw CancellationError() }
                     let count = Int(min(remaining, UInt64(sliceSize)))
-                    let chunk = [UInt8](try handle.read(upToCount: count) ?? Data())
+                    let chunk = try handle.readBytes(count)
                     guard chunk.count == count else { throw changed(file) }
                     chunk.withUnsafeBytes { encoder.add($0, inputLog: logs[firstSlice[number] + slice]) }
                     if pass == 0 {
@@ -407,7 +407,7 @@ private extension DiscImage {
                     progress?(done / work)
                 }
                 if pass == 0 {
-                    if let extra = try handle.read(upToCount: 1), !extra.isEmpty { throw changed(file) }
+                    if try !handle.readBytes(1).isEmpty { throw changed(file) }
                     digests[layout.discPath(file)] = DiscChecksums.hex(sha.finalize())
                     md5s[number] = Array(md5.finalize())
                     sliceSums[number] = sums
@@ -424,12 +424,12 @@ private extension DiscImage {
                     index += PAR2.packet(type: PAR2.sliceChecksumType, setID: setID, body: ids[number] + sliceSums[number])
                 }
                 precondition(index.count == layout.recoveryCriticalSize, "PAR2 packets changed size")
-                try output.write(contentsOf: Data(index))
+                try output.writeBytes(index)
             }
             for exponent in batch {
                 let packet = PAR2.packet(type: PAR2.recoverySliceType, setID: setID,
                                          body: PAR2.le32(UInt32(exponent)) + encoder.slice(exponent: exponent))
-                try output.write(contentsOf: Data(packet))
+                try output.writeBytes(packet)
             }
         }
         finished = true
@@ -444,7 +444,7 @@ private extension DiscImage {
         try handle.seek(toOffset: offset)
         // The file holds exactly the volume's bytes; anything short is an error, never padding.
         let wanted = Int(min(UInt64(length), node.size - offset))
-        var data = try handle.readFully(wanted)
+        var data = try handle.readBytes(wanted)
         guard data.count == wanted else { throw ISOBuilderError.unreadable(volume.path) }
         data += [UInt8](repeating: 0, count: length - data.count)
         return data
@@ -453,17 +453,3 @@ private extension DiscImage {
 
 /// The drive engine burns a `DiscImage` directly.
 extension DiscImage: ImageSource {}
-
-extension FileHandle {
-    /// Reads until `count` bytes or the end of the file. One read can return less than asked
-    /// before the end, so a single call isn't enough.
-    func readFully(_ count: Int) throws -> [UInt8] {
-        var result: [UInt8] = []
-        result.reserveCapacity(count)
-        while result.count < count {
-            guard let chunk = try read(upToCount: count - result.count), !chunk.isEmpty else { break }
-            result += chunk
-        }
-        return result
-    }
-}

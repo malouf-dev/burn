@@ -70,8 +70,8 @@ public final class FileImageSource: ImageSource, @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         try handle.seek(toOffset: UInt64(block) * UInt64(MMC.blockSize))
-        let data = try handle.read(upToCount: count * MMC.blockSize) ?? Data()
+        let data = try handle.readBytes(count * MMC.blockSize)
         guard data.count == count * MMC.blockSize else { throw ImageSourceError.shortRead(block: block) }
-        return [UInt8](data)
+        return data
     }
 }

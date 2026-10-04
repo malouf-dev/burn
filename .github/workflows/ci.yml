@@ -171,6 +171,25 @@ jobs:
           done
           rm -rf "$SRC" "$RUNNER_TEMP/speed.iso"
 
+      - name: Recovery data memory
+        run: |
+          set -euo pipefail
+          # Memory must stay level however much data there is. Reads that kept every byte in
+          # memory made a 36 GB disc fill a Mac's memory (hardware run 20).
+          SRC="$RUNNER_TEMP/memory"
+          mkdir -p "$SRC"
+          head -c 2147483648 /dev/urandom > "$SRC/random.bin"
+          BURNCTL="$(swift build -c release --package-path Packages/BurnKit --show-bin-path)/burnctl"
+          /usr/bin/time -l "$BURNCTL" make-iso "$SRC" --output "$RUNNER_TEMP/memory.iso" --name Memory --recovery 10 \
+            2> "$RUNNER_TEMP/memory.txt"
+          PEAK="$(awk '/maximum resident set size/ { print $1 }' "$RUNNER_TEMP/memory.txt")"
+          echo "::notice title=Recovery memory, 2 GB at 10%::Peak $((PEAK / 1048576)) MB"
+          rm -rf "$SRC" "$RUNNER_TEMP/memory.iso"
+          if [ "$PEAK" -gt 1073741824 ]; then
+            echo "::error title=Recovery memory::Peak $((PEAK / 1048576)) MB for 2 GB of files; it should stay well under 1 GB"
+            exit 1
+          fi
+
       - name: Keep the test image
         if: always()
         uses: actions/upload-artifact@v4

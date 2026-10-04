@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import MMC
 
 /// What a repair found and did. Paths are from the disc's root.
 public struct RepairReport: Sendable, Equatable {
@@ -75,7 +76,7 @@ public enum RecoveryRepair {
                 if let reader {
                     do {
                         try reader.seek(toOffset: offset)
-                        data = try reader.read(upToCount: count).map { [UInt8]($0) }
+                        data = try reader.readBytes(count)
                     } catch {
                         data = nil
                     }
@@ -83,7 +84,7 @@ public enum RecoveryRepair {
                 if let bytes = data, bytes.count == count,
                    PAR2.md5((bytes + [UInt8](repeating: 0, count: sliceSize - count))[...]) == file.sliceMD5s[slice] {
                     try writer.seek(toOffset: offset)
-                    try writer.write(contentsOf: Data(bytes))
+                    try writer.writeBytes(bytes)
                 } else {
                     damaged.append((number, slice))
                 }
@@ -125,7 +126,7 @@ public enum RecoveryRepair {
             defer { try? reader.close() }
             for slice in 0..<file.sliceCount where !damagedSet.contains(firstSlices[number] + slice) {
                 try reader.seek(toOffset: UInt64(slice) * UInt64(sliceSize))
-                let bytes = [UInt8](try reader.read(upToCount: sliceSize) ?? Data())
+                let bytes = try reader.readBytes(sliceSize)
                 bytes.withUnsafeBytes { known.add($0, inputLog: logs[firstSlices[number] + slice]) }
                 done += Double(bytes.count)
                 progress(done / work)
@@ -158,7 +159,7 @@ public enum RecoveryRepair {
             let bytes = words.withUnsafeBytes { Array($0.prefix(count)) }
             let writer = try FileHandle(forWritingTo: outputs[place.file])
             try writer.seek(toOffset: offset)
-            try writer.write(contentsOf: Data(bytes))
+            try writer.writeBytes(bytes)
             try writer.close()
         }
 
@@ -198,7 +199,9 @@ public enum RecoveryRepair {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         var hasher = Insecure.MD5()
-        while let chunk = try handle.read(upToCount: 1024 * 1024), !chunk.isEmpty {
+        while true {
+            let chunk = try handle.readBytes(1024 * 1024)
+            if chunk.isEmpty { break }
             hasher.update(data: chunk)
         }
         return Array(hasher.finalize())
@@ -283,7 +286,7 @@ struct RecoverySet {
         let handle = try FileHandle(forReadingFrom: place.url)
         defer { try? handle.close() }
         try handle.seek(toOffset: place.offset)
-        let bytes = [UInt8](try handle.read(upToCount: sliceSize) ?? Data())
+        let bytes = try handle.readBytes(sliceSize)
         guard bytes.count == sliceSize else { throw RecoveryRepairError.noRecoveryData }
         return bytes
     }
@@ -298,12 +301,12 @@ struct RecoverySet {
         var offset: UInt64 = 0
         while offset + UInt64(PAR2.headerSize) <= size {
             guard (try? handle.seek(toOffset: offset)) != nil,
-                  let data = try? handle.read(upToCount: PAR2.headerSize), data.count == PAR2.headerSize,
+                  let data = try? handle.readBytes(PAR2.headerSize), data.count == PAR2.headerSize,
                   Array(data.prefix(8)) == PAR2.magic else {
                 offset += 4
                 continue
             }
-            let header = [UInt8](data)
+            let header = data
             var length: UInt64 = 0
             for index in 0..<8 { length |= UInt64(header[8 + index]) << (8 * UInt64(index)) }
             guard length >= UInt64(PAR2.headerSize), length % 4 == 0, offset + length <= size else {
@@ -319,7 +322,7 @@ struct RecoverySet {
             var remaining = length - UInt64(PAR2.headerSize)
             var readable = true
             while remaining > 0 {
-                guard let chunk = try? handle.read(upToCount: Int(min(remaining, 1 << 20))), !chunk.isEmpty else {
+                guard let chunk = try? handle.readBytes(Int(min(remaining, 1 << 20))), !chunk.isEmpty else {
                     readable = false
                     break
                 }

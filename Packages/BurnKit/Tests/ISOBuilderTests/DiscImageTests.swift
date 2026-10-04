@@ -119,7 +119,7 @@ struct DiscImageTests {
             try? writer.close()
         }
         thread.start()
-        #expect(try pipe.fileHandleForReading.readFully(10) == [1, 2, 3, 4, 5, 6])
+        #expect(try pipe.fileHandleForReading.readBytes(10) == [1, 2, 3, 4, 5, 6])
     }
 
     @Test func imagesFromOneBuilderStandApart() throws {

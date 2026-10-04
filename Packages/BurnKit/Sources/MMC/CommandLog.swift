@@ -99,7 +99,7 @@ public final class CommandLog: @unchecked Sendable {
     /// One write per line, straight to the file, so nothing waits in a buffer if the app dies.
     private func write(_ entry: Entry) {
         guard let mirror else { return }
-        try? mirror.write(contentsOf: Data((line(entry) + "\n").utf8))
+        try? mirror.writeBytes(Array((line(entry) + "\n").utf8))
         lastMirrorLine = entry.time
     }
 
