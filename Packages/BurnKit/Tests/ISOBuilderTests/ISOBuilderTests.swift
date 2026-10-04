@@ -117,6 +117,23 @@ struct ISOBuilderTests {
         }
     }
 
+    @Test func longNamesThatTruncateAlikeGetDistinctNames() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("iso-long-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let long = String(repeating: "x", count: 150)
+        try Data("one".utf8).write(to: folder.appendingPathComponent(long + "1.txt"))
+        try Data("two".utf8).write(to: folder.appendingPathComponent(long + "2.txt"))
+        var builder = ISOImageBuilder(volumeName: "Long")
+        builder.includesChecksums = false
+        try builder.addContents(of: folder)
+        let output = folder.appendingPathComponent("long.iso")
+        try builder.write(to: output)
+        let files = try ISOReader(url: output).jolietFiles()
+        #expect(files.count == 2)
+        #expect(Set(files.values) == [Array("one".utf8), Array("two".utf8)])
+        #expect(files.keys.allSatisfy { $0.hasSuffix(".txt") && $0.utf16.count == Names.jolietLimit })
+    }
+
     @Test func largeDirectorySpansSectors() throws {
         let (reader, _, _, _) = try build()
         let root = reader.rootRecord(descriptorSector: 17)
@@ -221,6 +238,17 @@ struct NameTests {
         #expect(Names.joliet("photo.jpg", isDirectory: false, index: 1) == "photo (2).jpg")
         let long = String(repeating: "x", count: 200)
         #expect(Names.joliet(long, isDirectory: true).utf16.count == Names.jolietLimit)
+    }
+
+    @Test func longDuplicatesStayDistinctAndKeepTheirExtension() {
+        let long = String(repeating: "n", count: 150)
+        let first = Names.joliet(long + "1.txt", isDirectory: false)
+        let second = Names.joliet(long + "2.txt", isDirectory: false, index: 1)
+        #expect(first.utf16.count == Names.jolietLimit)
+        #expect(first.hasSuffix(".txt"))
+        #expect(second.utf16.count == Names.jolietLimit)
+        #expect(second.hasSuffix(" (2).txt"))
+        #expect(first != second)
     }
 
     @Test func jolietNamesAreComposed() {

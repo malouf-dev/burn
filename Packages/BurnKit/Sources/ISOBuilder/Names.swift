@@ -36,23 +36,31 @@ enum Names {
         let forbidden: Set<Character> = ["*", "/", ":", ";", "?", "\\"]
         // Composed (NFC) form, as Windows expects. macOS reads either.
         let composed = name.precomposedStringWithCanonicalMapping
-        var cleaned = String(composed.map { character -> Character in
+        let cleaned = String(composed.map { character -> Character in
             if forbidden.contains(character) { return "_" }
             if let scalar = character.unicodeScalars.first, scalar.value < 0x20 { return "_" }
             return character
         })
-        if index > 0 {
-            let suffix = " (\(index + 1))"
-            var base = cleaned
-            var ext = ""
-            if !isDirectory, let dot = cleaned.lastIndex(of: "."), dot != cleaned.startIndex {
-                base = String(cleaned[..<dot])
-                ext = String(cleaned[dot...])
-            }
-            cleaned = base + suffix + ext
+        return fitted(cleaned, isDirectory: isDirectory, index: index, limit: jolietLimit)
+    }
+
+    /// Adds " (n)" before the extension for the nth duplicate, then shortens the name to `limit`
+    /// UTF-16 units. The suffix always survives, so duplicates stay distinct however long they are,
+    /// and the extension survives when there's room for it.
+    static func fitted(_ name: String, isDirectory: Bool, index: Int, limit: Int) -> String {
+        let suffix = index > 0 ? " (\(index + 1))" : ""
+        if suffix.isEmpty && name.utf16.count <= limit { return name }
+        var base = name
+        var ext = ""
+        if !isDirectory, let dot = name.lastIndex(of: "."), dot != name.startIndex {
+            base = String(name[..<dot])
+            ext = String(name[dot...])
         }
-        cleaned = truncateUTF16(cleaned, to: jolietLimit)
-        return cleaned
+        if ext.utf16.count + suffix.utf16.count >= limit {
+            base = name
+            ext = ""
+        }
+        return truncateUTF16(base, to: limit - suffix.utf16.count - ext.utf16.count) + suffix + ext
     }
 
     static func truncateUTF16(_ text: String, to limit: Int) -> String {
