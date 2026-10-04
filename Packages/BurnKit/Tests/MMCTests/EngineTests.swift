@@ -143,6 +143,21 @@ struct WriteTests {
         #expect(simulator.currentMedia == nil)
     }
 
+    @Test func aMisplacedReadDuringVerifyIsReadAgain() async throws {
+        // Hardware runs 18 and 20: once, the drive handed back data from 8,184 bytes on, with no
+        // error, while the disc held the right data.
+        let simulator = SimulatedDrive(media: .init(profile: .bdRSequential, capacityBlocks: 20_000))
+        simulator.misplacedReadAt = 48
+        let log = CommandLog()
+        let report = try await DiscDrive(transport: simulator, log: log).write(patternImage(blocks: 100))
+        #expect(report.verified)
+        #expect(simulator.misplacedReadAt == nil)
+        let text = log.render()
+        #expect(text.contains("Verification mismatch at image block 48, read 1 of 3"))
+        #expect(text.contains("match the image 8184 bytes further on"))
+        #expect(text.contains("Blocks 48 to 63 read back correctly on read 2"))
+    }
+
     @Test func failedBurnOnARewritableDiscIsErased() async throws {
         let simulator = SimulatedDrive(media: .init(profile: .dvdRWSequential, capacityBlocks: 2_297_888))
         simulator.corruptReadBlock = 5

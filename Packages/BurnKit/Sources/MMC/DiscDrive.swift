@@ -75,6 +75,8 @@ public actor DiscDrive {
 
     /// Blocks per WRITE(10) and READ(10): 32 KiB, a whole DVD ECC block pair.
     static let transferBlocks = 16
+    /// How many times verify reads blocks that don't match before calling the burn failed.
+    static let verifyReads = 3
 
     /// How long to wait between polls while the drive finishes a long operation.
     private let pollInterval: Duration
@@ -407,18 +409,30 @@ public actor DiscDrive {
         while checked < total {
             if Task.isCancelled { throw DriveError.cancelled }
             let count = min(Self.transferBlocks, total - checked)
-            let fromDisc = try await run(MMC.read10(lba: startBlock + UInt32(checked), blocks: UInt16(count)),
-                                         "READ", notReadyRetries: 3000)
+            let read = MMC.read10(lba: startBlock + UInt32(checked), blocks: UInt16(count))
+            var fromDisc = try await run(read, "READ", notReadyRetries: 3000)
             let fromImage = try readImage(image, block: checked, count: count)
-            if fromDisc != fromImage {
+            // The drive can hand back data from the wrong place with no error, while the disc holds
+            // the right data (hardware runs 18 and 20). A bad disc reads the same way every time,
+            // so a mismatch fails only when it survives reading again.
+            var attempt = 1
+            while fromDisc != fromImage {
                 let firstBad = (0..<count).first { index in
                     let range = index * MMC.blockSize..<(index + 1) * MMC.blockSize
                     return fromDisc.count < range.upperBound || fromDisc[range] != fromImage[range]
                 } ?? 0
-                log.note("Verification mismatch at image block \(checked + firstBad)")
+                log.note("Verification mismatch at image block \(checked + firstBad), "
+                    + "read \(attempt) of \(Self.verifyReads)")
                 log.note(Self.mismatchDetail(disc: fromDisc, image: fromImage, blockInRead: firstBad,
                                              part: image.describe(block: checked + firstBad)))
-                throw DriveError.verificationFailed(block: checked + firstBad)
+                guard attempt < Self.verifyReads else {
+                    throw DriveError.verificationFailed(block: checked + firstBad)
+                }
+                attempt += 1
+                fromDisc = try await run(read, "READ", notReadyRetries: 3000)
+                if fromDisc == fromImage {
+                    log.note("Blocks \(checked) to \(checked + count - 1) read back correctly on read \(attempt)")
+                }
             }
             checked += count
             if Date().timeIntervalSince(lastReport) > 0.2 || checked == total {
@@ -455,6 +469,14 @@ public actor DiscDrive {
         text += " Disc: \(sample(disc)). Image: \(sample(image))."
         if disc[start..<end].allSatisfy({ $0 == 0 }) { text += " The disc block is all zeros." }
         if image[start..<end].allSatisfy({ $0 == 0 }) { text += " The image block is all zeros." }
+        // Data from the wrong place shows up elsewhere in what the image holds for this read.
+        // A probe of one repeated byte, such as zeros, would match too easily to mean anything.
+        let probe = disc[first..<min(first + 16, end)]
+        if probe.count == 16, Set(probe).count > 1,
+           let found = (0...(image.count - 16)).first(where: { image[$0..<($0 + 16)].elementsEqual(probe) }),
+           found != first {
+            text += " The disc's bytes match the image \(found - first) bytes further on, so they came from the wrong place."
+        }
         if let part { text += " The block holds \(part)." }
         return text
     }

@@ -207,4 +207,17 @@ struct MismatchDetailTests {
         #expect(DiscDrive.mismatchDetail(disc: disc, image: image, blockInRead: 0, part: nil)
             .hasSuffix("The image block is all zeros."))
     }
+
+    @Test func saysWhenTheDiscDataCameFromElsewhere() {
+        var seed: UInt32 = 1
+        let image = (0..<(16 * MMC.blockSize)).map { _ -> UInt8 in
+            seed = seed &* 1_664_525 &+ 1_013_904_223
+            return UInt8(truncatingIfNeeded: seed >> 24)
+        }
+        let disc = Array(image[8184...]) + [UInt8](repeating: 0, count: 8184)
+        let text = DiscDrive.mismatchDetail(disc: disc, image: image, blockInRead: 0, part: nil)
+        #expect(text.contains("The disc's bytes match the image 8184 bytes further on"))
+        #expect(!DiscDrive.mismatchDetail(disc: image, image: disc, blockInRead: 0, part: nil)
+            .contains("further on"))
+    }
 }

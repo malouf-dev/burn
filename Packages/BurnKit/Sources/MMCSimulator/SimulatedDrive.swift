@@ -63,6 +63,16 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     }
     private var _corruptReadBlock: UInt32?
 
+    /// When set, the next READ starting at this block returns its data 8,184 bytes late, with no
+    /// error, then reads work again. The BD-R drive did this during verify in hardware runs 18
+    /// and 20, while the disc itself held the right data.
+    public var misplacedReadAt: UInt32? {
+        get { withLock { _misplacedReadAt } }
+        set { withLock { _misplacedReadAt = newValue } }
+    }
+    private var _misplacedReadAt: UInt32?
+    public static let misplacedReadShift = 8184
+
     /// When set, every nth WRITE first answers "long write in progress", as busy drives do.
     public var longWriteEvery: Int? {
         get { withLock { _longWriteEvery } }
@@ -446,6 +456,15 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
             var bytes = media.blocks[block] ?? [UInt8](repeating: 0, count: MMC.blockSize)
             if block == _corruptReadBlock { bytes[100] ^= 0xFF }
             result += bytes
+        }
+        if lba == _misplacedReadAt {
+            _misplacedReadAt = nil
+            let shift = Self.misplacedReadShift
+            var after: [UInt8] = []
+            for block in (lba + blocks)..<(lba + blocks + UInt32(shift / MMC.blockSize + 1)) {
+                after += media.blocks[block] ?? [UInt8](repeating: 0, count: MMC.blockSize)
+            }
+            result = Array((result + after)[shift..<(shift + result.count)])
         }
         return .good(result)
     }
