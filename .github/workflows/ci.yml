@@ -67,6 +67,8 @@ jobs:
           mkdir -p "$MNT"
           hdiutil attach -readonly -nobrowse -mountpoint "$MNT" "$RUNNER_TEMP/test.iso"
           mount | grep "$MNT"
+          # A bridge image must mount as UDF, which macOS prefers when it can read it.
+          mount | grep "$MNT" | grep -q "(udf"
           ls -laR "$MNT"
           python3 scripts/compare-trees.py "$SRC" "$MNT"
           # The checksum folder must check out with plain shasum, as it will years from now.
@@ -74,6 +76,51 @@ jobs:
           cat "$MNT/.burn/info.json"
           swift run --package-path Packages/BurnKit burnctl verify-files "$MNT"
           hdiutil detach "$MNT"
+
+          # Without UDF, the same files through ISO 9660 and Joliet.
+          swift run --package-path Packages/BurnKit burnctl make-iso "$SRC" --output "$RUNNER_TEMP/plain.iso" --name "Plain" --no-udf
+          hdiutil attach -readonly -nobrowse -mountpoint "$MNT" "$RUNNER_TEMP/plain.iso"
+          mount | grep "$MNT" | grep -q "(cd9660"
+          python3 scripts/compare-trees.py "$SRC" "$MNT"
+          (cd "$MNT" && shasum -a 256 -c .burn/SHA256SUMS)
+          hdiutil detach "$MNT"
+
+      - name: Keep the test image
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-image
+          path: ${{ runner.temp }}/test.iso
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: A file over 4 GB through macOS
+        run: |
+          set -euo pipefail
+          df -h "$RUNNER_TEMP"
+          SRC="$RUNNER_TEMP/big"
+          mkdir -p "$SRC"
+          # 4 GiB and 1 MiB, each MiB filled with its own number, so misplaced pieces would show.
+          python3 -c "
+          import struct, sys
+          with open(sys.argv[1], 'wb') as f:
+              for i in range(4097):
+                  f.write(struct.pack('<Q', i) * 131072)
+          " "$SRC/big.bin"
+          printf 'small\n' > "$SRC/small.txt"
+          EXPECTED="$(shasum -a 256 "$SRC/big.bin" | cut -d' ' -f1)"
+          swift run --package-path Packages/BurnKit burnctl make-iso "$SRC" --output "$RUNNER_TEMP/big.iso" --name "Big"
+          rm "$SRC/big.bin"
+          MNT="$RUNNER_TEMP/bigmnt"
+          mkdir -p "$MNT"
+          hdiutil attach -readonly -nobrowse -mountpoint "$MNT" "$RUNNER_TEMP/big.iso"
+          mount | grep "$MNT" | grep -q "(udf"
+          ls -la "$MNT"
+          test "$(stat -f %z "$MNT/big.bin")" = 4296015872
+          test "$(shasum -a 256 "$MNT/big.bin" | cut -d' ' -f1)" = "$EXPECTED"
+          (cd "$MNT" && shasum -a 256 -c .burn/SHA256SUMS)
+          hdiutil detach "$MNT"
+          rm "$RUNNER_TEMP/big.iso"
 
       - name: Simulated burn of the same files
         run: |

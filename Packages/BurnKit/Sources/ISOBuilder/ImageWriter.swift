@@ -57,6 +57,26 @@ extension Layout {
         terminator[6] = 1
         try writer.write(terminator)
 
+        if includesUDF {
+            try writer.write(UDF.recognitionSequence())
+            try writer.writeZeros(sectors: Int(UDF.mainSequence) - writer.currentSector)
+            try writer.write(udfVolumeSequence(start: UDF.mainSequence, volumeName: volumeName, stamp: stamp))
+            try writer.write(udfVolumeSequence(start: UDF.reserveSequence, volumeName: volumeName, stamp: stamp))
+            try checkPosition(writer, UDF.integritySequence)
+            try writer.write(udfIntegritySequence(stamp: stamp))
+            try writer.writeZeros(sectors: Int(UDF.anchor) - writer.currentSector)
+            try writer.write(udfAnchor(location: UDF.anchor))
+            try writer.write(udfFileSet(volumeName: volumeName, stamp: stamp))
+            for node in udfNodes {
+                try checkPosition(writer, UDF.partitionStart + node.udfEntry)
+                try writer.write(udfFileEntry(node))
+            }
+            for directory in udfNodes where directory.isDirectory {
+                try checkPosition(writer, UDF.partitionStart + directory.udfDirectoryBlock)
+                try writer.write(udfDirectoryContents(directory))
+            }
+        }
+
         try checkPosition(writer, isoPathTableL)
         try writer.write(pathTable(joliet: false, bigEndian: false))
         try writer.padSector()
@@ -111,12 +131,17 @@ extension Layout {
             if let extra = try input.read(upToCount: 1), !extra.isEmpty {
                 throw ISOBuilderError.changedWhileWriting(source.path)
             }
-            if let hasher { digests[jolietPath(file)] = DiscChecksums.hex(hasher.finalize()) }
+            if let hasher { digests[discPath(file)] = DiscChecksums.hex(hasher.finalize()) }
             try writer.padSector()
         }
 
         try checkPosition(writer, dataEnd)
-        try writer.writeZeros(sectors: paddingBlocks)
+        if includesUDF {
+            try writer.writeZeros(sectors: totalBlocks - Int(dataEnd) - 1)
+            try writer.write(udfAnchor(location: UInt32(totalBlocks - 1)))
+        } else {
+            try writer.writeZeros(sectors: paddingBlocks)
+        }
         try writer.flush()
         progress?(1)
     }
@@ -297,11 +322,13 @@ func bothEndian16(_ bytes: inout [UInt8], _ value: UInt16, at offset: Int) {
     bytes[offset + 3] = UInt8(value & 0xFF)
 }
 
-/// ISO 9660 dates, always in UTC.
+/// Disc dates, always in UTC.
 struct Timestamp {
+    let date: Date
     let components: DateComponents
 
     init(_ date: Date) {
+        self.date = date
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
         components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: date)

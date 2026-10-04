@@ -3,23 +3,26 @@ import Foundation
 public enum ISOBuilderError: Error, Sendable, Equatable, CustomStringConvertible {
     case notFound(String)
     case fileTooLarge(String)
+    case fileTooLargeForDisc(String)
     case unreadable(String)
     case changedWhileWriting(String)
 
     public var description: String {
         switch self {
         case .notFound(let path): return "\(path) doesn't exist."
-        case .fileTooLarge(let path): return "\(path) is 4 GB or larger. Files that size need UDF, which comes in a later version."
+        case .fileTooLarge(let path): return "\(path) is 4 GB or larger. Files that size need UDF, which is turned off."
+        case .fileTooLargeForDisc(let path): return "\(path) is larger than any disc holds."
         case .unreadable(let path): return "Couldn't read \(path)."
         case .changedWhileWriting(let path): return "\(path) changed while the image was being written."
         }
     }
 }
 
-/// Builds an ISO 9660 image with Joliet names from files and folders on disk.
+/// Builds a disc image from files and folders on disk (decision D14).
 ///
-/// ISO 9660 level 1 names (8.3, upper case) serve old systems. Joliet carries the real names,
-/// which macOS, Windows and Linux all read. Files must be under 4 GB.
+/// The image is a UDF 2.01 bridge: UDF carries the real names and files of any size, and every
+/// current system reads it. ISO 9660 and Joliet describe the same file data for older systems:
+/// level 1 names (8.3, upper case) and Joliet's longer ones. Files of 4 GB or more are in UDF only.
 public struct ISOImageBuilder {
     public var volumeName: String
     /// Zero blocks added at the end, so drives that read ahead past the data don't fail.
@@ -30,6 +33,8 @@ public struct ISOImageBuilder {
     public var includesChecksums = true
     /// Recorded in `.burn/info.json`.
     public var applicationName = "Burn"
+    /// Adds UDF 2.01 alongside ISO 9660 and Joliet. Without it, files must be under 4 GB.
+    public var includesUDF = true
 
     private let root = Node(name: "", source: nil, isDirectory: true, size: 0, date: Date())
 
@@ -66,13 +71,19 @@ public struct ISOImageBuilder {
 
     /// The image size in 2,048-byte blocks.
     public func blockCount() -> Int {
-        Layout(root: imageRoot(date: Date()), paddingBlocks: paddingBlocks).totalBlocks
+        Layout(root: imageRoot(date: Date()), paddingBlocks: paddingBlocks, includesUDF: includesUDF).totalBlocks
     }
 
     /// Writes the image and returns its size in blocks.
     @discardableResult
     public func write(to url: URL, date: Date = Date(), progress: ((Double) -> Void)? = nil) throws -> Int {
-        let layout = Layout(root: imageRoot(date: date), paddingBlocks: paddingBlocks)
+        if let file = root.first(where: { !$0.isDirectory && $0.size > UDF.maxFileSize }) {
+            throw ISOBuilderError.fileTooLargeForDisc(file.source?.path ?? file.name)
+        }
+        if !includesUDF, let file = root.first(where: { !$0.inISO }) {
+            throw ISOBuilderError.fileTooLarge(file.source?.path ?? file.name)
+        }
+        let layout = Layout(root: imageRoot(date: date), paddingBlocks: paddingBlocks, includesUDF: includesUDF)
         let writer = try ImageWriter(url: url)
         defer { writer.close() }
         try layout.write(to: writer, volumeName: volumeName, date: date, progress: progress)
@@ -118,7 +129,6 @@ public struct ISOImageBuilder {
             return node
         }
         let size = UInt64(values.fileSize ?? 0)
-        guard size < UInt64(UInt32.max) else { throw ISOBuilderError.fileTooLarge(url.path) }
         return Node(name: url.lastPathComponent, source: url, isDirectory: false, size: size, date: date)
     }
 }
@@ -151,6 +161,13 @@ final class Node {
     var jolietExtent: UInt32 = 0
     var jolietSize = 0
     var fileExtent: UInt32 = 0
+    var udfName = ""
+    /// Block of the File Entry, within the UDF partition.
+    var udfEntry: UInt32 = 0
+    var udfUniqueID: UInt64 = 0
+    /// Folders: where their File Identifier Descriptors start, within the partition, and their length.
+    var udfDirectoryBlock: UInt32 = 0
+    var udfDirectorySize = 0
 
     init(name: String, source: URL?, isDirectory: Bool, size: UInt64, date: Date) {
         self.name = name
@@ -168,7 +185,17 @@ final class Node {
         isDirectory ? children.reduce(0) { $0 + $1.fileCount } : 1
     }
 
-    var blocks: Int {
-        Int((size + 2047) / 2048)
+    /// Whether ISO 9660 and Joliet can list it: every folder, and files under 4 GB.
+    var inISO: Bool {
+        isDirectory || size < UInt64(UInt32.max)
+    }
+
+    /// This node or the first below it that matches, depth first.
+    func first(where predicate: (Node) -> Bool) -> Node? {
+        if predicate(self) { return self }
+        for child in children {
+            if let found = child.first(where: predicate) { return found }
+        }
+        return nil
     }
 }

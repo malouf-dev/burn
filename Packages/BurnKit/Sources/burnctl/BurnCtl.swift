@@ -13,8 +13,8 @@ struct BurnCtl {
       burnctl list
       burnctl diagnose
       burnctl status [--drive N]
-      burnctl make-iso PATH... --output FILE [--name NAME] [--no-checksums]
-      burnctl burn PATH... [--drive N] [--name NAME] [--overwrite] [--simulate] [--no-verify] [--no-checksums] [--eject] [--yes] [--log FILE]
+      burnctl make-iso PATH... --output FILE [--name NAME] [--no-checksums] [--no-udf]
+      burnctl burn PATH... [--drive N] [--name NAME] [--overwrite] [--simulate] [--no-verify] [--no-checksums] [--no-udf] [--eject] [--yes] [--log FILE]
       burnctl verify-files PATH
       burnctl erase [--drive N] [--full] [--yes] [--log FILE]
       burnctl inspect [--drive N] [--log FILE]
@@ -106,10 +106,12 @@ struct BurnCtl {
         guard let output = arguments.option("--output") else { throw CLIError("make-iso needs --output FILE") }
         let nameOption = arguments.option("--name")
         let checksums = !arguments.flag("--no-checksums")
+        let udf = !arguments.flag("--no-udf")
         let paths = arguments.remaining()
         guard !paths.isEmpty else { throw CLIError("make-iso needs at least one file or folder") }
         let name = nameOption ?? defaultName(for: paths)
-        let blocks = try buildImage(paths: paths, name: name, checksums: checksums, output: URL(fileURLWithPath: output))
+        let blocks = try buildImage(paths: paths, name: name, checksums: checksums, udf: udf,
+                                    output: URL(fileURLWithPath: output))
         print("Wrote \(output): \(blocks) blocks (\(formatBytes(Int64(blocks) * 2048)))")
     }
 
@@ -119,6 +121,7 @@ struct BurnCtl {
         let simulate = arguments.flag("--simulate")
         let verify = !arguments.flag("--no-verify")
         let checksums = !arguments.flag("--no-checksums")
+        let udf = !arguments.flag("--no-udf")
         let overwrite = arguments.flag("--overwrite")
         let eject = arguments.flag("--eject")
         let yes = arguments.flag("--yes")
@@ -127,7 +130,7 @@ struct BurnCtl {
         guard !paths.isEmpty else { throw CLIError("burn needs at least one file or folder") }
 
         let drive = try openDrive(driveNumber)
-        let image = try prepareImage(paths: paths, name: name ?? defaultName(for: paths), checksums: checksums)
+        let image = try prepareImage(paths: paths, name: name ?? defaultName(for: paths), checksums: checksums, udf: udf)
         print("Image: \(image.blockCount) blocks (\(formatBytes(Int64(image.blockCount) * 2048)))")
 
         let state = try await drive.state()
@@ -397,21 +400,24 @@ struct BurnCtl {
         return DiscDrive(transport: try IOKitTransport(drives[index]))
     }
 
-    static func prepareImage(paths: [String], name: String, checksums: Bool = true) throws -> any ImageSource {
+    static func prepareImage(paths: [String], name: String, checksums: Bool = true,
+                             udf: Bool = true) throws -> any ImageSource {
         if paths.count == 1, paths[0].lowercased().hasSuffix(".iso") {
             return try FileImageSource(url: URL(fileURLWithPath: paths[0]))
         }
         let output = FileManager.default.temporaryDirectory.appendingPathComponent("burnctl-\(UUID().uuidString).iso")
         print("Building the disc image…")
-        _ = try buildImage(paths: paths, name: name, checksums: checksums, output: output)
+        _ = try buildImage(paths: paths, name: name, checksums: checksums, udf: udf, output: output)
         return try FileImageSource(url: output)
     }
 
     /// A single folder's contents go at the root of the disc, as other disc tools do.
     /// Several paths are added as they are.
-    static func buildImage(paths: [String], name: String, checksums: Bool = true, output: URL) throws -> Int {
+    static func buildImage(paths: [String], name: String, checksums: Bool = true, udf: Bool = true,
+                           output: URL) throws -> Int {
         var builder = ISOImageBuilder(volumeName: name)
         builder.includesChecksums = checksums
+        builder.includesUDF = udf
         builder.applicationName = "burnctl"
         var isDirectory: ObjCBool = false
         if paths.count == 1, FileManager.default.fileExists(atPath: paths[0], isDirectory: &isDirectory),

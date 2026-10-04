@@ -1,6 +1,6 @@
 import Foundation
 
-/// Name rules for ISO 9660 level 1 and Joliet.
+/// Name rules for ISO 9660 level 1, Joliet and UDF.
 enum Names {
     static let dCharacters = Set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_")
 
@@ -61,6 +61,17 @@ enum Names {
             ext = ""
         }
         return truncateUTF16(base, to: limit - suffix.utf16.count - ext.utf16.count) + suffix + ext
+    }
+
+    /// UDF: the real name, composed, with only "/" and NUL replaced. A UDF name holds 255 bytes
+    /// of compressed Unicode: 254 characters when each fits in 8 bits, else 127 UTF-16 units.
+    static func udf(_ name: String, isDirectory: Bool, index: Int = 0) -> String {
+        let composed = name.precomposedStringWithCanonicalMapping
+        let cleaned = String(composed.map { character -> Character in
+            character == "/" || character == "\0" ? "_" : character
+        })
+        let limit = cleaned.utf16.allSatisfy { $0 <= 0xFF } ? 254 : 127
+        return fitted(cleaned, isDirectory: isDirectory, index: index, limit: limit)
     }
 
     static func truncateUTF16(_ text: String, to limit: Int) -> String {
