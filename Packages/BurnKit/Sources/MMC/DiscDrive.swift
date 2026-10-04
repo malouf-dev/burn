@@ -498,6 +498,9 @@ public actor DiscDrive {
         case erased
         /// The disc was ejected. It may not read back.
         case ejected
+        /// A write-once disc that closed before verify failed. It's finished like any other, so it
+        /// was left in the drive for macOS to mount and its files to be checked (hardware run 21).
+        case leftClosed
     }
 
     /// A burn that fails after changing the disc keeps the drive, so macOS never reads a disc
@@ -514,6 +517,10 @@ public actor DiscDrive {
             guard case .disc(let disc) = try await readState(), disc.writability != .blank else {
                 await releaseDrive()
                 return .nothingNeeded
+            }
+            if disc.writability == .notWritable {
+                await releaseDrive()
+                return .leftClosed
             }
             if erase && disc.profile.supportsBlank {
                 try await blankLocked(.quickThenFull, progress: progress)

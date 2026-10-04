@@ -202,6 +202,10 @@ struct BurnCtl {
                 print(rewritable
                       ? "To reuse it, run `burnctl erase` with the drive empty and insert it when asked."
                       : "To check it, run `burnctl inspect` with the drive empty and insert it when asked.")
+            case .leftClosed:
+                print("The disc was closed, so it was left in the drive for macOS to mount.")
+                print("Check it with `burnctl verify-files` on the mounted volume: "
+                      + "a failed verify can be the drive misreading a good disc.")
             case .nothingNeeded:
                 print("The disc was untouched or gone. The drive is back with macOS.")
             }

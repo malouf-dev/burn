@@ -135,12 +135,13 @@ struct WriteTests {
         await #expect(throws: DriveError.verificationFailed(block: 42)) {
             try await drive.write(patternImage(blocks: 100))
         }
-        // The disc may not read back, so the drive stays out of macOS's hands until it's settled.
+        // The drive stays out of macOS's hands until it's settled. The disc closed before verify,
+        // so it reads like any finished disc and stays in the drive to be checked.
         #expect(await drive.isHoldingDrive)
         #expect(simulator.hasExclusiveAccess)
-        #expect(try await drive.settleAfterFailedBurn(erase: true) == .ejected)
+        #expect(try await drive.settleAfterFailedBurn(erase: true) == .leftClosed)
         #expect(!simulator.hasExclusiveAccess)
-        #expect(simulator.currentMedia == nil)
+        #expect(simulator.currentMedia != nil)
     }
 
     @Test func aMisplacedReadDuringVerifyIsReadAgain() async throws {

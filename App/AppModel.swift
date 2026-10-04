@@ -404,6 +404,8 @@ final class AppModel {
                 return String(localized: "The disc was erased so it can be used again.")
             case .ejected:
                 return String(localized: "The disc was ejected. Don't put it back in: macOS may get stuck reading it.")
+            case .leftClosed:
+                return String(localized: "The disc was closed, so it was left in the drive. Check it in Verify: a failed verify can be the drive misreading a good disc.")
             case .nothingNeeded:
                 return nil
             }
