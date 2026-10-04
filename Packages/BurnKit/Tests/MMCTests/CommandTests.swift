@@ -188,3 +188,23 @@ struct ParserTests {
         #expect(MediaProfile(rawValue: 0x0041).mediaClass == .bluRay)
     }
 }
+
+@Suite("Verification mismatch detail")
+struct MismatchDetailTests {
+    @Test func saysHowABlockDiffers() {
+        var image = [UInt8](repeating: 0xAA, count: 2 * MMC.blockSize)
+        var disc = image
+        disc[MMC.blockSize + 10] = 0x00
+        disc[MMC.blockSize + 11] = 0x01
+        let text = DiscDrive.mismatchDetail(disc: disc, image: image, blockInRead: 1, part: "a.bin from byte 0 of 4096")
+        #expect(text.hasPrefix("2 of 2048 bytes differ, the first at byte 10."))
+        #expect(text.contains("Disc: 00 01 AA"))
+        #expect(text.contains("Image: AA AA AA"))
+        #expect(text.hasSuffix("The block holds a.bin from byte 0 of 4096."))
+
+        image = [UInt8](repeating: 0, count: MMC.blockSize)
+        disc = [UInt8](repeating: 1, count: MMC.blockSize)
+        #expect(DiscDrive.mismatchDetail(disc: disc, image: image, blockInRead: 0, part: nil)
+            .hasSuffix("The image block is all zeros."))
+    }
+}

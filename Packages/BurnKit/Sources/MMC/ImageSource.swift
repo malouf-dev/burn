@@ -6,6 +6,12 @@ public protocol ImageSource: Sendable {
     var blockCount: Int { get }
     /// Reads `count` blocks starting at `block`. Must return exactly `count * 2048` bytes.
     func read(block: Int, count: Int) throws -> [UInt8]
+    /// What a block holds, such as which file and where in it, for the log. Nil if not known.
+    func describe(block: Int) -> String?
+}
+
+extension ImageSource {
+    public func describe(block: Int) -> String? { nil }
 }
 
 public enum ImageSourceError: Error, Sendable, CustomStringConvertible {

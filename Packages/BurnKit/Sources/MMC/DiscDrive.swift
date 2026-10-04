@@ -416,6 +416,8 @@ public actor DiscDrive {
                     return fromDisc.count < range.upperBound || fromDisc[range] != fromImage[range]
                 } ?? 0
                 log.note("Verification mismatch at image block \(checked + firstBad)")
+                log.note(Self.mismatchDetail(disc: fromDisc, image: fromImage, blockInRead: firstBad,
+                                             part: image.describe(block: checked + firstBad)))
                 throw DriveError.verificationFailed(block: checked + firstBad)
             }
             checked += count
@@ -435,6 +437,26 @@ public actor DiscDrive {
         let updated = parameters.applied(to: page)
         _ = try await run(MMC.modeSelect(parameters: ModePage.selectParameters(page: updated)),
                           "MODE SELECT (write parameters)")
+    }
+
+    /// How one mismatched block differs, so a failed verify can be traced to the disc or the image.
+    static func mismatchDetail(disc: [UInt8], image: [UInt8], blockInRead: Int, part: String?) -> String {
+        let start = blockInRead * MMC.blockSize
+        let end = start + MMC.blockSize
+        guard disc.count >= end, image.count >= end else {
+            return "The drive returned \(disc.count) bytes where \(image.count) were expected"
+        }
+        let differing = (start..<end).filter { disc[$0] != image[$0] }
+        let first = differing.first ?? start
+        func sample(_ bytes: [UInt8]) -> String {
+            bytes[first..<min(first + 16, end)].map { String(format: "%02X", $0) }.joined(separator: " ")
+        }
+        var text = "\(differing.count) of \(MMC.blockSize) bytes differ, the first at byte \(first - start)."
+        text += " Disc: \(sample(disc)). Image: \(sample(image))."
+        if disc[start..<end].allSatisfy({ $0 == 0 }) { text += " The disc block is all zeros." }
+        if image[start..<end].allSatisfy({ $0 == 0 }) { text += " The image block is all zeros." }
+        if let part { text += " The block holds \(part)." }
+        return text
     }
 
     private func readImage(_ image: any ImageSource, block: Int, count: Int) throws -> [UInt8] {

@@ -160,6 +160,20 @@ public final class DiscImage: @unchecked Sendable {
         return result
     }
 
+    /// What a block holds, for the log: a file and the byte offset in it, or a structure's name.
+    public func describe(block: Int) -> String? {
+        guard block >= 0, block < blockCount else { return nil }
+        let region = lock.withLock { regions[regionIndex(containing: block)] }
+        let offset = (block - region.start) * sectorSize
+        switch region.content {
+        case .zeros: return "padding"
+        case .bytes: return "disc structures (blocks \(region.start) to \(region.start + region.blocks - 1))"
+        case .fileEntries: return "UDF file entries"
+        case .file(let node), .generated(let node):
+            return "\(layout.discPath(node)) from byte \(offset) of \(node.size)"
+        }
+    }
+
     /// Writes the whole image to a file, reporting the fraction done.
     func write(to url: URL, progress: ((Double) -> Void)?) throws {
         try prepare()
