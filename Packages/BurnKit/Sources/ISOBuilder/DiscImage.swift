@@ -242,7 +242,7 @@ public final class DiscImage: @unchecked Sendable {
         guard let source = node.source else { throw ISOBuilderError.notFound(node.name) }
         let handle = try self.handle(for: node)
         try handle.seek(toOffset: offset)
-        let data = [UInt8](try handle.read(upToCount: length) ?? Data())
+        let data = try handle.readFully(length)
         guard data.count == length else { throw ISOBuilderError.changedWhileWriting(source.path) }
 
         // Hash the file when it's read in order from the start, as a burn does.
@@ -442,7 +442,10 @@ private extension DiscImage {
         let handle = try FileHandle(forReadingFrom: volume)
         defer { try? handle.close() }
         try handle.seek(toOffset: offset)
-        var data = [UInt8](try handle.read(upToCount: Int(min(UInt64(length), node.size - offset))) ?? Data())
+        // The file holds exactly the volume's bytes; anything short is an error, never padding.
+        let wanted = Int(min(UInt64(length), node.size - offset))
+        var data = try handle.readFully(wanted)
+        guard data.count == wanted else { throw ISOBuilderError.unreadable(volume.path) }
         data += [UInt8](repeating: 0, count: length - data.count)
         return data
     }
@@ -450,3 +453,17 @@ private extension DiscImage {
 
 /// The drive engine burns a `DiscImage` directly.
 extension DiscImage: ImageSource {}
+
+extension FileHandle {
+    /// Reads until `count` bytes or the end of the file. One read can return less than asked
+    /// before the end, so a single call isn't enough.
+    func readFully(_ count: Int) throws -> [UInt8] {
+        var result: [UInt8] = []
+        result.reserveCapacity(count)
+        while result.count < count {
+            guard let chunk = try read(upToCount: count - result.count), !chunk.isEmpty else { break }
+            result += chunk
+        }
+        return result
+    }
+}

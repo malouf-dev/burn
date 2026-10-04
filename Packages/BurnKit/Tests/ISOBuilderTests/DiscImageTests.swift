@@ -108,6 +108,20 @@ struct DiscImageTests {
         #expect(path.hasSuffix("/Report.PDF"))
     }
 
+    @Test func readsCarryOnPastAShortRead() throws {
+        // A pipe hands back what has arrived so far, so one read returns less than asked.
+        let pipe = Pipe()
+        pipe.fileHandleForWriting.write(Data([1, 2, 3]))
+        let writer = pipe.fileHandleForWriting
+        let thread = Thread {
+            Thread.sleep(forTimeInterval: 0.2)
+            writer.write(Data([4, 5, 6]))
+            try? writer.close()
+        }
+        thread.start()
+        #expect(try pipe.fileHandleForReading.readFully(10) == [1, 2, 3, 4, 5, 6])
+    }
+
     @Test func imagesFromOneBuilderStandApart() throws {
         let (folder, expected) = try makeSourceFolder()
         var builder = try makeBuilder(folder)
