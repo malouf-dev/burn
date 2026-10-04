@@ -74,9 +74,9 @@ public struct ISOImageBuilder {
         Layout(root: imageRoot(date: Date()), paddingBlocks: paddingBlocks, includesUDF: includesUDF).totalBlocks
     }
 
-    /// Writes the image and returns its size in blocks.
-    @discardableResult
-    public func write(to url: URL, date: Date = Date(), progress: ((Double) -> Void)? = nil) throws -> Int {
+    /// The image, made block by block as it's read, for burning with no file in between.
+    /// Later changes to the builder don't affect it.
+    public func image(date: Date = Date()) throws -> DiscImage {
         if let file = root.first(where: { !$0.isDirectory && $0.size > UDF.maxFileSize }) {
             throw ISOBuilderError.fileTooLargeForDisc(file.source?.path ?? file.name)
         }
@@ -84,16 +84,23 @@ public struct ISOImageBuilder {
             throw ISOBuilderError.fileTooLarge(file.source?.path ?? file.name)
         }
         let layout = Layout(root: imageRoot(date: date), paddingBlocks: paddingBlocks, includesUDF: includesUDF)
-        let writer = try ImageWriter(url: url)
-        defer { writer.close() }
-        try layout.write(to: writer, volumeName: volumeName, date: date, progress: progress)
-        return layout.totalBlocks
+        return DiscImage(layout: layout, volumeName: volumeName, date: date)
     }
 
-    /// The tree to write: what was added, plus the `.burn` folder when checksums are on.
+    /// Writes the image to a file and returns its size in blocks.
+    @discardableResult
+    public func write(to url: URL, date: Date = Date(), progress: ((Double) -> Void)? = nil) throws -> Int {
+        let disc = try image(date: date)
+        try disc.write(to: url, progress: progress)
+        return disc.blockCount
+    }
+
+    /// The tree to write: a copy of what was added, so each image lays out its own, plus the
+    /// `.burn` folder when checksums are on.
     private func imageRoot(date: Date) -> Node {
-        guard includesChecksums else { return root }
         let top = Node(name: "", source: nil, isDirectory: true, size: 0, date: root.date)
+        top.children = root.children.map { $0.copy() }
+        guard includesChecksums else { return top }
         let folder = Node(name: DiscChecksums.folderName, source: nil, isDirectory: true, size: 0, date: date)
         folder.isHidden = true
         // Sized once the names on the disc are known, and written once every file is hashed.
@@ -106,7 +113,7 @@ public struct ISOImageBuilder {
         infoNode.generated = .content(info)
         folder.children = [sums, infoNode]
         // A `.burn` folder copied from an earlier disc would describe that disc, so ours replaces it.
-        top.children = [folder] + root.children.filter { $0.name != DiscChecksums.folderName }
+        top.children = [folder] + top.children.filter { $0.name != DiscChecksums.folderName }
         return top
     }
 
@@ -188,6 +195,15 @@ final class Node {
     /// Whether ISO 9660 and Joliet can list it: every folder, and files under 4 GB.
     var inISO: Bool {
         isDirectory || size < UInt64(UInt32.max)
+    }
+
+    /// A copy of this node and everything below it, without any layout.
+    func copy() -> Node {
+        let node = Node(name: name, source: source, isDirectory: isDirectory, size: size, date: date)
+        node.generated = generated
+        node.isHidden = isHidden
+        node.children = children.map { $0.copy() }
+        return node
     }
 
     /// This node or the first below it that matches, depth first.

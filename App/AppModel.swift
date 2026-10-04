@@ -297,22 +297,16 @@ final class AppModel {
         outcome = nil
 
         burnTask = Task {
-            let imageURL = FileManager.default.temporaryDirectory.appendingPathComponent("Burn-\(UUID().uuidString).iso")
-            defer { try? FileManager.default.removeItem(at: imageURL) }
             do {
-                try await Task.detached(priority: .userInitiated) {
+                // The image is made as the drive asks for it, so nothing is written to disk first.
+                let image = try await Task.detached(priority: .userInitiated) {
                     var builder = ISOImageBuilder(volumeName: name)
                     builder.includesChecksums = checksums
                     builder.applicationName = "Burn \(version)"
                     for url in urls { try builder.add(url) }
-                    try builder.write(to: imageURL) { fraction in
-                        Task { @MainActor in
-                            if case .buildingImage = self.activity { self.activity = .buildingImage(fraction: fraction) }
-                        }
-                    }
+                    return try builder.image()
                 }.value
                 try Task.checkCancellation()
-                let image = try FileImageSource(url: imageURL)
                 guard disc.canOverwrite || image.blockCount <= Int(disc.freeBlocks) else {
                     throw DriveError.doesNotFit(neededBlocks: image.blockCount, freeBlocks: Int(disc.freeBlocks))
                 }

@@ -16,8 +16,9 @@ let package = Package(
         .target(name: "MMC"),
         // Plain Swift: an in-memory drive for tests and CI.
         .target(name: "MMCSimulator", dependencies: ["MMC"]),
-        // Plain Swift: ISO 9660 + Joliet image builder.
-        .target(name: "ISOBuilder"),
+        // Plain Swift: the disc image builder (UDF bridge with ISO 9660 and Joliet), checksums and
+        // the checksum verifier. Depends on MMC only for the ImageSource protocol it serves.
+        .target(name: "ISOBuilder", dependencies: ["MMC"]),
         // C wrapper over IOKit's MMC and SCSI task interfaces. Compiles to nothing off macOS.
         .target(
             name: "CIOKitMMC",
@@ -34,6 +35,6 @@ let package = Package(
             dependencies: ["MMC", "MMCSimulator", "ISOBuilder", "IOKitTransport"]
         ),
         .testTarget(name: "MMCTests", dependencies: ["MMC", "MMCSimulator"]),
-        .testTarget(name: "ISOBuilderTests", dependencies: ["ISOBuilder"]),
+        .testTarget(name: "ISOBuilderTests", dependencies: ["ISOBuilder", "MMC", "MMCSimulator"]),
     ]
 )

@@ -1,159 +1,19 @@
-import CryptoKit
 import Foundation
 
-/// Buffered sequential output for the image file.
-final class ImageWriter {
-    private let handle: FileHandle
-    private var buffer: [UInt8] = []
-    private var bytesWritten = 0
-
-    init(url: URL) throws {
-        guard FileManager.default.createFile(atPath: url.path, contents: nil) else {
-            throw ISOBuilderError.unreadable(url.path)
-        }
-        handle = try FileHandle(forWritingTo: url)
-    }
-
-    func write(_ bytes: [UInt8]) throws {
-        buffer += bytes
-        bytesWritten += bytes.count
-        if buffer.count >= 4 * 1024 * 1024 { try flush() }
-    }
-
-    func writeZeros(sectors: Int) throws {
-        guard sectors > 0 else { return }
-        try write([UInt8](repeating: 0, count: sectors * sectorSize))
-    }
-
-    /// Pads to the next sector boundary.
-    func padSector() throws {
-        let remainder = bytesWritten % sectorSize
-        if remainder != 0 { try write([UInt8](repeating: 0, count: sectorSize - remainder)) }
-    }
-
-    var currentSector: Int { bytesWritten / sectorSize }
-
-    func flush() throws {
-        guard !buffer.isEmpty else { return }
-        try handle.write(contentsOf: Data(buffer))
-        buffer.removeAll(keepingCapacity: true)
-    }
-
-    func close() {
-        try? flush()
-        try? handle.close()
-    }
-}
-
 extension Layout {
-    func write(to writer: ImageWriter, volumeName: String, date: Date, progress: ((Double) -> Void)?) throws {
-        let stamp = Timestamp(date)
-        try writer.writeZeros(sectors: 16)
-        try writer.write(volumeDescriptor(joliet: false, volumeName: volumeName, stamp: stamp))
-        try writer.write(volumeDescriptor(joliet: true, volumeName: volumeName, stamp: stamp))
+    /// Sectors 16-18: the ISO 9660 primary descriptor, the Joliet descriptor and the terminator.
+    func isoDescriptors(volumeName: String, stamp: Timestamp) -> [UInt8] {
         var terminator = [UInt8](repeating: 0, count: sectorSize)
         terminator[0] = 255
         terminator.replaceSubrange(1..<6, with: Array("CD001".utf8))
         terminator[6] = 1
-        try writer.write(terminator)
-
-        if includesUDF {
-            try writer.write(UDF.recognitionSequence())
-            try writer.writeZeros(sectors: Int(UDF.mainSequence) - writer.currentSector)
-            try writer.write(udfVolumeSequence(start: UDF.mainSequence, volumeName: volumeName, stamp: stamp))
-            try writer.write(udfVolumeSequence(start: UDF.reserveSequence, volumeName: volumeName, stamp: stamp))
-            try checkPosition(writer, UDF.integritySequence)
-            try writer.write(udfIntegritySequence(stamp: stamp))
-            try writer.writeZeros(sectors: Int(UDF.anchor) - writer.currentSector)
-            try writer.write(udfAnchor(location: UDF.anchor))
-            try writer.write(udfFileSet(volumeName: volumeName, stamp: stamp))
-            for node in udfNodes {
-                try checkPosition(writer, UDF.partitionStart + node.udfEntry)
-                try writer.write(udfFileEntry(node))
-            }
-            for directory in udfNodes where directory.isDirectory {
-                try checkPosition(writer, UDF.partitionStart + directory.udfDirectoryBlock)
-                try writer.write(udfDirectoryContents(directory))
-            }
-        }
-
-        try checkPosition(writer, isoPathTableL)
-        try writer.write(pathTable(joliet: false, bigEndian: false))
-        try writer.padSector()
-        try writer.write(pathTable(joliet: false, bigEndian: true))
-        try writer.padSector()
-        try writer.write(pathTable(joliet: true, bigEndian: false))
-        try writer.padSector()
-        try writer.write(pathTable(joliet: true, bigEndian: true))
-        try writer.padSector()
-
-        for directory in isoDirectories {
-            try checkPosition(writer, directory.isoExtent)
-            try writer.write(directoryContents(directory, joliet: false))
-        }
-        for directory in jolietDirectories {
-            try checkPosition(writer, directory.jolietExtent)
-            try writer.write(directoryContents(directory, joliet: true))
-        }
-
-        let totalBytes = max(1, files.reduce(0) { $0 + $1.size })
-        var copied: UInt64 = 0
-        var digests: [String: String] = [:]
-        for file in files {
-            try checkPosition(writer, file.fileExtent)
-            if let generated = file.generated {
-                let content: [UInt8]
-                switch generated {
-                case .checksums: content = Array(DiscChecksums.render(digests).utf8)
-                case .content(let bytes): content = bytes
-                }
-                precondition(content.count == Int(file.size), "Generated file \(file.name) changed size")
-                try writer.write(content)
-                try writer.padSector()
-                continue
-            }
-            guard let source = file.source else { continue }
-            guard let input = try? FileHandle(forReadingFrom: source) else {
-                throw ISOBuilderError.unreadable(source.path)
-            }
-            defer { try? input.close() }
-            var hasher: SHA256? = checksumsNode == nil ? nil : SHA256()
-            var remaining = file.size
-            while remaining > 0 {
-                let chunk = try input.read(upToCount: Int(min(remaining, 1024 * 1024))) ?? Data()
-                if chunk.isEmpty { throw ISOBuilderError.changedWhileWriting(source.path) }
-                hasher?.update(data: chunk)
-                try writer.write([UInt8](chunk))
-                remaining -= UInt64(chunk.count)
-                copied += UInt64(chunk.count)
-                progress?(Double(copied) / Double(totalBytes))
-            }
-            if let extra = try input.read(upToCount: 1), !extra.isEmpty {
-                throw ISOBuilderError.changedWhileWriting(source.path)
-            }
-            if let hasher { digests[discPath(file)] = DiscChecksums.hex(hasher.finalize()) }
-            try writer.padSector()
-        }
-
-        try checkPosition(writer, dataEnd)
-        if includesUDF {
-            try writer.writeZeros(sectors: totalBlocks - Int(dataEnd) - 1)
-            try writer.write(udfAnchor(location: UInt32(totalBlocks - 1)))
-        } else {
-            try writer.writeZeros(sectors: paddingBlocks)
-        }
-        try writer.flush()
-        progress?(1)
-    }
-
-    private func checkPosition(_ writer: ImageWriter, _ expected: UInt32) throws {
-        precondition(writer.currentSector == Int(expected),
-                     "Image layout out of step: at sector \(writer.currentSector), expected \(expected)")
+        return volumeDescriptor(joliet: false, volumeName: volumeName, stamp: stamp)
+            + volumeDescriptor(joliet: true, volumeName: volumeName, stamp: stamp) + terminator
     }
 
     // MARK: - Volume descriptors
 
-    private func volumeDescriptor(joliet: Bool, volumeName: String, stamp: Timestamp) -> [UInt8] {
+    func volumeDescriptor(joliet: Bool, volumeName: String, stamp: Timestamp) -> [UInt8] {
         var sector = [UInt8](repeating: 0, count: sectorSize)
         sector[0] = joliet ? 2 : 1
         sector.replaceSubrange(1..<6, with: Array("CD001".utf8))
@@ -212,7 +72,7 @@ extension Layout {
 
     // MARK: - Path tables
 
-    private func pathTable(joliet: Bool, bigEndian: Bool) -> [UInt8] {
+    func pathTable(joliet: Bool, bigEndian: Bool) -> [UInt8] {
         let directories = joliet ? jolietDirectories : isoDirectories
         var table: [UInt8] = []
         for directory in directories {
@@ -246,7 +106,7 @@ extension Layout {
 
     // MARK: - Directories
 
-    private func directoryContents(_ directory: Node, joliet: Bool) -> [UInt8] {
+    func directoryContents(_ directory: Node, joliet: Bool) -> [UInt8] {
         let parent = directory.parent ?? root
         var records: [[UInt8]] = []
         records.append(directoryRecord(extent: joliet ? directory.jolietExtent : directory.isoExtent,
@@ -284,7 +144,7 @@ extension Layout {
         return bytes
     }
 
-    private func directoryRecord(extent: UInt32, size: UInt32, isDirectory: Bool, identifier: [UInt8], stamp: Timestamp,
+    func directoryRecord(extent: UInt32, size: UInt32, isDirectory: Bool, identifier: [UInt8], stamp: Timestamp,
                                  hidden: Bool = false) -> [UInt8] {
         var record = [UInt8](repeating: 0, count: Self.recordLength(identifierLength: identifier.count))
         record[0] = UInt8(record.count)

@@ -110,8 +110,8 @@ struct BurnCtl {
         let paths = arguments.remaining()
         guard !paths.isEmpty else { throw CLIError("make-iso needs at least one file or folder") }
         let name = nameOption ?? defaultName(for: paths)
-        let blocks = try buildImage(paths: paths, name: name, checksums: checksums, udf: udf,
-                                    output: URL(fileURLWithPath: output))
+        let builder = try makeBuilder(paths: paths, name: name, checksums: checksums, udf: udf)
+        let blocks = try builder.write(to: URL(fileURLWithPath: output))
         print("Wrote \(output): \(blocks) blocks (\(formatBytes(Int64(blocks) * 2048)))")
     }
 
@@ -405,16 +405,14 @@ struct BurnCtl {
         if paths.count == 1, paths[0].lowercased().hasSuffix(".iso") {
             return try FileImageSource(url: URL(fileURLWithPath: paths[0]))
         }
-        let output = FileManager.default.temporaryDirectory.appendingPathComponent("burnctl-\(UUID().uuidString).iso")
-        print("Building the disc image…")
-        _ = try buildImage(paths: paths, name: name, checksums: checksums, udf: udf, output: output)
-        return try FileImageSource(url: output)
+        // Made as the drive asks for it, with no file in between.
+        return try makeBuilder(paths: paths, name: name, checksums: checksums, udf: udf).image()
     }
 
     /// A single folder's contents go at the root of the disc, as other disc tools do.
     /// Several paths are added as they are.
-    static func buildImage(paths: [String], name: String, checksums: Bool = true, udf: Bool = true,
-                           output: URL) throws -> Int {
+    static func makeBuilder(paths: [String], name: String, checksums: Bool = true,
+                            udf: Bool = true) throws -> ISOImageBuilder {
         var builder = ISOImageBuilder(volumeName: name)
         builder.includesChecksums = checksums
         builder.includesUDF = udf
@@ -428,7 +426,7 @@ struct BurnCtl {
                 try builder.add(URL(fileURLWithPath: path))
             }
         }
-        return try builder.write(to: output)
+        return builder
     }
 
     static func defaultName(for paths: [String]) -> String {
