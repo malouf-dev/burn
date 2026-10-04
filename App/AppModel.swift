@@ -159,8 +159,14 @@ final class AppModel {
         // A disc with data: its name and whether it has checksums, from its mounted volume.
         if case .disc(let disc)? = driveState, disc.writability != .blank,
            let transport = selectedDriveID.flatMap({ transports[$0] }) {
-            discVolume = transport.mountedVolume()
-            discHasChecksums = discVolume.map { ChecksumVerifier.hasChecksums(at: $0.url) } ?? false
+            // Off the main thread: macOS may stop the read to ask for permission, and the window
+            // must not freeze while it waits.
+            let volume = transport.mountedVolume()
+            let hasChecksums = await Task.detached {
+                volume.map { ChecksumVerifier.hasChecksums(at: $0.url) } ?? false
+            }.value
+            discHasChecksums = hasChecksums
+            discVolume = volume
         } else {
             discVolume = nil
             discHasChecksums = false

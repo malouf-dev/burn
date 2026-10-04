@@ -5,6 +5,9 @@ import Observation
 
 /// The Verify view's state: one disc (or folder) with a `.burn` checksum folder at a time, and
 /// every file on it with its result (decision D12).
+///
+/// Discs and folders are only ever read off the main thread. Reading a removable volume can make
+/// macOS stop and ask the user for permission, and the window must not freeze while it waits.
 @MainActor
 @Observable
 final class VerifyModel {
@@ -65,13 +68,20 @@ final class VerifyModel {
     private var chosen: [URL] = []
     private var preferred: URL?
     private var task: Task<Void, Never>?
+    /// True while the selected disc's file list is being read.
+    private var loading = false
+    /// Whether the last check's disc has PAR2 recovery data, found when the check finished.
+    private var recoveryAvailable = false
+    private var refreshes = 0
 
     init() {
-        refresh()
+        Task { await refresh() }
         let center = NSWorkspace.shared.notificationCenter
         for name in [NSWorkspace.didMountNotification, NSWorkspace.didUnmountNotification] {
             _ = center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.refresh() }
+                MainActor.assumeIsolated {
+                    Task { await self?.refresh() }
+                }
             }
         }
     }
@@ -89,8 +99,8 @@ final class VerifyModel {
 
     /// True when a check found damage and the disc has PAR2 recovery data to repair it from.
     var canRepair: Bool {
-        guard case .finished(let report) = phase, !report.isIntact, let source = selected else { return false }
-        return RecoveryRepair.hasRecovery(at: source.url)
+        guard case .finished(let report) = phase, !report.isIntact else { return false }
+        return recoveryAvailable
     }
 
     /// Copies the disc's files into a new folder inside `folder`, rebuilding damaged ones from the
@@ -140,20 +150,20 @@ final class VerifyModel {
     /// Prefers the disc in the drive when it has checksums.
     func prefer(_ url: URL?) {
         preferred = url
-        refresh()
-        if let url, sources.contains(where: { $0.url == url }), !isChecking { selectedID = url }
+        Task {
+            await refresh()
+            if let url, sources.contains(where: { $0.url == url }), !isChecking { selectedID = url }
+        }
     }
 
     /// Finds mounted discs, disc images and chosen folders that have checksums.
-    func refresh() {
-        let mounted = FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: [.volumeNameKey],
-                                                            options: [.skipHiddenVolumes]) ?? []
-        var found: [Source] = []
-        for url in mounted + chosen where ChecksumVerifier.hasChecksums(at: url) {
-            guard !found.contains(where: { $0.url == url }) else { continue }
-            let name = (try? url.resourceValues(forKeys: [.volumeNameKey]).volumeName) ?? url.lastPathComponent
-            found.append(Source(url: url, name: name, info: ChecksumVerifier.info(at: url)))
-        }
+    func refresh() async {
+        refreshes += 1
+        let generation = refreshes
+        let chosen = self.chosen
+        let found = await Task.detached(priority: .userInitiated) { Self.findSources(chosen: chosen) }.value
+        // A later refresh may have finished first; its answer is the newer one.
+        guard generation == refreshes else { return }
         sources = found
         if let selectedID, !found.contains(where: { $0.id == selectedID }) {
             self.selectedID = nil
@@ -163,30 +173,57 @@ final class VerifyModel {
         }
     }
 
+    nonisolated private static func findSources(chosen: [URL]) -> [Source] {
+        let mounted = FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: [.volumeNameKey],
+                                                            options: [.skipHiddenVolumes]) ?? []
+        var found: [Source] = []
+        for url in mounted + chosen where ChecksumVerifier.hasChecksums(at: url) {
+            guard !found.contains(where: { $0.url == url }) else { continue }
+            let name = (try? url.resourceValues(forKeys: [.volumeNameKey]).volumeName) ?? url.lastPathComponent
+            found.append(Source(url: url, name: name, info: ChecksumVerifier.info(at: url)))
+        }
+        return found
+    }
+
     func choose(_ url: URL) {
         if !chosen.contains(url) { chosen.append(url) }
-        refresh()
-        if sources.contains(where: { $0.url == url }) { selectedID = url }
+        Task {
+            await refresh()
+            if sources.contains(where: { $0.url == url }) { selectedID = url }
+        }
     }
 
     /// Lists the selected disc's files, not yet checked.
     private func load() {
         phase = .idle
+        recoveryAvailable = false
+        setRows([])
         guard let root = selected?.url else {
-            setRows([])
+            loading = false
             return
         }
-        do {
-            let paths = try ChecksumVerifier.listedFiles(at: root)
-            setRows(paths.map { Row(id: $0, size: Self.size(root.appendingPathComponent($0)), status: .pending) })
-        } catch {
-            setRows([])
-            phase = .failed("\(error)")
+        loading = true
+        Task {
+            let listed = await Task.detached(priority: .userInitiated) { () -> Result<[Row], any Error> in
+                Result {
+                    try ChecksumVerifier.listedFiles(at: root).map {
+                        Row(id: $0, size: Self.size(root.appendingPathComponent($0)), status: .pending)
+                    }
+                }
+            }.value
+            guard selectedID == root else { return }
+            loading = false
+            switch listed {
+            case .success(let rows):
+                setRows(rows)
+            case .failure(let error):
+                phase = .failed("\(error)")
+            }
         }
     }
 
     func check() {
-        guard let source = selected, !isChecking else { return }
+        guard let source = selected, !isChecking, !loading else { return }
         let root = source.url
         setRows(rows.filter { $0.status != .unexpected }.map { Row(id: $0.id, size: $0.size, status: .pending) })
         phase = .checking(ChecksumProgress(checkedFiles: 0, totalFiles: rows.count, checkedBytes: 0,
@@ -197,6 +234,8 @@ final class VerifyModel {
             let hold = SessionLog.Hold("Checking a disc")
             defer { hold.release() }
             let result: Phase
+            var extra: [Row] = []
+            var hasRecovery = false
             do {
                 let report = try ChecksumVerifier.verify(root: root, progress: { progress in
                     guard throttle.shouldReport(progress) else { return }
@@ -205,6 +244,10 @@ final class VerifyModel {
                     Task { @MainActor in self?.update(path, Status(check), root: root) }
                 })
                 result = .finished(report)
+                extra = report.unexpected.map {
+                    Row(id: $0, size: Self.size(root.appendingPathComponent($0)), status: .unexpected)
+                }
+                hasRecovery = !report.isIntact && RecoveryRepair.hasRecovery(at: root)
                 SessionLog.events.note("Check finished: \(report.matched.count) match, \(report.changed.count) changed, "
                     + "\(report.missing.count) missing, \(report.unreadable.count) unreadable")
             } catch is CancellationError {
@@ -214,7 +257,9 @@ final class VerifyModel {
                 result = .failed("\(error)")
                 SessionLog.events.note("Check failed: \(error)")
             }
-            await MainActor.run { self?.finish(result, root: root) }
+            await MainActor.run { [extra, hasRecovery] in
+                self?.finish(result, root: root, unexpected: extra, hasRecovery: hasRecovery)
+            }
         }
     }
 
@@ -235,16 +280,16 @@ final class VerifyModel {
         rows[index].status = status
     }
 
-    private func finish(_ result: Phase, root: URL) {
+    private func finish(_ result: Phase, root: URL, unexpected: [Row], hasRecovery: Bool) {
         guard selectedID == root else { return }
+        recoveryAvailable = hasRecovery
         if case .finished(let report) = result {
             // Settle every row from the report, in case a file's update arrived late.
             for path in report.matched { update(path, .matched, root: root) }
             for path in report.changed { update(path, .changed, root: root) }
             for path in report.missing { update(path, .missing, root: root) }
             for path in report.unreadable { update(path, .unreadable, root: root) }
-            setRows(rows + report.unexpected.map { Row(id: $0, size: Self.size(root.appendingPathComponent($0)),
-                                                       status: .unexpected) })
+            setRows(rows + unexpected)
         } else if case .idle = result {
             setRows(rows.map { Row(id: $0.id, size: $0.size, status: .pending) })
         }
@@ -256,7 +301,7 @@ final class VerifyModel {
         rowIndex = Dictionary(newRows.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
-    private static func size(_ url: URL) -> Int64? {
+    nonisolated private static func size(_ url: URL) -> Int64? {
         (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init)
     }
 }
