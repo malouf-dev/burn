@@ -51,7 +51,7 @@ The first milestone, 0.1 alpha, is an app that opens, sees a disc, and writes fi
 | D8 | Drop VCD, SVCD, DivX and DVD-Audio. Keep data discs, audio CD, disc images, disc copy and DVD-Video. | Proposed |
 | D9 | No App Sandbox. The engine opens IOKit device interfaces, which the sandbox blocks. | Proposed, confirm on hardware |
 | D10 | Our own engine over IOKit's MMC interfaces. No DiscRecording. | Decided |
-| D11 | Data discs use ISO 9660 with Joliet, built by our own code, for now. Next comes a UDF bridge (UDF plus ISO 9660), which becomes the default once it passes the same hardware tests. | Decided |
+| D11 | Data discs use ISO 9660 with Joliet, built by our own code, for now. Next comes a UDF bridge (UDF plus ISO 9660), which becomes the default once it passes the same hardware tests. | Replaced by D14 |
 | D12 | Every data disc carries a hidden `.burn` folder at its root, on by default: `SHA256SUMS`, one line per file that `shasum -a 256 -c` can check without Burn, and `info.json` with the disc name, date, app version and file count. The app's Verify view checks any mounted disc that has one. | Decided |
 | D13 | The app is for data discs only for now, in one window modelled on Burn's data view. Audio, video and copy come later (D8). | Decided |
 | D14 | Data discs use a UDF 2.01 bridge: UDF 2.01 with ISO 9660 and Joliet alongside, sharing the file data, on CD, DVD and Blu-ray alike. Files of 4 GB or more appear in UDF only. The `.burn` checksum paths follow the UDF names. Images are generated as they're written, with no temporary file, so Blu-ray sizes work. | Decided |
@@ -288,9 +288,24 @@ Left for 0.1:
 - Acceptance criteria 8, 9 and 12 in 9.5 have simulator tests but no hardware or accessibility check yet.
 - D6, the final name and bundle identifier, is still open.
 
-### 9.8 Next: the UDF bridge (D11)
+### 9.8 The UDF bridge (D14)
 
-The plan for large files and long names, for whoever picks it up:
+Done on 4 October 2026, in `Packages/BurnKit/Sources/ISOBuilder/UDF.swift`. It passes the unit tests, a reader written separately in the tests, and CI: macOS mounts the image as UDF, the files and checksums match, and a 4.3 GB file reads back intact. It isn't yet tested on a burned disc.
+
+Where things sit in the image:
+
+| Sectors | Contents |
+|---|---|
+| 16-18 | ISO 9660 primary descriptor, Joliet descriptor, terminator |
+| 19-21 | UDF recognition: BEA01, NSR03, TEA01 |
+| 32-47, 48-63 | UDF volume descriptor sequence and its reserve copy |
+| 64-65 | Logical volume integrity descriptor (closed), terminator |
+| 256 | Anchor; a second anchor is in the last sector |
+| 257 on | The UDF partition: File Set Descriptor, a File Entry per file and folder, folder contents, then the ISO 9660 and Joliet structures and the file data |
+
+`burnctl make-iso --no-udf` and `ISOImageBuilder.includesUDF = false` give a plain ISO 9660 and Joliet image.
+
+The original plan:
 
 - Write UDF 2.01 alongside the existing ISO 9660 and Joliet trees, sharing the same file data, as a "bridge" disc. Old readers use ISO 9660, everything current uses UDF.
 - New structures: Anchor Volume Descriptor Pointer at block 256, the Volume Descriptor Sequence (Primary, Implementation Use, Partition, Logical Volume, Unallocated Space, Terminating) and its reserve copy, the Logical Volume Integrity Descriptor, the File Set Descriptor, and a File Entry plus File Identifier Descriptors for every file and folder. Each needs its descriptor tag, tag checksum and CRC.

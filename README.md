@@ -8,7 +8,7 @@ The original Objective-C Burn app is on the [`legacy`](../../tree/legacy) branch
 
 ## What it does now
 
-- Burns files and folders to CD-R, DVD-R and DVD-RW as ISO 9660 with Joliet, then reads every block back to check it. DVD+R and BD-R are written by the same engine but not yet tested on a real drive. See [docs/hardware-testing.md](docs/hardware-testing.md).
+- Burns files and folders to CD-R, DVD-R and DVD-RW as a UDF 2.01 bridge (UDF with ISO 9660 and Joliet alongside), then reads every block back to check it. Files of any size work; files of 4 GB or more are in UDF only. DVD+R and BD-R are written by the same engine but not yet tested on a real drive. See [docs/hardware-testing.md](docs/hardware-testing.md).
 - Puts a hidden `.burn` folder on each disc with a SHA-256 checksum for every file. The app's Verify view checks a disc against it. Without Burn, run this from the disc's root:
 
 ```sh

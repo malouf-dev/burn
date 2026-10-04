@@ -79,10 +79,33 @@ In the order it happened. The run numbers match `docs/hardware-testing.md`.
 - **Push only once CI would pass, and keep one behaviour per commit.** CI caught every compile error the cloud session couldn't. The one-behaviour rule slipped a few times, where changes shared a file; those commits say so.
 - **Keep the hardware log up to date as you go.** `docs/hardware-testing.md` has every run, including the failures. That record made the run 7 to 16 diagnosis possible.
 
+## Session 2: 4 October 2026
+
+A cloud session. The owner asked for Blu-ray data discs in the best format, with full checksums, and for recovery data so a damaged disc can be repaired.
+
+### Decisions
+
+- **UDF 2.01 bridge on every disc (D14).** UDF is what Blu-ray expects, holds files of any size and keeps real names up to 255 bytes. ISO 9660 and Joliet stay alongside, sharing the file data, so older systems still read the disc. One format for CD, DVD and Blu-ray keeps testing simple. UDF 2.01 rather than 2.50 or 2.60: those add a metadata partition that matters for rewriting in place, which closed discs don't need, and 2.01 is read by every current system.
+- **PAR2 recovery data in `.burn/` by default, 10% (D15).** Checksums say what was lost; recovery data puts it back. PAR2 is an open format, so any PAR2 tool can repair a disc without Burn. We write our own encoder from the PAR2 2.0 specification, since par2cmdline is GPL.
+
+### What was built
+
+- The UDF bridge (proposal 9.8). Checksum paths follow UDF names, since every current system reads UDF first.
+- The app no longer blocks files of 4 GB or more, and its size estimate counts a block per file for its UDF entry.
+- A fix for a hang: two Joliet names that shortened to the same 103 characters made the builder loop forever, because the duplicate suffix was cut off with the rest.
+
+### What we learned
+
+- **macOS mounts a bridge image as UDF**, so CI checks `mount` for `udf`, and mounts a `--no-udf` image to keep testing ISO 9660 through macOS.
+- **The UDF code passed on the first CI run.** Writing the test reader separately from the builder, both from ECMA-167 and the UDF 2.01 text, caught nothing, which means either both are right or both share a misreading. macOS mounting the image and reading a 4.3 GB file correctly is the stronger evidence.
+- **This cloud session can't download CI artifacts or logs.** The built-in `gh` only talks to api.github.com, and artifacts come from another host. Checking an image with Linux tools such as `udfinfo` needs a local session.
+
 ## Open items
 
 - **Hardware still untested:** DVD+R (no media on hand), BD-R, CD-RW erase, a failed burn going through the keep-the-drive path, and a burn from the app itself.
-- **UDF bridge:** planned in proposal section 9.8.
+- **UDF on a burned disc:** a BD-R, and a CD-R or DVD-R, should be burned and read on macOS, and ideally Windows, before relying on it.
+- **Generating the image while burning**, with no temporary file, so Blu-ray sizes don't need 25 to 100 GB of free space.
+- **PAR2 recovery data and a Repair step** (D15).
 - **Name and bundle identifier (D6):** see below.
 
 ### Naming the project (D6)
