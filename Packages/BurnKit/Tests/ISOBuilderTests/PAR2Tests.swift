@@ -104,6 +104,25 @@ struct PAR2Tests {
         }
     }
 
+    @Test func manyExponentsAtOnceMatchOneAtATime() {
+        // Enough exponents that every core works on several, as on a real disc.
+        let size = 4096
+        let inputs: [[UInt8]] = (0..<3).map { number in (0..<size).map { UInt8(truncatingIfNeeded: $0 &* 7 &+ number) } }
+        let logs = GF16.inputLogs(count: inputs.count)
+        let exponents = Array(0..<96)
+        let together = PAR2Encoder(sliceSize: size, exponents: exponents)
+        for (index, input) in inputs.enumerated() {
+            input.withUnsafeBytes { together.add($0, inputLog: logs[index]) }
+        }
+        for exponent in exponents {
+            let alone = PAR2Encoder(sliceSize: size, exponents: [exponent])
+            for (index, input) in inputs.enumerated() {
+                input.withUnsafeBytes { alone.add($0, inputLog: logs[index]) }
+            }
+            #expect(together.slice(exponent: exponent) == alone.slice(exponent: exponent), "exponent \(exponent)")
+        }
+    }
+
     @Test func slicesSuitTheDisc() throws {
         let cd = try #require(PAR2.plan(sizes: [700_000_000], percent: 10))
         #expect(cd.recoveryCount == 2000)

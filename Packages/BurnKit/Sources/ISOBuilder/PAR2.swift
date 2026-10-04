@@ -261,7 +261,9 @@ final class PAR2Encoder: @unchecked Sendable {
         self.sliceSize = sliceSize
         self.exponents = exponents
         position = Dictionary(uniqueKeysWithValues: exponents.enumerated().map { ($1, $0) })
-        recovery = Array(repeating: [UInt8](repeating: 0, count: sliceSize), count: exponents.count)
+        // Each buffer is its own allocation. Array(repeating:) would share one buffer until first
+        // written, and the workers would then race to copy it, starting some slices with garbage.
+        recovery = (0..<exponents.count).map { _ in [UInt8](repeating: 0, count: sliceSize) }
         pending = [UInt8](repeating: 0, count: Self.batch * sliceSize)
     }
 
