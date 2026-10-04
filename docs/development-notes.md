@@ -91,6 +91,8 @@ A cloud session. The owner asked for Blu-ray data discs in the best format, with
 ### What was built
 
 - The UDF bridge (proposal 9.8). Checksum paths follow UDF names, since every current system reads UDF first.
+- Images made on demand. `DiscImage` serves any block from the layout and the source files, so a burn needs no image file. CI's simulated BD-R burn writes and verifies straight from it.
+- PAR2 recovery data and repair (proposal 9.9), with Repair in Verify and `burnctl repair`.
 - The app no longer blocks files of 4 GB or more, and its size estimate counts a block per file for its UDF entry.
 - A fix for a hang: two Joliet names that shortened to the same 103 characters made the builder loop forever, because the duplicate suffix was cut off with the rest.
 
@@ -98,14 +100,17 @@ A cloud session. The owner asked for Blu-ray data discs in the best format, with
 
 - **macOS mounts a bridge image as UDF**, so CI checks `mount` for `udf`, and mounts a `--no-udf` image to keep testing ISO 9660 through macOS.
 - **The UDF code passed on the first CI run.** Writing the test reader separately from the builder, both from ECMA-167 and the UDF 2.01 text, caught nothing, which means either both are right or both share a misreading. macOS mounting the image and reading a 4.3 GB file correctly is the stronger evidence.
-- **This cloud session can't download CI artifacts or logs.** The built-in `gh` only talks to api.github.com, and artifacts come from another host. Checking an image with Linux tools such as `udfinfo` needs a local session.
+- **This cloud session can't download CI artifacts or logs.** The built-in `gh` only talks to api.github.com, and artifacts come from another host. CI now puts failing test lines, par2's output on failure, and timings into annotations, which the API returns. Checking an image with Linux tools such as `udfinfo` needs a local session.
+- **PAR2 also passed par2cmdline on the first run**, both ways. The one bug was ours alone: the packet reader dropped each recovery slice's exponent along with its data. The repair test caught it.
+- **Plain Swift was too slow for recovery data.** 256 MB took 90 to 160 seconds on CI. A C kernel with NEON table lookups brought it to 27. It was tested here first, under an ARM emulator, against a plain multiply.
+- **Watch for names that hide the method you mean.** `let handle = try handle(for: node)` doesn't compile in Swift; the new constant shadows the method. Use `self.handle(for:)`.
 
 ## Open items
 
 - **Hardware still untested:** DVD+R (no media on hand), BD-R, CD-RW erase, a failed burn going through the keep-the-drive path, and a burn from the app itself.
 - **UDF on a burned disc:** a BD-R, and a CD-R or DVD-R, should be burned and read on macOS, and ideally Windows, before relying on it.
-- **Generating the image while burning**, with no temporary file, so Blu-ray sizes don't need 25 to 100 GB of free space.
-- **PAR2 recovery data and a Repair step** (D15).
+- **Recovery data on hardware:** time it on the owner's Mac, burn a disc with it, and repair a deliberately damaged copy.
+- **More than 32,768 files** get no recovery data yet; several recovery sets would fix it.
 - **Name and bundle identifier (D6):** see below.
 
 ### Naming the project (D6)

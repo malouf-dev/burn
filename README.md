@@ -15,6 +15,9 @@ The original Objective-C Burn app is on the [`legacy`](../../tree/legacy) branch
 shasum -a 256 -c .burn/SHA256SUMS
 ```
 
+- Adds PAR2 recovery data to the `.burn` folder, a tenth of the files' size by default. If a check finds damage, Verify's Repair copies the disc's files to a folder you choose and rebuilds the damaged ones. Any PAR2 tool can do the same without Burn: copy the disc to a folder, then run `par2 repair -B<folder> <folder>/.burn/recovery.par2`.
+- Makes the disc image as the drive asks for it, so a Blu-ray needs no image-sized temporary file. Recovery data needs one read of the files before the burn, and a temporary file about a tenth of their size.
+
 ## Layout
 
 - `App/` holds the SwiftUI app.

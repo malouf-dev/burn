@@ -55,7 +55,7 @@ The first milestone, 0.1 alpha, is an app that opens, sees a disc, and writes fi
 | D12 | Every data disc carries a hidden `.burn` folder at its root, on by default: `SHA256SUMS`, one line per file that `shasum -a 256 -c` can check without Burn, and `info.json` with the disc name, date, app version and file count. The app's Verify view checks any mounted disc that has one. | Decided |
 | D13 | The app is for data discs only for now, in one window modelled on Burn's data view. Audio, video and copy come later (D8). | Decided |
 | D14 | Data discs use a UDF 2.01 bridge: UDF 2.01 with ISO 9660 and Joliet alongside, sharing the file data, on CD, DVD and Blu-ray alike. Files of 4 GB or more appear in UDF only. The `.burn` checksum paths follow the UDF names. Images are generated as they're written, with no temporary file, so Blu-ray sizes work. | Decided |
-| D15 | Every data disc carries PAR2 recovery data in `.burn/`, 10% of the data by default, adjustable or off per burn. It's written by our own encoder from the published PAR2 2.0 specification (par2cmdline is GPL), so any PAR2 tool can repair the disc without Burn. Verify gains a Repair step. | Decided |
+| D15 | Every data disc carries PAR2 recovery data in `.burn/`, 10% of the data by default, adjustable or off per burn. It's written by our own encoder from the published PAR2 2.0 specification (par2cmdline is GPL), so any PAR2 tool can repair the disc without Burn. Verify gains a Repair step. | Decided, done (9.9) |
 
 ## 3. Background: Burn
 
@@ -313,6 +313,16 @@ The original plan:
 - Keep the ISO 9660 tree, but a file of 4 GB or more can only appear in UDF.
 - Test it the way ISO 9660 is tested: a reader written separately in the tests, then mount the image in CI with `hdiutil` and run `scripts/compare-trees.py` and `shasum -a 256 -c .burn/SHA256SUMS`.
 - Work from ECMA-167 and the OSTA UDF 2.01 specification. Rough size: one or two focused sessions, most of it getting macOS's UDF reader to accept the image.
+
+### 9.9 Recovery data and repair (D15)
+
+Done on 4 October 2026, in `PAR2.swift`, `DiscImage.swift`, `RecoveryRepair.swift` and the C target `CGF16`. CI checks it against par2cmdline both ways: `par2 verify` and `par2 repair` accept Burn's recovery data, and `burnctl repair` rebuilds files from recovery data that `par2 create` made. Not yet tested on a burned disc.
+
+- **Files on the disc.** `.burn/recovery.par2` holds the packets that describe the files: the main packet, the creator, and a description and slice checksums for each file. `.burn/recovery.vol0+N.par2` repeats them, then holds the N recovery slices. File names are the paths on the disc, through UDF names. Empty files have nothing to recover, so they're left out.
+- **Slices.** The work grows with the data times the number of recovery slices, so `PAR2.plan` aims for about 10^12 word operations: about 2,000 recovery slices for a CD, 400 for a DVD, 80 for a 25 GB Blu-ray, 20 at least. Slices are 4 KB or more, and grow if the files would need more than PAR2's 32,768 input slices. A disc of more than 32,768 files gets no recovery data for now; splitting into several recovery sets would fix that.
+- **When it's made.** Recovery data needs every file read first, so `DiscImage.prepare` reads them before the drive is taken. It hashes each file at the same time, so SHA256SUMS is ready, and the burn then checks each file's hash again as it reads it; a file that changed in between fails the burn. Recovery slices are kept in a temporary file. More than 512 MB of recovery slices is made in several passes over the files.
+- **Speed.** A C kernel multiplies in GF(2^16) with NEON table lookups, eight input slices at a time, in 64 KB pieces. On CI's 3-core runner, 256 MB with 10% recovery data takes about 27 seconds, against 90 to 160 in plain Swift. A full disc should take a minute or two; the owner's Mac will tell.
+- **Repair.** `RecoveryRepair` reads the PAR2 files, skipping packets that fail their MD5, checks every slice of every file, and copies the disc's files to another folder with the damaged slices rebuilt. Each rebuilt file is checked against its MD5. Damage beyond the recovery data is reported, never guessed at. Verify offers Repair when a check fails; `burnctl repair` does the same.
 
 ## 11. Roadmap after 0.1
 
