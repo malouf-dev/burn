@@ -92,6 +92,51 @@ jobs:
           (cd "$MNT" && shasum -a 256 -c .burn/SHA256SUMS)
           hdiutil detach "$MNT"
 
+      - name: Recovery data works with par2
+        run: |
+          set -euo pipefail
+          brew install par2 > /dev/null
+          LOG="$RUNNER_TEMP/par2.log"
+          # Show par2's own words as an annotation if any step fails.
+          trap 'echo "::error title=par2::$(tail -40 "$LOG" | sed "s/%/%25/g" | awk "{printf \"%s%%0A\", \$0}")"' ERR
+          MNT="$RUNNER_TEMP/mnt"
+          hdiutil attach -readonly -nobrowse -mountpoint "$MNT" "$RUNNER_TEMP/test.iso"
+          ls -la "$MNT/.burn"
+          par2 verify "-B$MNT" "$MNT/.burn/recovery.par2" >> "$LOG" 2>&1
+          COPY="$RUNNER_TEMP/copy"
+          cp -R "$MNT" "$COPY"
+          hdiutil detach "$MNT"
+          chmod -R u+w "$COPY"
+          # Damage 100 KB in the middle of one file and delete another, then repair.
+          dd if=/dev/zero of="$COPY/sub dir/random.bin" bs=1024 seek=1000 count=100 conv=notrunc 2> /dev/null
+          rm "$COPY/hello.txt"
+          if par2 verify "-B$COPY" "$COPY/.burn/recovery.par2" >> "$LOG" 2>&1; then
+            echo "par2 didn't notice the damage" >> "$LOG"
+            false
+          fi
+          par2 repair "-B$COPY" "$COPY/.burn/recovery.par2" >> "$LOG" 2>&1
+          (cd "$COPY" && shasum -a 256 -c .burn/SHA256SUMS)
+          python3 scripts/compare-trees.py "$RUNNER_TEMP/src/Test Data" "$COPY" || {
+            # par2 keeps the damaged file as random.bin.1, which compare-trees reports.
+            find "$COPY" -name "*.1" -delete
+            python3 scripts/compare-trees.py "$RUNNER_TEMP/src/Test Data" "$COPY"
+          }
+
+      - name: Recovery data speed
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/speed"
+          mkdir -p "$SRC"
+          head -c 268435456 /dev/urandom > "$SRC/random.bin"
+          swift build -c release --package-path Packages/BurnKit --product burnctl > /dev/null
+          BURNCTL="$(swift build -c release --package-path Packages/BurnKit --show-bin-path)/burnctl"
+          for percent in 0 10; do
+            OUT="$("$BURNCTL" make-iso "$SRC" --output "$RUNNER_TEMP/speed.iso" --name Speed --recovery "$percent")"
+            echo "$OUT"
+            echo "::notice title=Recovery speed, 256 MB at ${percent}% on $(sysctl -n hw.ncpu) cores::$(echo "$OUT" | grep seconds)"
+          done
+          rm -rf "$SRC" "$RUNNER_TEMP/speed.iso"
+
       - name: Keep the test image
         if: always()
         uses: actions/upload-artifact@v4
@@ -116,7 +161,8 @@ jobs:
           " "$SRC/big.bin"
           printf 'small\n' > "$SRC/small.txt"
           EXPECTED="$(shasum -a 256 "$SRC/big.bin" | cut -d' ' -f1)"
-          swift run --package-path Packages/BurnKit burnctl make-iso "$SRC" --output "$RUNNER_TEMP/big.iso" --name "Big"
+          # Recovery data for 4 GB takes minutes in a debug build; the speed step measures it.
+          swift run --package-path Packages/BurnKit burnctl make-iso "$SRC" --output "$RUNNER_TEMP/big.iso" --name "Big" --recovery 0
           rm "$SRC/big.bin"
           MNT="$RUNNER_TEMP/bigmnt"
           mkdir -p "$MNT"

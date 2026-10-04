@@ -35,6 +35,9 @@ public struct ISOImageBuilder {
     public var applicationName = "Burn"
     /// Adds UDF 2.01 alongside ISO 9660 and Joliet. Without it, files must be under 4 GB.
     public var includesUDF = true
+    /// PAR2 recovery data in the `.burn` folder, as a percentage of the file data (decision D15).
+    /// 0 leaves it out. It needs checksums on, since it lives in the same folder.
+    public var recoveryPercent = 10
 
     private let root = Node(name: "", source: nil, isDirectory: true, size: 0, date: Date())
 
@@ -71,7 +74,8 @@ public struct ISOImageBuilder {
 
     /// The image size in 2,048-byte blocks.
     public func blockCount() -> Int {
-        Layout(root: imageRoot(date: Date()), paddingBlocks: paddingBlocks, includesUDF: includesUDF).totalBlocks
+        let (top, plan) = imageRoot(date: Date())
+        return Layout(root: top, paddingBlocks: paddingBlocks, includesUDF: includesUDF, recovery: plan).totalBlocks
     }
 
     /// The image, made block by block as it's read, for burning with no file in between.
@@ -83,7 +87,8 @@ public struct ISOImageBuilder {
         if !includesUDF, let file = root.first(where: { !$0.inISO }) {
             throw ISOBuilderError.fileTooLarge(file.source?.path ?? file.name)
         }
-        let layout = Layout(root: imageRoot(date: date), paddingBlocks: paddingBlocks, includesUDF: includesUDF)
+        let (top, plan) = imageRoot(date: date)
+        let layout = Layout(root: top, paddingBlocks: paddingBlocks, includesUDF: includesUDF, recovery: plan)
         return DiscImage(layout: layout, volumeName: volumeName, date: date)
     }
 
@@ -96,25 +101,39 @@ public struct ISOImageBuilder {
     }
 
     /// The tree to write: a copy of what was added, so each image lays out its own, plus the
-    /// `.burn` folder when checksums are on.
-    private func imageRoot(date: Date) -> Node {
+    /// `.burn` folder when checksums are on, and how its recovery data is sliced.
+    private func imageRoot(date: Date) -> (Node, PAR2.Plan?) {
         let top = Node(name: "", source: nil, isDirectory: true, size: 0, date: root.date)
         top.children = root.children.map { $0.copy() }
-        guard includesChecksums else { return top }
+        guard includesChecksums else { return (top, nil) }
+        let plan = PAR2.plan(sizes: top.fileSizes, percent: recoveryPercent)
         let folder = Node(name: DiscChecksums.folderName, source: nil, isDirectory: true, size: 0, date: date)
         folder.isHidden = true
         // Sized once the names on the disc are known, and written once every file is hashed.
         let sums = Node(name: DiscChecksums.sumsName, source: nil, isDirectory: false, size: 0, date: date)
         sums.generated = .checksums
-        let info = DiscInfo(discName: volumeName, created: date, application: applicationName,
-                            fileCount: root.fileCount, totalBytes: root.totalSize).encoded()
+        var discInfo = DiscInfo(discName: volumeName, created: date, application: applicationName,
+                                fileCount: root.fileCount, totalBytes: root.totalSize)
+        if plan != nil { discInfo.recovery = "PAR2, \(recoveryPercent)%" }
+        let info = discInfo.encoded()
         let infoNode = Node(name: DiscChecksums.infoName, source: nil, isDirectory: false,
                             size: UInt64(info.count), date: date)
         infoNode.generated = .content(info)
         folder.children = [sums, infoNode]
+        if let plan {
+            // Sized once the names on the disc are known, and filled in when the image is prepared.
+            let index = Node(name: "recovery.par2", source: nil, isDirectory: false, size: 0, date: date)
+            index.generated = .recoveryIndex
+            let width = String(plan.recoveryCount).count
+            let count = String(plan.recoveryCount)
+            let volumeFile = "recovery.vol" + String(repeating: "0", count: width) + "+" + count + ".par2"
+            let volume = Node(name: volumeFile, source: nil, isDirectory: false, size: 0, date: date)
+            volume.generated = .recoveryVolume
+            folder.children += [index, volume]
+        }
         // A `.burn` folder copied from an earlier disc would describe that disc, so ours replaces it.
         top.children = [folder] + top.children.filter { $0.name != DiscChecksums.folderName }
-        return top
+        return (top, plan)
     }
 
     // MARK: - Scanning
@@ -147,6 +166,10 @@ final class Node {
         /// `.burn/SHA256SUMS`, written after every other file has been hashed.
         case checksums
         case content([UInt8])
+        /// `.burn/recovery.par2`: the PAR2 packets that describe the files and slices.
+        case recoveryIndex
+        /// `.burn/recovery.vol…par2`: the same packets, then the recovery slices.
+        case recoveryVolume
     }
 
     let name: String
@@ -186,6 +209,11 @@ final class Node {
 
     var totalSize: UInt64 {
         isDirectory ? children.reduce(0) { $0 + $1.totalSize } : size
+    }
+
+    /// The size of every file, depth first.
+    var fileSizes: [UInt64] {
+        isDirectory ? children.flatMap(\.fileSizes) : [size]
     }
 
     var fileCount: Int {

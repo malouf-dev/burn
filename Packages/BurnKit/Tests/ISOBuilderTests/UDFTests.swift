@@ -29,10 +29,10 @@ struct UDFTests {
         #expect(reader.volumeName == "My Test Disc")
         #expect(reader.partitionStart == 257)
         #expect(reader.partitionStart + reader.partitionLength == iso.bytes.count / 2048 - 1)
-        // Every file plus the two in .burn; the root, .burn, Holiday Photos, a to e, and many.
-        #expect(reader.integrity.fileCount == UInt32(expected.count + 2))
+        // Every file plus the four in .burn; the root, .burn, Holiday Photos, a to e, and many.
+        #expect(reader.integrity.fileCount == UInt32(expected.count + 4))
         #expect(reader.integrity.directoryCount == 9)
-        #expect(reader.integrity.nextUniqueID == UInt64(15 + expected.count + 2 + 9))
+        #expect(reader.integrity.nextUniqueID == UInt64(15 + expected.count + 4 + 9))
     }
 
     @Test func isoAndUDFShareTheFileData() throws {

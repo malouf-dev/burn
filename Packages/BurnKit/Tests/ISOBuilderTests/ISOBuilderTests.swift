@@ -218,7 +218,8 @@ struct ChecksumFolderTests {
         let sums = String(decoding: try #require(files[".burn/SHA256SUMS"]), as: UTF8.self)
         #expect(!sums.contains("old disc"))
         #expect(try DiscChecksums.parse(sums).count == expected.count)
-        #expect(files.keys.filter { $0.hasPrefix(".burn") }.count == 2)
+        // SHA256SUMS, info.json and the two recovery files.
+        #expect(files.keys.filter { $0.hasPrefix(".burn") }.count == 4)
     }
 }
 

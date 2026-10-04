@@ -73,6 +73,8 @@ public struct DiscInfo: Codable, Sendable, Hashable {
     public var algorithm = "SHA-256"
     public var fileCount: Int
     public var totalBytes: UInt64
+    /// How the disc's PAR2 recovery data was made, such as "PAR2, 10%", when it has some.
+    public var recovery: String?
 
     public init(discName: String, created: Date, application: String, fileCount: Int, totalBytes: UInt64) {
         self.discName = discName

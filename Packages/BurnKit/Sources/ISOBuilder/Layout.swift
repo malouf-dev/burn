@@ -12,6 +12,8 @@ struct Layout {
     let root: Node
     let paddingBlocks: Int
     let includesUDF: Bool
+    /// How the PAR2 recovery data in `.burn` is sliced, when there is some.
+    let recovery: PAR2.Plan?
     /// Directories in ISO path table order, and in Joliet path table order.
     private(set) var isoDirectories: [Node] = []
     private(set) var jolietDirectories: [Node] = []
@@ -31,10 +33,11 @@ struct Layout {
     private(set) var udfPartitionLength: UInt32 = 0
     private(set) var udfNextUniqueID: UInt64 = 16
 
-    init(root: Node, paddingBlocks: Int, includesUDF: Bool) {
+    init(root: Node, paddingBlocks: Int, includesUDF: Bool, recovery: PAR2.Plan? = nil) {
         self.root = root
         self.paddingBlocks = paddingBlocks
         self.includesUDF = includesUDF
+        self.recovery = recovery
         root.parent = root
         assignNames(root)
         isoDirectories = pathTableOrder(key: { $0.isoName })
@@ -51,6 +54,17 @@ struct Layout {
         if let checksumsNode {
             checksumsNode.size = UInt64(files.filter { $0.generated == nil }
                 .reduce(0) { $0 + DiscChecksums.lineLength(path: discPath($1)) })
+        }
+        if let recovery {
+            let critical = recoveryCriticalSize
+            for node in files {
+                switch node.generated {
+                case .recoveryIndex?: node.size = UInt64(critical)
+                case .recoveryVolume?:
+                    node.size = UInt64(critical + recovery.recoveryCount * PAR2.recoverySliceSize(sliceSize: recovery.sliceSize))
+                default: break
+                }
+            }
         }
 
         isoPathTableSize = isoDirectories.reduce(0) { $0 + Self.pathRecordLength(identifierLength: $1 === root ? 1 : $1.isoName.utf8.count) }
@@ -200,6 +214,21 @@ struct Layout {
 
     static func identifierOrder(_ lhs: String, _ rhs: String) -> Bool {
         Array(lhs.utf16).lexicographicallyPrecedes(Array(rhs.utf16))
+    }
+
+    /// The files PAR2 protects: every file with data, other than those Burn makes.
+    var recoveryFiles: [Node] {
+        files.filter { $0.generated == nil && $0.size > 0 }
+    }
+
+    /// The PAR2 packets every recovery file starts with: the main packet, the creator, and a
+    /// description and slice checksums for each file.
+    var recoveryCriticalSize: Int {
+        guard let recovery else { return 0 }
+        return recoveryFiles.reduce(PAR2.mainPacketSize(files: recoveryFiles.count) + PAR2.creatorSize) {
+            $0 + PAR2.fileDescriptionSize(nameBytes: discPath($1).utf8.count)
+                + PAR2.sliceChecksumSize(slices: PAR2.sliceCount($1.size, sliceSize: recovery.sliceSize))
+        }
     }
 
     /// Every file, including those too large for ISO 9660, which only UDF lists.

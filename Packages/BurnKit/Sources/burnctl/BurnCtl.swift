@@ -13,8 +13,8 @@ struct BurnCtl {
       burnctl list
       burnctl diagnose
       burnctl status [--drive N]
-      burnctl make-iso PATH... --output FILE [--name NAME] [--no-checksums] [--no-udf]
-      burnctl burn PATH... [--drive N] [--name NAME] [--overwrite] [--simulate] [--no-verify] [--no-checksums] [--no-udf] [--eject] [--yes] [--log FILE]
+      burnctl make-iso PATH... --output FILE [--name NAME] [--no-checksums] [--no-udf] [--recovery PERCENT]
+      burnctl burn PATH... [--drive N] [--name NAME] [--overwrite] [--simulate] [--no-verify] [--no-checksums] [--no-udf] [--recovery PERCENT] [--eject] [--yes] [--log FILE]
       burnctl verify-files PATH
       burnctl erase [--drive N] [--full] [--yes] [--log FILE]
       burnctl inspect [--drive N] [--log FILE]
@@ -107,11 +107,14 @@ struct BurnCtl {
         let nameOption = arguments.option("--name")
         let checksums = !arguments.flag("--no-checksums")
         let udf = !arguments.flag("--no-udf")
+        let recovery = try recoveryPercent(&arguments)
         let paths = arguments.remaining()
         guard !paths.isEmpty else { throw CLIError("make-iso needs at least one file or folder") }
         let name = nameOption ?? defaultName(for: paths)
-        let builder = try makeBuilder(paths: paths, name: name, checksums: checksums, udf: udf)
+        let builder = try makeBuilder(paths: paths, name: name, checksums: checksums, udf: udf, recovery: recovery)
+        let started = Date()
         let blocks = try builder.write(to: URL(fileURLWithPath: output))
+        print(String(format: "Made the image in %.1f seconds.", Date().timeIntervalSince(started)))
         print("Wrote \(output): \(blocks) blocks (\(formatBytes(Int64(blocks) * 2048)))")
     }
 
@@ -122,6 +125,7 @@ struct BurnCtl {
         let verify = !arguments.flag("--no-verify")
         let checksums = !arguments.flag("--no-checksums")
         let udf = !arguments.flag("--no-udf")
+        let recovery = try recoveryPercent(&arguments)
         let overwrite = arguments.flag("--overwrite")
         let eject = arguments.flag("--eject")
         let yes = arguments.flag("--yes")
@@ -130,7 +134,8 @@ struct BurnCtl {
         guard !paths.isEmpty else { throw CLIError("burn needs at least one file or folder") }
 
         let drive = try openDrive(driveNumber)
-        let image = try prepareImage(paths: paths, name: name ?? defaultName(for: paths), checksums: checksums, udf: udf)
+        let image = try prepareImage(paths: paths, name: name ?? defaultName(for: paths), checksums: checksums, udf: udf,
+                                     recovery: recovery)
         print("Image: \(image.blockCount) blocks (\(formatBytes(Int64(image.blockCount) * 2048)))")
 
         let state = try await drive.state()
@@ -401,21 +406,44 @@ struct BurnCtl {
     }
 
     static func prepareImage(paths: [String], name: String, checksums: Bool = true,
-                             udf: Bool = true) throws -> any ImageSource {
+                             udf: Bool = true, recovery: Int = 10) throws -> any ImageSource {
         if paths.count == 1, paths[0].lowercased().hasSuffix(".iso") {
             return try FileImageSource(url: URL(fileURLWithPath: paths[0]))
         }
-        // Made as the drive asks for it, with no file in between.
-        return try makeBuilder(paths: paths, name: name, checksums: checksums, udf: udf).image()
+        // Made as the drive asks for it, with no file in between. Recovery data needs every
+        // file read first, so that's done now, before the drive is taken.
+        let image = try makeBuilder(paths: paths, name: name, checksums: checksums, udf: udf, recovery: recovery).image()
+        if image.needsPreparing {
+            print("Making recovery data…")
+            var shown = -1
+            try image.prepare { fraction in
+                let percent = Int(fraction * 100)
+                if percent != shown, percent % 10 == 0 {
+                    shown = percent
+                    print("  \(percent)%")
+                }
+            }
+        }
+        return image
+    }
+
+    /// `--recovery PERCENT`: PAR2 recovery data as a share of the file data, 0 for none.
+    static func recoveryPercent(_ arguments: inout Arguments) throws -> Int {
+        guard let text = arguments.option("--recovery") else { return 10 }
+        guard let percent = Int(text), (0...100).contains(percent) else {
+            throw CLIError("--recovery needs a percentage from 0 to 100")
+        }
+        return percent
     }
 
     /// A single folder's contents go at the root of the disc, as other disc tools do.
     /// Several paths are added as they are.
     static func makeBuilder(paths: [String], name: String, checksums: Bool = true,
-                            udf: Bool = true) throws -> ISOImageBuilder {
+                            udf: Bool = true, recovery: Int = 10) throws -> ISOImageBuilder {
         var builder = ISOImageBuilder(volumeName: name)
         builder.includesChecksums = checksums
         builder.includesUDF = udf
+        builder.recoveryPercent = recovery
         builder.applicationName = "burnctl"
         var isDirectory: ObjCBool = false
         if paths.count == 1, FileManager.default.fileExists(atPath: paths[0], isDirectory: &isDirectory),
