@@ -56,6 +56,7 @@ The first milestone, 0.1 alpha, is an app that opens, sees a disc, and writes fi
 | D13 | The app is for data discs only for now, in one window modelled on Burn's data view. Audio, video and copy come later (D8). | Decided |
 | D14 | Data discs use a UDF 2.01 bridge: UDF 2.01 with ISO 9660 and Joliet alongside, sharing the file data, on CD, DVD and Blu-ray alike. Files of 4 GB or more appear in UDF only. The `.burn` checksum paths follow the UDF names. Images are generated as they're written, with no temporary file, so Blu-ray sizes work. | Decided |
 | D15 | Every data disc carries PAR2 recovery data in `.burn/`, 10% of the data by default, adjustable or off per burn. It's written by our own encoder from the published PAR2 2.0 specification (par2cmdline is GPL), so any PAR2 tool can repair the disc without Burn. Verify gains a Repair step. | Decided, done (9.9) |
+| D16 | Files too big for one disc can be burned as a disc set. The user picks a disc size; every disc but the last is filled to the last block, and the last holds what's left, with the smallest disc that fits suggested. Files keep their order and stay whole, except the one at each disc's edge, which is cut into parts (`name.part1`, `name.part2`) that rejoin with `cat`. Every disc is readable on its own, carries its own checksums and recovery data, and lists the whole set in `.burn/set.json`. See 9.10. | Decided |
 
 ## 3. Background: Burn
 
@@ -323,6 +324,18 @@ Done on 4 October 2026, in `PAR2.swift`, `DiscImage.swift`, `RecoveryRepair.swif
 - **When it's made.** Recovery data needs every file read first, so `DiscImage.prepare` reads them before the drive is taken. It hashes each file at the same time, so SHA256SUMS is ready, and the burn then checks each file's hash again as it reads it; a file that changed in between fails the burn. Recovery slices are kept in a temporary file. More than 512 MB of recovery slices is made in several passes over the files.
 - **Speed.** A C kernel multiplies in GF(2^16) with NEON table lookups, eight input slices at a time, in 64 KB pieces. On CI's 3-core runner, 256 MB with 10% recovery data takes about 27 seconds, against 90 to 160 in plain Swift. A full disc should take a minute or two; the owner's Mac will tell.
 - **Repair.** `RecoveryRepair` reads the PAR2 files, skipping packets that fail their MD5, checks every slice of every file, and copies the disc's files to another folder with the damaged slices rebuilt. Each rebuilt file is checked against its MD5. Damage beyond the recovery data is reported, never guessed at. Verify offers Repair when a check fails; `burnctl repair` does the same.
+
+### 9.10 Disc sets (D16)
+
+For collections bigger than any disc, such as a TV series of several 60 to 70 GB seasons on 100 GB BD-R XL discs.
+
+- **When.** The Burn view offers "Split Across Discs" when the files don't fit the disc. Its plan sheet asks for the disc size, from the blank disc in the drive or a list of standard sizes, and shows each disc's contents and size before anything is burned.
+- **Filling.** Files go on in the order they're listed. Each disc but the last is filled to its last block: the file that crosses the edge is cut where the disc is full, to the nearest MiB, and the rest starts the next disc. A file under 64 MB isn't cut; it moves to the next disc. A file bigger than a disc is cut into as many parts as it needs. The last disc holds what's left, and the plan names the smallest standard disc it fits.
+- **On each disc.** The files keep their folders. A cut file's parts are `name.part1`, `name.part2` and so on, next to where the file would be; `cat name.part1 name.part2 > name` rejoins it. Each disc has its own `.burn` folder: checksums and recovery data for what's on it, and `set.json`, which lists every disc in the set and what it holds, so any one disc says where everything is. Discs are named "Name 1 of 6" and so on.
+- **Restoring.** Verify's Restore copies a disc's files into a folder you choose, checking each against its checksum and repairing damage from the recovery data on the way, the same as Repair. A part is written into its file at its place, so discs can be restored in any order; when the last part is in, the file is whole. Each part has its own checksum, so a rejoined file is right when every part checks out. The app asks for the next disc until the set is done.
+- **Without the app.** Every disc in a set also carries `.burn/restore.sh` and `.burn/README.txt`. `sh /Volumes/Name/.burn/restore.sh ~/Restored` checks the disc with `shasum` (or `sha256sum`), copies its files and writes its parts into place with `dd`, using offsets written into the script when the disc was made. The README says the same in words, including `cat` on macOS and Linux and `copy /b` on Windows, and that `par2` repairs damage. Cuts fall on 1 MiB boundaries so `dd` can work in large blocks.
+- **Space.** The checksums, recovery data and `set.json` count against each disc, so with 10% recovery data a 100 GB disc carries about 91 GB of files.
+- **Not yet.** Recovery data across the whole set, so a lost disc could be rebuilt, is a possible later addition. 100 GB and 128 GB discs haven't been tested on hardware yet.
 
 ## 11. Roadmap after 0.1
 
