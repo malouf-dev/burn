@@ -186,7 +186,11 @@ struct DiscSetTests {
         #expect(last.blocks < size.blocks)
         #expect(plan.lastDiscSize == DiscSize.smallest(holding: last.blocks))
         // Every byte is planned once, in order.
-        let pieces = plan.discs.flatMap(\.pieces)
-        #expect(pieces.reduce(0) { $0 + $1.length } == 80 * 6_500_000_000 + 8 * (1...10).reduce(0) { $0 + UInt64($1) * 1_000_003 })
+        let planned: UInt64 = plan.discs.flatMap(\.pieces).reduce(0) { $0 + $1.length }
+        var total: UInt64 = 0
+        for episode in 1...10 {
+            total += 8 * (6_500_000_000 + UInt64(episode) * 1_000_003)
+        }
+        #expect(planned == total)
     }
 }
