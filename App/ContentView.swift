@@ -61,6 +61,7 @@ struct BurnView: View {
     @State private var selection = Set<URL>()
     @State private var showingImporter = false
     @State private var showingBurnSheet = false
+    @State private var showingSetSheet = false
     @State private var confirmingErase = false
     @State private var confirmingCancel = false
 
@@ -70,6 +71,10 @@ struct BurnView: View {
             Divider()
             DiscHeader(model: model)
             fileList
+            if let set = model.discSet, let disc = model.nextSetDisc {
+                Divider()
+                DiscSetBanner(set: set, disc: disc) { model.cancelDiscSet() }
+            }
             Divider()
             footer
         }
@@ -83,6 +88,9 @@ struct BurnView: View {
         }
         .sheet(isPresented: $showingBurnSheet) {
             BurnSheet(model: model)
+        }
+        .sheet(isPresented: $showingSetSheet) {
+            DiscSetSheet(model: model)
         }
         .sheet(isPresented: .constant(model.activity != .idle)) {
             ProgressSheet(model: model, confirmingCancel: $confirmingCancel)
@@ -155,11 +163,23 @@ struct BurnView: View {
                     .multilineTextAlignment(.trailing)
             }
 
-            Button(model.willOverwrite ? "Erase and Burn…" : "Burn…") { showingBurnSheet = true }
+            if model.canSplitAcrossDiscs {
+                Button("Split Across Discs…") { showingSetSheet = true }
+                    .help("Plan a set of discs of one size, each filled to the last block, with the last disc holding what's left")
+            }
+
+            Button(burnTitle) { showingBurnSheet = true }
                 .keyboardShortcut(.defaultAction)
                 .disabled(!model.canBurn)
         }
         .padding(12)
+    }
+
+    private var burnTitle: String {
+        if let set = model.discSet {
+            return String(localized: "Burn Disc \(model.setDiscNumber) of \(set.discs.count)…")
+        }
+        return model.willOverwrite ? String(localized: "Erase and Burn…") : String(localized: "Burn…")
     }
 }
 
@@ -177,6 +197,7 @@ struct DiscHeader: View {
                 .textFieldStyle(.plain)
                 .font(.title3.weight(.semibold))
                 .frame(maxWidth: 260)
+                .disabled(model.discSet != nil)
                 .accessibilityLabel("Disc name")
                 .help("Up to \(AppModel.discNameLimit) characters. Older systems that read only Joliet see the first 16.")
             Spacer()
@@ -186,6 +207,7 @@ struct DiscHeader: View {
                 .help("Readable on Mac, Windows and Linux, with files of any size. Older systems read the ISO 9660 copy, which leaves out files of 4 GB or more.")
             Toggle("Checksums", isOn: $model.includeChecksums)
                 .toggleStyle(.checkbox)
+                .disabled(model.discSet != nil)
                 .help("Adds a hidden .burn folder with a checksum for every file, so the disc can be checked in Verify, or with shasum, years from now.")
         }
         .padding(.horizontal, 12)

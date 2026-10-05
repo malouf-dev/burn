@@ -198,6 +198,7 @@ final class AppModel {
     // MARK: - Items
 
     func add(_ urls: [URL]) {
+        cancelDiscSet()
         for original in urls {
             // Add what an alias or symbolic link points to, not the link itself.
             let url = ((try? URL(resolvingAliasFileAt: original)) ?? original).resolvingSymlinksInPath()
@@ -225,12 +226,86 @@ final class AppModel {
     }
 
     func remove(_ ids: Set<DiscItem.ID>) {
+        cancelDiscSet()
         items.removeAll { ids.contains($0.id) }
     }
 
     /// Removes added items by URL. Rows inside an added folder can't be removed on their own.
     func remove(urls: Set<URL>) {
+        cancelDiscSet()
         items.removeAll { urls.contains($0.url) }
+    }
+
+    // MARK: - Disc sets (D16)
+
+    /// Discs being burned one at a time, because the files don't fit on one.
+    private(set) var discSet: DiscSetPlan?
+    /// The set's disc to burn next, from 1.
+    private(set) var setDiscNumber = 1
+
+    /// The set's disc to burn next.
+    var nextSetDisc: DiscSetPlan.Disc? {
+        discSet.map { $0.discs[setDiscNumber - 1] }
+    }
+
+    /// True when the files are more than the blank disc holds, or more than a 25 GB Blu-ray
+    /// when there isn't one, so it's worth offering to split them across discs.
+    var canSplitAcrossDiscs: Bool {
+        guard discSet == nil, activity == .idle, !items.isEmpty, sizesKnown,
+              !items.contains(where: \.unreadable) else { return false }
+        if let disc = writableDisc, !disc.canOverwrite { return !fits }
+        return estimatedBytes > 12_219_392 * 2048
+    }
+
+    /// Disc sizes to plan with: the blank disc in the drive first, when it isn't a standard size.
+    var discSizeChoices: [DiscSize] {
+        var sizes = DiscSize.standard
+        if let inDrive = blankDiscSize, !sizes.contains(inDrive) {
+            sizes.insert(inDrive, at: 0)
+        }
+        return sizes
+    }
+
+    /// The blank disc in the drive's size, or a 100 GB BD-R XL when there isn't one.
+    var defaultDiscSize: DiscSize {
+        blankDiscSize ?? DiscSize.standard.first { $0.blocks == 48_878_592 } ?? DiscSize.standard[0]
+    }
+
+    private var blankDiscSize: DiscSize? {
+        guard let disc = writableDisc, !disc.canOverwrite else { return nil }
+        let blocks = Int(disc.freeBlocks)
+        return DiscSize.standard.first { $0.blocks == blocks }
+            ?? DiscSize(name: String(localized: "The \(disc.profile.name) in the drive"), blocks: blocks)
+    }
+
+    /// Works out which files go on which disc. Reads the files' sizes, so it runs off the main thread.
+    func planDiscSet(size: DiscSize) async throws -> DiscSetPlan {
+        let urls = items.map(\.url)
+        let name = discName.isEmpty ? String(localized: "Untitled") : discName
+        let recovery = includeRecovery ? Self.recoveryPercent : 0
+        let application = "Burn \(appVersion)"
+        return try await Task.detached(priority: .userInitiated) {
+            try DiscSetPlan.make(urls: urls, name: name, discSize: size, recoveryPercent: recovery,
+                                 applicationName: application)
+        }.value
+    }
+
+    func startDiscSet(_ plan: DiscSetPlan) {
+        discSet = plan
+        setDiscNumber = 1
+        includeChecksums = true
+        SessionLog.events.note("Disc set planned: \"\(plan.name)\", \(plan.discs.count) discs of \(plan.discSize.name), "
+            + "last \(plan.discs.last?.blocks ?? 0) blocks")
+    }
+
+    func cancelDiscSet() {
+        guard discSet != nil else { return }
+        discSet = nil
+        setDiscNumber = 1
+    }
+
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
     }
 
     var rows: [FileRow] {
@@ -307,6 +382,13 @@ final class AppModel {
             case .appendable, .notWritable: return String(localized: "This disc is already burned. Insert a blank disc.")
             }
         }
+        if let disc = nextSetDisc, let set = discSet {
+            if let blank = writableDisc, !blank.canOverwrite, disc.blocks > Int(blank.freeBlocks) {
+                let size = ByteCountFormatter.string(fromByteCount: disc.bytes, countStyle: .file)
+                return String(localized: "Disc \(disc.number) of \(set.discs.count) needs \(size). Insert a bigger disc.")
+            }
+            return nil
+        }
         if items.isEmpty { return String(localized: "Add files to burn.") }
         if let item = items.first(where: \.unreadable) { return String(localized: "Can't read “\(item.name)”.") }
         if !sizesKnown { return String(localized: "Measuring the files…") }
@@ -323,12 +405,19 @@ final class AppModel {
         let options = WriteOptions(verify: true, ejectWhenDone: ejectWhenDone, eraseFirst: disc.canOverwrite)
         let checksums = includeChecksums
         let recovery = includeChecksums && includeRecovery ? Self.recoveryPercent : 0
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        let version = appVersion
+        let set = discSet
+        let setNumber = setDiscNumber
         activity = .buildingImage(fraction: 0)
         outcome = nil
         let log = engine.log
-        log.note("Burn requested: \"\(name)\", \(urls.count) items, checksums \(checksums ? "on" : "off"), "
-            + "recovery \(recovery)%, onto \(disc.profile.name) with \(disc.freeBlocks) free blocks")
+        if let set {
+            log.note("Burn requested: disc \(setNumber) of \(set.discs.count) of the set \"\(set.name)\", "
+                + "\(set.discs[setNumber - 1].blocks) blocks, onto \(disc.profile.name) with \(disc.freeBlocks) free blocks")
+        } else {
+            log.note("Burn requested: \"\(name)\", \(urls.count) items, checksums \(checksums ? "on" : "off"), "
+                + "recovery \(recovery)%, onto \(disc.profile.name) with \(disc.freeBlocks) free blocks")
+        }
 
         burnTask = Task {
             // A burn can't be paused, so macOS mustn't end the app or let the Mac sleep during one.
@@ -337,6 +426,7 @@ final class AppModel {
             do {
                 // The image is made as the drive asks for it, so nothing is written to disk first.
                 let image = try await Task.detached(priority: .userInitiated) {
+                    if let set { return try set.builder(forDisc: setNumber).image() }
                     var builder = ISOImageBuilder(volumeName: name)
                     builder.includesChecksums = checksums
                     builder.recoveryPercent = recovery
@@ -380,8 +470,19 @@ final class AppModel {
                 if checksums {
                     detail += " " + String(localized: "The disc carries checksums, so you can check it again any time in Verify.")
                 }
-                finish(Outcome(succeeded: true, title: String(localized: "Written and verified"), detail: detail),
-                       log: engine.log)
+                var title = String(localized: "Written and verified")
+                if let set {
+                    title = String(localized: "Disc \(setNumber) of \(set.discs.count) written and verified")
+                    if setNumber < set.discs.count {
+                        setDiscNumber = setNumber + 1
+                        detail += " " + String(localized: "Insert a blank disc for disc \(setNumber + 1).")
+                    } else {
+                        discSet = nil
+                        setDiscNumber = 1
+                        detail += " " + String(localized: "That was the last disc: the set is complete.")
+                    }
+                }
+                finish(Outcome(succeeded: true, title: title, detail: detail), log: engine.log)
             } catch DriveError.cancelled, is CancellationError {
                 let settled = await settleDisc(engine)
                 finish(Outcome(succeeded: false, title: String(localized: "Burn cancelled"),

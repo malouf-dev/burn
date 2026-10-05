@@ -10,17 +10,23 @@ struct BurnSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(model.willOverwrite ? "Erase and Burn" : "Burn Disc")
+            Text(title)
                 .font(.title2.weight(.semibold))
 
-            VStack(alignment: .leading, spacing: 4) {
-                TextField("Disc name", text: $model.discName, prompt: Text("Name this disc"))
-                    .textFieldStyle(.roundedBorder)
-                    .focused($nameFocused)
-                    .accessibilityLabel("Disc name")
-                Text("Up to \(AppModel.discNameLimit) characters. This is the name Finder shows for the disc.")
-                    .font(.caption)
+            if let set = model.discSet {
+                Text("“\(set.volumeName(forDisc: model.setDiscNumber))”, from the plan for the set “\(set.name)”.")
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    TextField("Disc name", text: $model.discName, prompt: Text("Name this disc"))
+                        .textFieldStyle(.roundedBorder)
+                        .focused($nameFocused)
+                        .accessibilityLabel("Disc name")
+                    Text("Up to \(AppModel.discNameLimit) characters. This is the name Finder shows for the disc.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Text(summary)
@@ -28,8 +34,9 @@ struct BurnSheet: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Toggle("Add checksums, so the disc can be checked years from now", isOn: $model.includeChecksums)
+                    .disabled(model.discSet != nil)
                 Toggle("Add recovery data, so damaged files can be repaired", isOn: $model.includeRecovery)
-                    .disabled(!model.includeChecksums)
+                    .disabled(!model.includeChecksums || model.discSet != nil)
                     .help("PAR2 recovery data in the hidden .burn folder, about \(AppModel.recoveryPercent)% of the files' size. Any PAR2 tool can use it.")
                 if model.recoveryOmitted {
                     Label(String(localized: "More than \(ISOImageBuilder.recoveryFileLimit.formatted()) files, so this disc can't carry recovery data. Checksums still cover every file."),
@@ -50,7 +57,7 @@ struct BurnSheet: View {
                     model.burn()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(model.discName.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(model.discSet == nil && model.discName.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .padding(20)
@@ -58,8 +65,16 @@ struct BurnSheet: View {
         .onAppear { nameFocused = true }
     }
 
+    private var title: String {
+        if let set = model.discSet {
+            return String(localized: "Burn Disc \(model.setDiscNumber) of \(set.discs.count)")
+        }
+        return model.willOverwrite ? String(localized: "Erase and Burn") : String(localized: "Burn Disc")
+    }
+
     private var summary: String {
-        let size = ByteCountFormatter.string(fromByteCount: model.estimatedBytes, countStyle: .file)
+        let bytes = model.nextSetDisc?.bytes ?? model.estimatedBytes
+        let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
         let media = model.writableDisc?.profile.name ?? ""
         var text = String(localized: "\(size) will be written to the \(media), then read back and checked block by block.")
         if model.willOverwrite {
