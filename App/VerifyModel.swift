@@ -16,6 +16,8 @@ final class VerifyModel {
         let url: URL
         let name: String
         let info: DiscInfo?
+        /// Which disc of a set it is, for a disc set (D16).
+        var set: DiscSetInfo?
         var id: URL { url }
     }
 
@@ -56,6 +58,9 @@ final class VerifyModel {
         case repairing(Double)
         /// What the repair did, and the folder it wrote the files to.
         case repaired(RepairReport, URL)
+        case restoring(Double)
+        /// What restoring the disc did, and the folder it went into.
+        case restored(RestoreReport, URL)
     }
 
     private(set) var sources: [Source] = []
@@ -93,7 +98,7 @@ final class VerifyModel {
 
     var isChecking: Bool {
         switch phase {
-        case .checking, .repairing: return true
+        case .checking, .repairing, .restoring: return true
         default: return false
         }
     }
@@ -148,6 +153,45 @@ final class VerifyModel {
         }
     }
 
+    /// Where the last restore went, so the next disc of a set goes to the same place.
+    private(set) var restoreFolder: URL?
+
+    /// Copies the disc's files into `folder`, checked and repaired, putting parts of files cut
+    /// across a set's discs into their files (D16). The disc itself is never written to.
+    func restore(into folder: URL) {
+        guard let source = selected, !isChecking else { return }
+        let root = source.url
+        restoreFolder = folder
+        phase = .restoring(0)
+        SessionLog.events.note("Restore started: \(root.path) into \(folder.path)")
+        task = Task.detached(priority: .userInitiated) { [weak self] in
+            let hold = SessionLog.Hold("Restoring a disc")
+            defer { hold.release() }
+            let result: Phase
+            do {
+                let report = try DiscRestore.restore(root: root, into: folder) { fraction in
+                    Task { @MainActor in
+                        guard let self, self.selectedID == root, case .restoring = self.phase else { return }
+                        self.phase = .restoring(fraction)
+                    }
+                }
+                result = .restored(report, folder)
+                SessionLog.events.note("Restore finished: \(report.restored.count) files, \(report.partsPlaced.count) parts, "
+                    + "\(report.completed.count) completed, \(report.repaired.count) repaired, \(report.damaged.count) damaged")
+            } catch is CancellationError {
+                result = .idle
+                SessionLog.events.note("Restore stopped")
+            } catch {
+                result = .failed("\(error)")
+                SessionLog.events.note("Restore failed: \(error)")
+            }
+            await MainActor.run {
+                guard let self, self.selectedID == root else { return }
+                self.phase = result
+            }
+        }
+    }
+
     /// Prefers the disc in the drive when it has checksums.
     func prefer(_ url: URL?) {
         preferred = url
@@ -181,7 +225,8 @@ final class VerifyModel {
         for url in mounted + chosen where ChecksumVerifier.hasChecksums(at: url) {
             guard !found.contains(where: { $0.url == url }) else { continue }
             let name = (try? url.resourceValues(forKeys: [.volumeNameKey]).volumeName) ?? url.lastPathComponent
-            found.append(Source(url: url, name: name, info: ChecksumVerifier.info(at: url)))
+            found.append(Source(url: url, name: name, info: ChecksumVerifier.info(at: url),
+                                 set: DiscRestore.setInfo(at: url)))
         }
         return found
     }

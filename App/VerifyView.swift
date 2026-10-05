@@ -61,7 +61,11 @@ struct VerifyView: View {
         }
         guard let info = source.info else { return source.url.path }
         let size = ByteCountFormatter.string(fromByteCount: Int64(clamping: info.totalBytes), countStyle: .file)
-        return String(localized: "Burned \(Self.date(info.created)) by \(info.application) · \(info.fileCount) files, \(size)")
+        var text = String(localized: "Burned \(Self.date(info.created)) by \(info.application) · \(info.fileCount) files, \(size)")
+        if let set = source.set {
+            text += " · " + String(localized: "disc \(set.disc) of \(set.discCount) of “\(set.name)”")
+        }
+        return text
     }
 
     // MARK: - Files
@@ -123,9 +127,12 @@ struct VerifyView: View {
             case .checking:
                 Button("Stop") { model.cancel() }
                     .keyboardShortcut(.cancelAction)
-            case .repairing:
+            case .repairing, .restoring:
                 Button("Stop") { model.cancel() }
                     .keyboardShortcut(.cancelAction)
+            case .restored(_, let folder):
+                Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([folder]) }
+                restoreButton
             case .repaired(_, let folder):
                 Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([folder]) }
                 Button("Check Again") { model.check() }
@@ -135,15 +142,23 @@ struct VerifyView: View {
                     Button("Repair…") { chooseRepairFolder() }
                         .help("Copies the disc's files to a folder you choose, rebuilding damaged ones from the disc's recovery data")
                 }
+                restoreButton
                 Button("Check Again") { model.check() }
                     .keyboardShortcut(.defaultAction)
             default:
+                restoreButton
                 Button("Check Files") { model.check() }
                     .keyboardShortcut(.defaultAction)
                     .disabled(model.selected == nil || model.rows.isEmpty)
             }
         }
         .padding(12)
+    }
+
+    private var restoreButton: some View {
+        Button("Restore…") { chooseRestoreFolder() }
+            .help("Copies the disc's files back to a folder, checked against their checksums and repaired where needed. Files cut across a disc set are put back together as each disc is restored.")
+            .disabled(model.selected == nil || model.rows.isEmpty)
     }
 
     @ViewBuilder
@@ -185,6 +200,20 @@ struct VerifyView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+        case .restoring(let fraction):
+            HStack(spacing: 8) {
+                ProgressView(value: fraction)
+                    .frame(width: 160)
+                Text("Restoring…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case .restored(let report, let folder):
+            Label(Self.restoreSummary(report, folder: folder),
+                  systemImage: report.isComplete ? "checkmark.seal.fill" : "xmark.seal.fill")
+                .foregroundStyle(report.isComplete ? .green : .red)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
         case .repaired(let report, let folder):
             if report.isComplete {
                 Label(String(localized: "Repaired \(report.repaired.count) files. Every file is in “\(folder.lastPathComponent)”."),
@@ -196,6 +225,46 @@ struct VerifyView: View {
                     .foregroundStyle(.red)
             }
         }
+    }
+
+    private func chooseRestoreFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.directoryURL = model.restoreFolder
+        panel.prompt = String(localized: "Restore Here")
+        panel.message = model.selected?.set == nil
+            ? String(localized: "Choose where to put the disc's files. The disc itself isn't changed.")
+            : String(localized: "Choose where to put the set's files. Restore every disc of the set into the same folder, in any order.")
+        if panel.runModal() == .OK, let url = panel.url {
+            model.restore(into: url)
+        }
+    }
+
+    static func restoreSummary(_ report: RestoreReport, folder: URL) -> String {
+        var text: String
+        if let disc = report.disc, let count = report.discCount {
+            text = String(localized: "Disc \(disc) of \(count) restored into “\(folder.lastPathComponent)”.")
+            let missing = Set(1...count).subtracting(report.discsRestored).sorted()
+            if missing.isEmpty {
+                text += " " + String(localized: "Every disc of the set is in.")
+            } else {
+                text += " " + String(localized: "Still to restore: \(missing.map(String.init).joined(separator: ", ")).")
+            }
+        } else {
+            text = String(localized: "\(report.restored.count) files restored into “\(folder.lastPathComponent)”.")
+        }
+        if !report.completed.isEmpty {
+            text += " " + String(localized: "\(report.completed.count) cut files are whole again.")
+        }
+        if !report.repaired.isEmpty {
+            text += " " + String(localized: "\(report.repaired.count) files were repaired on the way.")
+        }
+        if !report.damaged.isEmpty {
+            text += " " + String(localized: "\(report.damaged.count) files are too damaged to restore; they're in “\(report.kept?.lastPathComponent ?? "")”.")
+        }
+        return text
     }
 
     private func chooseRepairFolder() {
