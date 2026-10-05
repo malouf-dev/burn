@@ -20,8 +20,14 @@ import Synchronization
 public final class DiscImage: @unchecked Sendable {
     public let blockCount: Int
     /// Most memory used for recovery slices at once. More recovery data than this takes several
-    /// passes over the files.
-    var recoveryMemory = 512 << 20
+    /// passes over the files, and each pass reads every file again: a 100 GB disc's 9 GB of
+    /// recovery data takes 18 passes in 512 MB, but 3 in 4 GB.
+    var recoveryMemory = DiscImage.defaultRecoveryMemory
+
+    /// A quarter of the Mac's memory, between 512 MB and 8 GB.
+    static var defaultRecoveryMemory: Int {
+        Int(min(max(ProcessInfo.processInfo.physicalMemory / 4, 512 << 20), 8 << 30))
+    }
 
     private enum Content {
         case zeros
