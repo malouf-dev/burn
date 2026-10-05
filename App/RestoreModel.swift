@@ -112,17 +112,19 @@ final class RestoreModel {
         phase = .restoring(name: name, fraction: 0)
         SessionLog.events.note("Restore started: \(root.path) into \(destination.path)")
         let eject = ejectsWhenDone
+        // Captured weakly here, outside any task, so no closure holds `self` strongly around it.
+        let progress: @Sendable (Double) -> Void = { [weak self] fraction in
+            Task { @MainActor in
+                guard let self, case .restoring = self.phase else { return }
+                self.phase = .restoring(name: name, fraction: fraction)
+            }
+        }
         task = Task {
             // Stop cancels the detached work too.
             let work = Task.detached(priority: .userInitiated) {
                 let hold = SessionLog.Hold("Restoring a disc")
                 defer { hold.release() }
-                return try DiscRestore.restore(root: root, into: destination) { fraction in
-                    Task { @MainActor [weak self] in
-                        guard let self, case .restoring = self.phase else { return }
-                        self.phase = .restoring(name: name, fraction: fraction)
-                    }
-                }
+                return try DiscRestore.restore(root: root, into: destination, progress: progress)
             }
             let result: Phase
             do {
@@ -158,14 +160,15 @@ final class RestoreModel {
             ? inside : destination
         phase = .comparing(0)
         SessionLog.events.note("Compare started: \(original.path) with \(copy.path)")
+        let progress: @Sendable (Double) -> Void = { [weak self] fraction in
+            Task { @MainActor in
+                guard let self, case .comparing = self.phase else { return }
+                self.phase = .comparing(fraction)
+            }
+        }
         task = Task {
             let work = Task.detached(priority: .userInitiated) {
-                try FolderComparison.compare(original: original, copy: copy) { fraction in
-                    Task { @MainActor [weak self] in
-                        guard let self, case .comparing = self.phase else { return }
-                        self.phase = .comparing(fraction)
-                    }
-                }
+                try FolderComparison.compare(original: original, copy: copy, progress: progress)
             }
             let result: Phase
             do {
