@@ -50,6 +50,13 @@ public struct ISOImageBuilder {
     }
 
     private let root = Node(name: "", source: nil, isDirectory: true, size: 0, date: Date())
+    /// More files for the `.burn` folder, such as a disc set's `set.json` (D16).
+    var burnExtras: [(name: String, content: [UInt8])] = []
+
+    /// The tree to burn, set directly; for a disc of a disc set (D16).
+    mutating func setTopLevel(_ nodes: [Node]) {
+        root.children = nodes
+    }
 
     public init(volumeName: String) {
         self.volumeName = volumeName
@@ -129,7 +136,12 @@ public struct ISOImageBuilder {
         let infoNode = Node(name: DiscChecksums.infoName, source: nil, isDirectory: false,
                             size: UInt64(info.count), date: date)
         infoNode.generated = .content(info)
-        folder.children = [sums, infoNode]
+        folder.children = [sums, infoNode] + burnExtras.map { extra in
+            let node = Node(name: extra.name, source: nil, isDirectory: false,
+                            size: UInt64(extra.content.count), date: date)
+            node.generated = .content(extra.content)
+            return node
+        }
         if let plan {
             // Sized once the names on the disc are known, and filled in when the image is prepared.
             let index = Node(name: "recovery.par2", source: nil, isDirectory: false, size: 0, date: date)
@@ -148,7 +160,7 @@ public struct ISOImageBuilder {
 
     // MARK: - Scanning
 
-    private static func scan(_ url: URL, skipping: Set<String>) throws -> Node {
+    static func scan(_ url: URL, skipping: Set<String>) throws -> Node {
         let keys: Set<URLResourceKey> = [.isDirectoryKey, .isSymbolicLinkKey, .fileSizeKey, .contentModificationDateKey]
         guard FileManager.default.fileExists(atPath: url.path) else { throw ISOBuilderError.notFound(url.path) }
         let values = try url.resourceValues(forKeys: keys)
@@ -186,6 +198,10 @@ final class Node {
     let source: URL?
     let isDirectory: Bool
     var size: UInt64
+    /// Where this file's data starts in `source`. Not zero only for a part of a file (D16).
+    var sourceOffset: UInt64 = 0
+    /// For a part of a file cut across discs: the whole file's size. Nil for a whole file.
+    var partOf: UInt64?
     let date: Date
     var children: [Node] = []
     weak var parent: Node?
@@ -238,6 +254,8 @@ final class Node {
     /// A copy of this node and everything below it, without any layout.
     func copy() -> Node {
         let node = Node(name: name, source: source, isDirectory: isDirectory, size: size, date: date)
+        node.sourceOffset = sourceOffset
+        node.partOf = partOf
         node.generated = generated
         node.isHidden = isHidden
         node.children = children.map { $0.copy() }

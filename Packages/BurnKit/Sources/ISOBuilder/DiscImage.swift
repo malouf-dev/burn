@@ -241,7 +241,7 @@ public final class DiscImage: @unchecked Sendable {
     private func readFile(_ node: Node, offset: UInt64, length: Int) throws -> [UInt8] {
         guard let source = node.source else { throw ISOBuilderError.notFound(node.name) }
         let handle = try self.handle(for: node)
-        try handle.seek(toOffset: offset)
+        try handle.seek(toOffset: node.sourceOffset + offset)
         let data = try handle.readBytes(length)
         guard data.count == length else { throw ISOBuilderError.changedWhileWriting(source.path) }
 
@@ -253,7 +253,8 @@ public final class DiscImage: @unchecked Sendable {
             state.position += UInt64(length)
             hashing = state
             if state.position == node.size {
-                if try !handle.readBytes(1).isEmpty {
+                // A part ends inside its file, so only a whole file must end where it did.
+                if node.partOf == nil, try !handle.readBytes(1).isEmpty {
                     throw ISOBuilderError.changedWhileWriting(source.path)
                 }
                 // A file that changed since the image was prepared no longer matches its checksum.
@@ -306,7 +307,7 @@ public final class DiscImage: @unchecked Sendable {
     private func hashWhole(_ node: Node) throws -> String {
         guard let source = node.source else { throw ISOBuilderError.notFound(node.name) }
         let handle = try self.handle(for: node)
-        try handle.seek(toOffset: 0)
+        try handle.seek(toOffset: node.sourceOffset)
         var hasher = SHA256()
         var remaining = node.size
         while remaining > 0 {
@@ -315,7 +316,7 @@ public final class DiscImage: @unchecked Sendable {
             hasher.update(data: chunk)
             remaining -= UInt64(chunk.count)
         }
-        if try !handle.readBytes(1).isEmpty {
+        if node.partOf == nil, try !handle.readBytes(1).isEmpty {
             throw ISOBuilderError.changedWhileWriting(source.path)
         }
         return DiscChecksums.hex(hasher.finalize())
@@ -339,7 +340,7 @@ private extension DiscImage {
         var names: [[UInt8]] = []
         for file in files {
             let handle = try self.handle(for: file)
-            try handle.seek(toOffset: 0)
+            try handle.seek(toOffset: file.sourceOffset)
             let head = try handle.readBytes(16384)
             guard head.count == Int(min(16384, file.size)) else { throw changed(file) }
             let name = Array(layout.discPath(file).utf8)
@@ -382,7 +383,7 @@ private extension DiscImage {
             let encoder = PAR2Encoder(sliceSize: sliceSize, exponents: Array(batch))
             for (number, file) in files.enumerated() {
                 let handle = try self.handle(for: file)
-                try handle.seek(toOffset: 0)
+                try handle.seek(toOffset: file.sourceOffset)
                 var sha = SHA256()
                 var md5 = Insecure.MD5()
                 var sums: [UInt8] = []
@@ -407,7 +408,7 @@ private extension DiscImage {
                     progress?(done / work)
                 }
                 if pass == 0 {
-                    if try !handle.readBytes(1).isEmpty { throw changed(file) }
+                    if file.partOf == nil, try !handle.readBytes(1).isEmpty { throw changed(file) }
                     digests[layout.discPath(file)] = DiscChecksums.hex(sha.finalize())
                     md5s[number] = Array(md5.finalize())
                     sliceSums[number] = sums
