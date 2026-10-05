@@ -76,6 +76,14 @@ struct DiscSetTests {
             #expect(report.isComplete)
             #expect(report.disc == number + 1)
             #expect(report.discCount == discs.count)
+            // The Restore view's row of discs for the set.
+            let sets = DiscRestore.progress(in: destination)
+            #expect(sets.count == 1)
+            let progress = try #require(sets.first)
+            #expect(progress.id == DiscRestore.setInfo(at: root)?.id)
+            #expect(progress.discCount == discs.count)
+            #expect(progress.missing == Array(1..<(number + 1)))
+            #expect(progress.isComplete == (number == 0))
             completed += report.completed
             last = report
         }

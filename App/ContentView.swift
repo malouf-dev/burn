@@ -2,16 +2,18 @@ import MMC
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The two things the window does, chosen from the toolbar.
+/// What the window does, chosen from the toolbar.
 enum Mode: String, CaseIterable, Identifiable {
     case burn
     case verify
+    case restore
     var id: Self { self }
 }
 
 struct ContentView: View {
     @Bindable var model: AppModel
     let verifier: VerifyModel
+    let restorer: RestoreModel
     @SceneStorage("mode") private var mode: Mode = .burn
     @AppStorage("showsLog") private var showsLog = false
 
@@ -20,6 +22,7 @@ struct ContentView: View {
             switch mode {
             case .burn: BurnView(model: model)
             case .verify: VerifyView(model: verifier)
+            case .restore: RestoreView(model: restorer)
             }
             if showsLog {
                 Divider()
@@ -33,6 +36,7 @@ struct ContentView: View {
                 Picker("Mode", selection: $mode) {
                     Label("Burn", systemImage: "opticaldisc").tag(Mode.burn)
                     Label("Verify", systemImage: "checkmark.seal").tag(Mode.verify)
+                    Label("Restore", systemImage: "tray.and.arrow.down").tag(Mode.restore)
                 }
                 .pickerStyle(.segmented)
                 .labelStyle(.titleAndIcon)

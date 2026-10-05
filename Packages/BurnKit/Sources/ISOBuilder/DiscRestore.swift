@@ -31,9 +31,22 @@ public struct RestoreReport: Sendable, Equatable {
 
 /// Which disc of a set a disc is, from its `.burn/set.json`.
 public struct DiscSetInfo: Sendable, Hashable {
+    /// The set's ID, the same on each of its discs.
+    public let id: String
     public let name: String
     public let disc: Int
     public let discCount: Int
+}
+
+/// How far a set has been restored into a folder.
+public struct DiscSetProgress: Sendable, Hashable, Identifiable {
+    public let id: String
+    public let name: String
+    public let discCount: Int
+    public let discsRestored: [Int]
+
+    public var missing: [Int] { Array(Set(1...max(1, discCount)).subtracting(discsRestored)).sorted() }
+    public var isComplete: Bool { missing.isEmpty }
 }
 
 /// Copies a disc's files back into a folder, checked and repaired (decision D16).
@@ -48,7 +61,14 @@ public enum DiscRestore {
 
     /// The set a disc belongs to, or nil for a disc on its own.
     public static func setInfo(at root: URL) -> DiscSetInfo? {
-        manifest(at: root).map { DiscSetInfo(name: $0.name, disc: $0.thisDisc, discCount: $0.discCount) }
+        manifest(at: root).map { DiscSetInfo(id: $0.id, name: $0.name, disc: $0.thisDisc, discCount: $0.discCount) }
+    }
+
+    /// The sets restored, or partly restored, into `destination`.
+    public static func progress(in destination: URL) -> [DiscSetProgress] {
+        RestoreState.load(destination).sets.map { id, set in
+            DiscSetProgress(id: id, name: set.name, discCount: set.discCount, discsRestored: set.discs)
+        }.sorted { $0.name < $1.name }
     }
 
     static func manifest(at root: URL) -> DiscSetManifest? {
