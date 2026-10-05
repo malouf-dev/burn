@@ -51,6 +51,63 @@ struct DiscSetTests {
         }
     }
 
+    /// Writes a disc's files into a folder, as if it were mounted there.
+    func materialize(_ files: [String: [UInt8]], at root: URL) throws -> URL {
+        for (path, bytes) in files {
+            let url = root.appendingPathComponent(path)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try Data(bytes).write(to: url)
+        }
+        return root
+    }
+
+    @Test func restoringEachDiscPutsTheSetBackTogether() throws {
+        let (show, expected) = try makeShow()
+        let plan = try plan(show)
+        let base = show.deletingLastPathComponent()
+        let discs = try burn(plan, into: base)
+        let destination = base.appendingPathComponent("Restored by Burn")
+        var completed: [String] = []
+        var last: RestoreReport?
+        // Out of order on purpose.
+        for number in discs.indices.reversed() {
+            let root = try materialize(discs[number], at: base.appendingPathComponent("mounted\(number + 1)"))
+            let report = try DiscRestore.restore(root: root, into: destination)
+            #expect(report.isComplete)
+            #expect(report.disc == number + 1)
+            #expect(report.discCount == discs.count)
+            completed += report.completed
+            last = report
+        }
+        for (path, bytes) in expected {
+            #expect([UInt8](try Data(contentsOf: destination.appendingPathComponent(path))) == bytes, "\(path)")
+        }
+        let cut = Set(plan.discs.flatMap(\.pieces).filter { $0.part != nil }.map(\.path))
+        #expect(Set(completed) == cut)
+        #expect(last?.discsRestored == Array(1...discs.count))
+        // Nothing left over but the record of what's been restored.
+        let leftovers = try FileManager.default.contentsOfDirectory(atPath: destination.path)
+        #expect(Set(leftovers) == ["Show", DiscRestore.stateName])
+    }
+
+    @Test func restoreRepairsDamageOnTheWay() throws {
+        let (show, expected) = try makeShow()
+        let plan = try plan(show)
+        let base = show.deletingLastPathComponent()
+        var files = try burn(plan, into: base)[0]
+        let damaged = try #require(files.keys.filter { !$0.hasPrefix(".burn/") && (files[$0]?.count ?? 0) > 5_000 }.sorted().first)
+        files[damaged]?[4_000] ^= 0xFF
+        let root = try materialize(files, at: base.appendingPathComponent("damaged"))
+        let destination = base.appendingPathComponent("Repaired")
+        let report = try DiscRestore.restore(root: root, into: destination)
+        #expect(report.isComplete)
+        #expect(report.repaired == [damaged])
+        let piece = try #require(plan.discs[0].pieces.first { $0.discPath == damaged })
+        let restored = [UInt8](try Data(contentsOf: destination.appendingPathComponent(piece.path)))
+        let original = try #require(expected[piece.path])
+        #expect(Array(restored.prefix(Int(piece.length))) == Array(original[Int(piece.offset)..<Int(piece.offset + piece.length)]))
+    }
+
     @Test func discsAreFullAndPartsRejoin() throws {
         let (show, expected) = try makeShow()
         let plan = try plan(show)
