@@ -88,6 +88,7 @@ struct DiscSetTests {
         // Nothing left over but the record of what's been restored.
         let leftovers = try FileManager.default.contentsOfDirectory(atPath: destination.path)
         #expect(Set(leftovers) == ["Show", DiscRestore.stateName])
+        #expect(try FolderComparison.compare(original: show, copy: destination.appendingPathComponent("Show")).isIdentical)
     }
 
     @Test func restoreRepairsDamageOnTheWay() throws {
