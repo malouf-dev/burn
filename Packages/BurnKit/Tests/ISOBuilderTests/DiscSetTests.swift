@@ -95,7 +95,8 @@ struct DiscSetTests {
         let plan = try plan(show)
         let base = show.deletingLastPathComponent()
         var files = try burn(plan, into: base)[0]
-        let damaged = try #require(files.keys.filter { !$0.hasPrefix(".burn/") && (files[$0]?.count ?? 0) > 5_000 }.sorted().first)
+        let candidates = files.keys.filter { !$0.hasPrefix(".burn/") && files[$0, default: []].count > 5_000 }.sorted()
+        let damaged = try #require(candidates.first)
         files[damaged]?[4_000] ^= 0xFF
         let root = try materialize(files, at: base.appendingPathComponent("damaged"))
         let destination = base.appendingPathComponent("Repaired")
