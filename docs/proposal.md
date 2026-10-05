@@ -329,6 +329,8 @@ Done on 4 October 2026, in `PAR2.swift`, `DiscImage.swift`, `RecoveryRepair.swif
 
 For collections bigger than any disc, such as a TV series of several 60 to 70 GB seasons on 100 GB BD-R XL discs.
 
+Built on 5 October 2026 in `DiscSet.swift`, `DiscRestore.swift`, the app's `DiscSetSheet.swift` and Verify. CI plans a small set, burns it to images, rejoins the parts, runs each disc's `restore.sh` out of order and restores through the app's code, and plans eight 65 GB seasons on 100 GB discs from sparse files: six discs, each full to within about 4 MB. Not yet tried on hardware.
+
 - **When.** The Burn view offers "Split Across Discs" when the files don't fit the disc. Its plan sheet asks for the disc size, from the blank disc in the drive or a list of standard sizes, and shows each disc's contents and size before anything is burned.
 - **Filling.** Files go on in the order they're listed. Each disc but the last is filled to its last block: the file that crosses the edge is cut where the disc is full, to the nearest MiB, and the rest starts the next disc. A file under 64 MB isn't cut; it moves to the next disc. A file bigger than a disc is cut into as many parts as it needs. The last disc holds what's left, and the plan names the smallest standard disc it fits.
 - **On each disc.** The files keep their folders. A cut file's parts are `name.part1`, `name.part2` and so on, next to where the file would be; `cat name.part1 name.part2 > name` rejoins it. Each disc has its own `.burn` folder: checksums and recovery data for what's on it, and `set.json`, which lists every disc in the set and what it holds, so any one disc says where everything is. Discs are named "Name 1 of 6" and so on.
