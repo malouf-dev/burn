@@ -14,6 +14,10 @@ public struct RestoreReport: Sendable, Equatable {
     public var waiting: [String] = []
     /// Files that still failed their checksum after repair. They're left in `kept`, not restored.
     public var damaged: [String] = []
+    /// For damaged files: how many bytes couldn't be read at all. The rest was salvaged.
+    public var unreadableBytes: [String: Int] = [:]
+    /// Pieces that read wrongly or not at all at first, and read correctly when tried again.
+    public var rereads = 0
     public var kept: URL?
     /// For a disc of a set: its name, this disc's number, how many there are, and which of them
     /// have been restored into this destination so far.
@@ -56,22 +60,32 @@ public enum DiscRestore {
     /// calling task is cancelled.
     public static func restore(root: URL, into destination: URL,
                                progress: @Sendable (Double) -> Void = { _ in }) throws -> RestoreReport {
+        try restore(root: root, into: destination, reader: .disc, progress: progress)
+    }
+
+    static func restore(root: URL, into destination: URL, reader: DiscReader,
+                        progress: @Sendable (Double) -> Void) throws -> RestoreReport {
         let manager = FileManager.default
         try manager.createDirectory(at: destination, withIntermediateDirectories: true)
         let staging = destination.appendingPathComponent(".burn-restore-\(UUID().uuidString)", isDirectory: true)
         var report = RestoreReport()
 
         // 1. Copy the disc, repairing what the recovery data can.
-        if RecoveryRepair.hasRecovery(at: root) {
-            let repair = try RecoveryRepair.repair(root: root, into: staging) { progress($0 * 0.8) }
+        let onDisc = ChecksumVerifier.filesOnDisc(root)
+        var lost: [String: Int] = [:]
+        let hasRecovery = RecoveryRepair.hasRecovery(at: root)
+        if hasRecovery {
+            let repair = try RecoveryRepair.repair(root: root, into: staging, reader: reader) { progress($0 * 0.8) }
             report.repaired = repair.repaired
+            report.rereads = repair.rereadSlices
+            lost = repair.unreadableBytes
         } else {
             try manager.createDirectory(at: staging, withIntermediateDirectories: true)
-            for (path, entry) in ChecksumVerifier.filesOnDisc(root) {
+            for (path, entry) in onDisc {
                 try Task.checkCancellation()
                 let target = staging.appendingPathComponent(path)
                 try manager.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try manager.copyItem(at: entry.url, to: target)
+                lost[path] = try reader.copy(entry.url, size: entry.size, to: target)
             }
             let burn = root.appendingPathComponent(DiscChecksums.folderName)
             try manager.copyItem(at: burn, to: staging.appendingPathComponent(DiscChecksums.folderName))
@@ -79,11 +93,33 @@ public enum DiscRestore {
         }
 
         // 2. Check every copy.
-        let check = try ChecksumVerifier.verify(root: staging) { state in
+        var check = try ChecksumVerifier.verify(root: staging) { state in
             guard state.totalBytes > 0 else { return }
             progress(0.8 + 0.15 * Double(state.checkedBytes) / Double(state.totalBytes))
         }
+        // Without recovery data, a file that copied wrongly can only be read again.
+        if !hasRecovery {
+            let expected = Dictionary(((try? ChecksumVerifier.entries(at: staging)) ?? []).map { ($0.path, $0.digest) },
+                                      uniquingKeysWith: { first, _ in first })
+            for path in check.changed {
+                guard let entry = onDisc[path.precomposedStringWithCanonicalMapping] else { continue }
+                for attempt in 2...DiscReader.attempts {
+                    let target = staging.appendingPathComponent(path)
+                    try? manager.removeItem(at: target)
+                    lost[path] = try reader.copy(entry.url, size: entry.size, to: target, firstAttempt: attempt)
+                    if let digest = ChecksumVerifier.digest(of: target), digest == expected[path] {
+                        check.changed.removeAll { $0 == path }
+                        check.matched.append(path)
+                        report.rereads += 1
+                        break
+                    }
+                }
+            }
+        }
         report.damaged = (check.changed + check.missing + check.unreadable).sorted()
+        for path in report.damaged where (lost[path] ?? 0) > 0 {
+            report.unreadableBytes[path] = lost[path]
+        }
 
         // 3. Put each good file, or part, in its place.
         let manifest = Self.manifest(at: root)

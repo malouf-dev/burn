@@ -71,7 +71,7 @@ public enum ChecksumVerifier {
         try entries(at: root).map(\.path)
     }
 
-    private static func entries(at root: URL) throws -> [(path: String, digest: String)] {
+    static func entries(at root: URL) throws -> [(path: String, digest: String)] {
         guard hasChecksums(at: root) else { throw DiscChecksumsError.noChecksums }
         guard let data = try? Data(contentsOf: sumsURL(root)) else {
             throw DiscChecksumsError.unreadable(DiscChecksums.sumsName)
@@ -153,6 +153,10 @@ public enum ChecksumVerifier {
     }
 
     /// The file's SHA-256 in hex, or nil if it can't be read to the end.
+    static func digest(of url: URL) -> String? {
+        hash(url, progress: { _ in })
+    }
+
     private static func hash(_ url: URL, progress: (UInt64) -> Void) -> String? {
         guard let input = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? input.close() }

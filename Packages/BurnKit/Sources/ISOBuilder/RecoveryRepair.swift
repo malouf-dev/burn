@@ -12,6 +12,11 @@ public struct RepairReport: Sendable, Equatable {
     public var unrepairable: [String] = []
     public var damagedSlices = 0
     public var recoverySlices = 0
+    /// Slices that failed their checksum or their read at first and read correctly when tried again.
+    public var rereadSlices = 0
+    /// For files that couldn't be repaired: how many of their bytes couldn't be read at all.
+    /// The rest of each was salvaged.
+    public var unreadableBytes: [String: Int] = [:]
 
     public var isComplete: Bool { unrepairable.isEmpty }
 }
@@ -44,6 +49,11 @@ public enum RecoveryRepair {
     /// `CancellationError` if the calling task is cancelled.
     public static func repair(root: URL, into destination: URL,
                               progress: @Sendable (Double) -> Void = { _ in }) throws -> RepairReport {
+        try repair(root: root, into: destination, reader: .disc, progress: progress)
+    }
+
+    static func repair(root: URL, into destination: URL, reader: DiscReader,
+                       progress: @Sendable (Double) -> Void) throws -> RepairReport {
         let set = try RecoverySet(files: par2Files(root))
         var report = RepairReport(recoverySlices: set.recovery.count)
         let onDisc = ChecksumVerifier.filesOnDisc(root)
@@ -54,6 +64,7 @@ public enum RecoveryRepair {
 
         // Copy each file slice by slice, keeping the slices that match their checksums.
         var damaged: [(file: Int, slice: Int)] = []
+        var lostBytes: [Int: Int] = [:]
         var firstSlices: [Int] = []
         var outputs: [URL] = []
         for (number, file) in set.files.enumerated() {
@@ -66,27 +77,32 @@ public enum RecoveryRepair {
             outputs.append(output)
             let writer = try FileHandle(forWritingTo: output)
             defer { try? writer.close() }
-            let reader = onDisc[file.name.precomposedStringWithCanonicalMapping].flatMap { try? FileHandle(forReadingFrom: $0.url) }
-            defer { try? reader?.close() }
+            let source = onDisc[file.name.precomposedStringWithCanonicalMapping]?.url
             for slice in 0..<file.sliceCount {
                 let offset = UInt64(slice) * UInt64(sliceSize)
                 let count = Int(min(UInt64(sliceSize), file.length - offset))
-                // A slice that can't be read counts as damaged, like one that fails its checksum.
+                let expected = file.sliceMD5s[slice]
+                // A slice that can't be read, or fails its checksum, is read again before it
+                // counts as damaged.
                 var data: [UInt8]?
-                if let reader {
-                    do {
-                        try reader.seek(toOffset: offset)
-                        data = try reader.readBytes(count)
-                    } catch {
-                        data = nil
+                if let source {
+                    let result = reader.reliably(source, offset: offset, count: count) { bytes in
+                        PAR2.md5((bytes + [UInt8](repeating: 0, count: sliceSize - count))[...]) == expected
                     }
+                    data = result.bytes
+                    if data != nil, result.attempts > 1 { report.rereadSlices += 1 }
                 }
-                if let bytes = data, bytes.count == count,
-                   PAR2.md5((bytes + [UInt8](repeating: 0, count: sliceSize - count))[...]) == file.sliceMD5s[slice] {
-                    try writer.seek(toOffset: offset)
+                try writer.seek(toOffset: offset)
+                if let bytes = data {
                     try writer.writeBytes(bytes)
                 } else {
                     damaged.append((number, slice))
+                    // Keep what can be read, in case the recovery data can't rebuild it.
+                    if let source {
+                        let salvaged = reader.salvage(source, offset: offset, count: count)
+                        try writer.writeBytes(salvaged.bytes)
+                        lostBytes[number, default: 0] += salvaged.lost
+                    }
                 }
                 done += Double(count)
                 progress(done / work)
@@ -113,6 +129,7 @@ public enum RecoveryRepair {
         }
         guard damaged.count <= set.recovery.count else {
             report.unrepairable = damagedFiles.sorted().map { set.files[$0].name }
+            for number in damagedFiles { report.unreadableBytes[set.files[number].name] = lostBytes[number] }
             return report
         }
 
@@ -144,6 +161,7 @@ public enum RecoveryRepair {
         }
         guard let inverse = GF16.invert(matrix) else {
             report.unrepairable = damagedFiles.sorted().map { set.files[$0].name }
+            for number in damagedFiles { report.unreadableBytes[set.files[number].name] = lostBytes[number] }
             return report
         }
         for (k, place) in damaged.enumerated() {
@@ -170,6 +188,7 @@ public enum RecoveryRepair {
                 report.repaired.append(file.name)
             } else {
                 report.unrepairable.append(file.name)
+                report.unreadableBytes[file.name] = lostBytes[number]
             }
         }
         progress(1)
