@@ -86,7 +86,7 @@ public enum DiscImageFile {
     /// Names that may hold a disc image.
     public static let extensions: Set<String> = ["iso", "cdr", "img", "dmg"]
 
-    public enum Kind: Sendable, Equatable {
+    public enum Kind: Sendable, Hashable {
         /// The disc's blocks, ready to burn.
         case raw(blocks: Int)
         /// A UDIF image, to convert with `hdiutil convert -format UDTO` before burning.
