@@ -84,7 +84,8 @@ struct StateTests {
 
 @Suite("Writing and verifying")
 struct WriteTests {
-    @Test(arguments: [MediaProfile.cdR, .cdRW, .dvdRSequential, .dvdRWSequential, .dvdPlusR, .dvdPlusRDualLayer, .bdRSequential])
+    @Test(arguments: [MediaProfile.cdR, .cdRW, .dvdRSequential, .dvdRWSequential, .dvdRDualLayerSequential, .dvdPlusR,
+                      .dvdPlusRDualLayer, .bdRSequential])
     func writeAndVerify(profile: MediaProfile) async throws {
         let simulator = SimulatedDrive(media: .init(profile: profile, capacityBlocks: 20_000))
         let drive = DiscDrive(transport: simulator)

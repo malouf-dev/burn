@@ -145,7 +145,8 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
 
     public init(inquiry: InquiryData = InquiryData(vendor: "SIMULATE", product: "Disc Burner", revision: "1.00"),
                 supportedProfiles: [MediaProfile] = [.bdRE, .bdRSequential, .dvdPlusRDualLayer, .dvdPlusR, .dvdPlusRW,
-                                                     .dvdRWSequential, .dvdRSequential, .cdRW, .cdR],
+                                                     .dvdRDualLayerSequential, .dvdRWSequential, .dvdRSequential,
+                                                     .cdRW, .cdR],
                 media: Media? = nil) {
         self.inquiry = inquiry
         self.supportedProfiles = supportedProfiles
