@@ -342,7 +342,7 @@ Built on 5 October 2026 in `DiscSet.swift`, `DiscRestore.swift`, the app's `Disc
 ## 11. Roadmap after 0.1
 
 - **0.2 Data discs done well.** UDF for large files (9.8). Editing the folder structure on the disc. Adding to discs that already have data. Notarised builds and Sparkle 2. (The per-file checksum file and check came early, in 0.1.)
-- **0.3 Disc images.** Burn ISO and cue/bin images. Save a disc layout as an ISO image.
+- **0.3 Disc images.** Burn cue/bin images. Save a disc layout as an ISO image. (Burning an ISO or raw `.cdr` image as it is came early, in 0.1.)
 - **0.4 Audio CD.** Decoding, gaps and CD-Text, written disc-at-once with a cue sheet. Decoding may need ffmpeg as a helper tool built in CI.
 - **0.5 Disc copy.**
 - **0.6 DVD-Video.** Conversion, authoring and menus.

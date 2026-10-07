@@ -13,7 +13,9 @@ struct BurnSheet: View {
             Text(title)
                 .font(.title2.weight(.semibold))
 
-            if let set = model.discSet {
+            if model.burningImage {
+                EmptyView()
+            } else if let set = model.discSet {
                 Text("“\(set.volumeName(forDisc: model.setDiscNumber))”, from the plan for the set “\(set.name)”.")
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -33,17 +35,20 @@ struct BurnSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: 6) {
-                Toggle("Add checksums, so the disc can be checked years from now", isOn: $model.includeChecksums)
-                    .disabled(model.discSet != nil)
-                Toggle("Add recovery data, so damaged files can be repaired", isOn: $model.includeRecovery)
-                    .disabled(!model.includeChecksums || model.discSet != nil)
-                    .help("PAR2 recovery data in the hidden .burn folder, about \(AppModel.recoveryPercent)% of the files' size. Any PAR2 tool can use it.")
-                if model.recoveryOmitted {
-                    Label(String(localized: "More than \(ISOImageBuilder.recoveryFileLimit.formatted()) files, so this disc can't carry recovery data. Checksums still cover every file."),
-                          systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                        .fixedSize(horizontal: false, vertical: true)
+                // A disc image is copied as it is, so nothing can be added to it.
+                if !model.burningImage {
+                    Toggle("Add checksums, so the disc can be checked years from now", isOn: $model.includeChecksums)
+                        .disabled(model.discSet != nil)
+                    Toggle("Add recovery data, so damaged files can be repaired", isOn: $model.includeRecovery)
+                        .disabled(!model.includeChecksums || model.discSet != nil)
+                        .help("PAR2 recovery data in the hidden .burn folder, about \(AppModel.recoveryPercent)% of the files' size. Any PAR2 tool can use it.")
+                    if model.recoveryOmitted {
+                        Label(String(localized: "More than \(ISOImageBuilder.recoveryFileLimit.formatted()) files, so this disc can't carry recovery data. Checksums still cover every file."),
+                              systemImage: "exclamationmark.triangle")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 Toggle("Eject when done", isOn: $model.ejectWhenDone)
             }
@@ -57,7 +62,7 @@ struct BurnSheet: View {
                     model.burn()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(model.discSet == nil && model.discName.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(model.discSet == nil && !model.burningImage && model.discName.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .padding(20)
@@ -69,6 +74,9 @@ struct BurnSheet: View {
         if let set = model.discSet {
             return String(localized: "Burn Disc \(model.setDiscNumber) of \(set.discs.count)")
         }
+        if model.burningImage {
+            return model.willOverwrite ? String(localized: "Erase and Burn Disc Image") : String(localized: "Burn Disc Image")
+        }
         return model.willOverwrite ? String(localized: "Erase and Burn") : String(localized: "Burn Disc")
     }
 
@@ -77,6 +85,9 @@ struct BurnSheet: View {
         let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
         let media = model.writableDisc?.profile.name ?? ""
         var text = String(localized: "\(size) will be written to the \(media), then read back and checked block by block.")
+        if model.burningImage, let image = model.discImage {
+            text = String(localized: "“\(image.name)”, \(size), will be copied to the \(media) block for block, then read back and checked.")
+        }
         if model.willOverwrite {
             let current = model.discVolume.map { "“\($0.name)”" } ?? String(localized: "what's on it")
             text = String(localized: "The disc is erased first, and \(current) is lost.") + " " + text

@@ -20,6 +20,8 @@ struct DiscItem: Identifiable, Hashable {
     var dataFileCount = 0
     /// True when the item couldn't be read to measure it.
     var unreadable = false
+    /// For a file named like a disc image, what's in it, once read.
+    var imageKind: DiscImageFile.Kind?
 
     var name: String { url.lastPathComponent }
 }
@@ -77,6 +79,22 @@ final class AppModel {
     /// Add PAR2 recovery data to the `.burn` folder, a tenth the size of the files (decision D15).
     var includeRecovery = true
     static let recoveryPercent = 10
+
+    /// Burn a single disc image block for block, rather than as a file on a data disc. On by
+    /// default whenever one is added alone.
+    var burnsImageAsIs = true
+
+    /// The one item, when it's a file named like a disc image.
+    var discImage: DiscItem? {
+        guard items.count == 1, let item = items.first, !item.isDirectory,
+              DiscImageFile.hasImageExtension(item.url) else { return nil }
+        return item
+    }
+
+    /// True when the burn copies a disc image as it is: no name, checksums or recovery data.
+    var burningImage: Bool {
+        burnsImageAsIs && discImage != nil && discSet == nil
+    }
 
     /// True when recovery data is on but the files are too many for it.
     var recoveryOmitted: Bool {
@@ -210,11 +228,16 @@ final class AppModel {
             if discName.isEmpty && items.count == 1 && isDirectory {
                 discName = url.lastPathComponent
             }
+            // A disc image added on its own is burned as it is, unless the user says otherwise.
+            if items.count == 1 && discImage != nil { burnsImageAsIs = true }
             let id = item.id
+            let isImage = !isDirectory && DiscImageFile.hasImageExtension(url)
             Task.detached(priority: .utility) {
                 let measured = Self.measure(url)
+                let kind: DiscImageFile.Kind? = isImage ? (try? DiscImageFile.inspect(url)) : nil
                 await MainActor.run {
                     if let index = self.items.firstIndex(where: { $0.id == id }) {
+                        self.items[index].imageKind = kind
                         self.items[index].size = measured?.total ?? 0
                         self.items[index].imageBytes = measured?.imageBytes ?? 0
                         self.items[index].dataFileCount = measured?.dataFiles ?? 0
@@ -251,7 +274,7 @@ final class AppModel {
     /// True when the files are more than the blank disc holds, or more than a 25 GB Blu-ray
     /// when there isn't one, so it's worth offering to split them across discs.
     var canSplitAcrossDiscs: Bool {
-        guard discSet == nil, activity == .idle, !items.isEmpty, sizesKnown,
+        guard discSet == nil, !burningImage, activity == .idle, !items.isEmpty, sizesKnown,
               !items.contains(where: \.unreadable) else { return false }
         if let disc = writableDisc, !disc.canOverwrite { return !fits }
         return estimatedBytes > 12_219_392 * 2048
@@ -347,6 +370,7 @@ final class AppModel {
     /// The image's size, near enough: the files and their entries, plus about 1 MB of volume
     /// structures and padding, plus the recovery data. Folder listings add a little more.
     var estimatedBytes: Int64 {
+        if burningImage { return discImage?.size ?? 0 }
         let files = items.reduce(1_000_000) { $0 + $1.imageBytes }
         let data = items.reduce(0) { $0 + ($1.size ?? 0) }
         return files + (includeChecksums && includeRecovery && !recoveryOmitted ? data * Int64(Self.recoveryPercent) / 100 : 0)
@@ -358,6 +382,10 @@ final class AppModel {
     var fits: Bool {
         guard let disc = writableDisc else { return false }
         if disc.canOverwrite { return true }
+        if burningImage, case .raw(let blocks)? = discImage?.imageKind {
+            // Exact, but rounded up to a DVD's 16-block ECC unit, as the engine pads it.
+            return (blocks + 15) / 16 * 16 <= Int(disc.freeBlocks)
+        }
         return estimatedBytes + 1_000_000 <= disc.freeBytes
     }
 
@@ -392,6 +420,18 @@ final class AppModel {
         if items.isEmpty { return String(localized: "Add files to burn.") }
         if let item = items.first(where: \.unreadable) { return String(localized: "Can't read “\(item.name)”.") }
         if !sizesKnown { return String(localized: "Measuring the files…") }
+        if burningImage, let image = discImage {
+            switch image.imageKind {
+            case nil:
+                return String(localized: "Reading the disc image…")
+            case .appleDiskImage?:
+                return String(localized: "“\(image.name)” is a compressed disc image. Convert it to a .cdr in Disk Utility first.")
+            case .notBlockAligned?:
+                return String(localized: "“\(image.name)” isn't a disc image. Untick Disc Image to burn it as a file.")
+            case .raw?:
+                break
+            }
+        }
         if !fits { return String(localized: "Too much for this disc.") }
         return nil
     }
@@ -403,15 +443,19 @@ final class AppModel {
         let urls = items.map(\.url)
         let name = discName.isEmpty ? String(localized: "Untitled") : discName
         let options = WriteOptions(verify: true, ejectWhenDone: ejectWhenDone, eraseFirst: disc.canOverwrite)
-        let checksums = includeChecksums
-        let recovery = includeChecksums && includeRecovery ? Self.recoveryPercent : 0
+        let imageFile = burningImage ? discImage?.url : nil
+        let checksums = includeChecksums && imageFile == nil
+        let recovery = checksums && includeRecovery ? Self.recoveryPercent : 0
         let version = appVersion
         let set = discSet
         let setNumber = setDiscNumber
         activity = .buildingImage(fraction: 0)
         outcome = nil
         let log = engine.log
-        if let set {
+        if let imageFile {
+            log.note("Burn requested: the disc image \"\(imageFile.path)\" as it is, "
+                + "onto \(disc.profile.name) with \(disc.freeBlocks) free blocks")
+        } else if let set {
             log.note("Burn requested: disc \(setNumber) of \(set.discs.count) of the set \"\(set.name)\", "
                 + "\(set.discs[setNumber - 1].blocks) blocks, onto \(disc.profile.name) with \(disc.freeBlocks) free blocks")
         } else {
@@ -424,42 +468,16 @@ final class AppModel {
             let hold = SessionLog.Hold("Burning a disc")
             defer { hold.release() }
             do {
-                // The image is made as the drive asks for it, so nothing is written to disk first.
-                let image = try await Task.detached(priority: .userInitiated) {
-                    if let set { return try set.builder(forDisc: setNumber).image() }
-                    var builder = ISOImageBuilder(volumeName: name)
-                    builder.includesChecksums = checksums
-                    builder.recoveryPercent = recovery
-                    builder.applicationName = "Burn \(version)"
-                    for url in urls { try builder.add(url) }
-                    return try builder.image()
-                }.value
-                log.note("Image laid out: \(image.blockCount) blocks")
-                try Task.checkCancellation()
-                // Recovery data needs every file read first, before the drive is taken.
-                if image.needsPreparing {
-                    activity = .preparingRecovery(fraction: 0)
-                    log.note("Making recovery data")
-                    let started = Date()
-                    try await withTaskCancellationHandler {
-                        try await Task.detached(priority: .userInitiated) {
-                            try image.prepare { fraction in
-                                Task { @MainActor in
-                                    if case .preparingRecovery(let previous) = self.activity {
-                                        if Int(fraction * 10) > Int(previous * 10) {
-                                            log.note("Recovery data \(Int(fraction * 10) * 10)% made, "
-                                                + "peak memory \(SessionLog.peakMemory)")
-                                        }
-                                        self.activity = .preparingRecovery(fraction: fraction)
-                                    }
-                                }
-                            }
-                        }.value
-                    } onCancel: {
-                        image.cancelPreparing()
-                    }
-                    log.note("Recovery data made in \(Int(Date().timeIntervalSince(started))) seconds")
+                let image: any ImageSource
+                if let imageFile {
+                    // A disc image goes on as it is.
+                    image = try await Task.detached(priority: .userInitiated) { try FileImageSource(url: imageFile) }.value
+                    log.note("Disc image opened: \(image.blockCount) blocks")
+                } else {
+                    image = try await makeImage(log: log, set: set, setNumber: setNumber, name: name, urls: urls,
+                                                checksums: checksums, recovery: recovery, version: version)
                 }
+                try Task.checkCancellation()
                 guard disc.canOverwrite || image.blockCount <= Int(disc.freeBlocks) else {
                     throw DriveError.doesNotFit(neededBlocks: image.blockCount, freeBlocks: Int(disc.freeBlocks))
                 }
@@ -495,6 +513,48 @@ final class AppModel {
                        log: engine.log)
             }
         }
+    }
+
+    /// Lays out a data disc's image, and makes its recovery data, which needs every file read
+    /// first, before the drive is taken. The image itself is made as the drive asks for it, so
+    /// nothing is written to disk first.
+    private func makeImage(log: CommandLog, set: DiscSetPlan?, setNumber: Int, name: String, urls: [URL],
+                           checksums: Bool, recovery: Int, version: String) async throws -> DiscImage {
+        let image = try await Task.detached(priority: .userInitiated) {
+            if let set { return try set.builder(forDisc: setNumber).image() }
+            var builder = ISOImageBuilder(volumeName: name)
+            builder.includesChecksums = checksums
+            builder.recoveryPercent = recovery
+            builder.applicationName = "Burn \(version)"
+            for url in urls { try builder.add(url) }
+            return try builder.image()
+        }.value
+        log.note("Image laid out: \(image.blockCount) blocks")
+        try Task.checkCancellation()
+        if image.needsPreparing {
+            activity = .preparingRecovery(fraction: 0)
+            log.note("Making recovery data")
+            let started = Date()
+            try await withTaskCancellationHandler {
+                try await Task.detached(priority: .userInitiated) {
+                    try image.prepare { fraction in
+                        Task { @MainActor in
+                            if case .preparingRecovery(let previous) = self.activity {
+                                if Int(fraction * 10) > Int(previous * 10) {
+                                    log.note("Recovery data \(Int(fraction * 10) * 10)% made, "
+                                        + "peak memory \(SessionLog.peakMemory)")
+                                }
+                                self.activity = .preparingRecovery(fraction: fraction)
+                            }
+                        }
+                    }
+                }.value
+            } onCancel: {
+                image.cancelPreparing()
+            }
+            log.note("Recovery data made in \(Int(Date().timeIntervalSince(started))) seconds")
+        }
+        return image
     }
 
     func cancel() {

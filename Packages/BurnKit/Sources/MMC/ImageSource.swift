@@ -75,3 +75,40 @@ public final class FileImageSource: ImageSource, @unchecked Sendable {
         return data
     }
 }
+
+/// A disc image file the user added, and whether it can be burned block for block.
+///
+/// An ISO or a raw Apple image (`.cdr`, made by `hdiutil convert -format UDTO`) is the disc's
+/// blocks, so writing it as it is gives an exact copy, boot code and Mac partitions included.
+/// An Apple disc image in UDIF form (most `.dmg` files) is compressed or wrapped, and ends in a
+/// 512-byte trailer that starts "koly"; it has to be converted first.
+public enum DiscImageFile {
+    /// Names that may hold a disc image.
+    public static let extensions: Set<String> = ["iso", "cdr", "img", "dmg"]
+
+    public enum Kind: Sendable, Equatable {
+        /// The disc's blocks, ready to burn.
+        case raw(blocks: Int)
+        /// A UDIF image, to convert with `hdiutil convert -format UDTO` before burning.
+        case appleDiskImage
+        /// Not a whole number of 2,048-byte blocks, so not a data disc's image.
+        case notBlockAligned(bytes: Int64)
+    }
+
+    public static func hasImageExtension(_ url: URL) -> Bool {
+        extensions.contains(url.pathExtension.lowercased())
+    }
+
+    /// Reads the file's size and its last 512 bytes.
+    public static func inspect(_ url: URL) throws -> Kind {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        let size = try handle.seekToEnd()
+        if size >= 512 {
+            try handle.seek(toOffset: size - 512)
+            if try handle.readBytes(4) == Array("koly".utf8) { return .appleDiskImage }
+        }
+        guard size > 0, size % UInt64(MMC.blockSize) == 0 else { return .notBlockAligned(bytes: Int64(size)) }
+        return .raw(blocks: Int(size / UInt64(MMC.blockSize)))
+    }
+}
