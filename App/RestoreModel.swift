@@ -39,10 +39,14 @@ final class RestoreModel {
             Task { await refresh() }
         }
     }
-    /// Starts restoring a disc of a set as soon as it's inserted, if it isn't in yet.
+    /// Starts restoring a disc of a set as soon as it's inserted, if it isn't in yet, while the
+    /// Restore view is showing.
     var startsOnInsert: Bool {
         didSet { UserDefaults.standard.set(startsOnInsert, forKey: "restoreStartsOnInsert") }
     }
+    /// Whether the Restore view is the one showing. A set's disc inserted while the Burn or Verify
+    /// view is open is left alone, so inserting one to check it doesn't start a whole restore.
+    var isShowing = false
     /// Ejects each disc once it's restored, ready for the next.
     var ejectsWhenDone: Bool {
         didSet { UserDefaults.standard.set(ejectsWhenDone, forKey: "restoreEjectsWhenDone") }
@@ -97,9 +101,10 @@ final class RestoreModel {
         sets = progress
     }
 
-    /// Restores the first inserted disc of a set that isn't in the destination yet.
+    /// Restores the first inserted disc of a set that isn't in the destination yet. Switching to
+    /// the Restore view doesn't call this, so a disc already in the drive waits for its button.
     private func startNextIfWanted() {
-        guard startsOnInsert, destination != nil, !isBusy else { return }
+        guard isShowing, startsOnInsert, destination != nil, !isBusy else { return }
         if let next = discs.first(where: { $0.set != nil && !isRestored($0) }) {
             restore(next)
         }

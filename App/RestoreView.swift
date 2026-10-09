@@ -143,7 +143,7 @@ struct RestoreView: View {
             status
             Spacer()
             Toggle("Start when a disc is inserted", isOn: $model.startsOnInsert)
-                .help("Restores each disc of a set as soon as it's inserted, if it isn't in the folder yet")
+                .help("While this view is open, restores each disc of a set as soon as it's inserted, if it isn't in the folder yet")
             Toggle("Eject when done", isOn: $model.ejectsWhenDone)
             if model.isBusy {
                 Button("Stop") { model.cancel() }

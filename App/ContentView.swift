@@ -56,6 +56,10 @@ struct ContentView: View {
         .onChange(of: model.discVolume, initial: true) { _, volume in
             verifier.prefer(model.discHasChecksums ? volume?.url : nil)
         }
+        // Restore starts discs on insert only while its view is open.
+        .onChange(of: mode, initial: true) { _, mode in
+            restorer.isShowing = mode == .restore
+        }
     }
 }
 
