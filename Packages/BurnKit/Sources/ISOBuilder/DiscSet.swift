@@ -127,6 +127,39 @@ public struct DiscSetPlan: Sendable, Codable {
         return discs.flatMap(\.pieces).compactMap { $0.chain.first?.source }.filter { seen.insert($0).inserted }
     }
 
+    /// A file a disc needs that isn't as the plan has it.
+    public struct FileProblem: Sendable, Hashable {
+        /// The whole file's path on the disc.
+        public let path: String
+        /// True when it's gone, false when it's there but a different size.
+        public let isMissing: Bool
+
+        public var name: String { path.split(separator: "/").last.map(String.init) ?? path }
+    }
+
+    /// Files and empty folders the given discs need that are gone, or files that are a different
+    /// size. Reads only each file's details, never its contents, so it can run every few seconds.
+    public func fileProblems(onDiscs numbers: ClosedRange<Int>) -> [FileProblem] {
+        var seen = Set<String>()
+        var problems: [FileProblem] = []
+        for disc in discs where numbers.contains(disc.number) {
+            for piece in disc.pieces where seen.insert(piece.path).inserted {
+                let leaf = piece.chain[piece.chain.count - 1]
+                // Not URL.resourceValues: it caches, and these URLs are asked again and again.
+                guard let source = leaf.source,
+                      let attributes = try? FileManager.default.attributesOfItem(atPath: source.path),
+                      (attributes[.type] as? FileAttributeType == .typeDirectory) == leaf.isDirectory else {
+                    problems.append(FileProblem(path: piece.path, isMissing: true))
+                    continue
+                }
+                if !leaf.isDirectory, (attributes[.size] as? NSNumber)?.uint64Value != leaf.size {
+                    problems.append(FileProblem(path: piece.path, isMissing: false))
+                }
+            }
+        }
+        return problems
+    }
+
     /// Plans a set: `urls` are the files and folders to burn, in order, each at the top level.
     public static func make(urls: [URL], name: String, discSize: DiscSize, includesUDF: Bool = true,
                             recoveryPercent: Int = 10, applicationName: String = "Burn",

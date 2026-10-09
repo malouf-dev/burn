@@ -81,7 +81,7 @@ struct BurnView: View {
             fileList
             if let set = model.discSet, let disc = model.nextSetDisc {
                 Divider()
-                DiscSetBanner(set: set, disc: disc) { model.cancelDiscSet() }
+                DiscSetBanner(set: set, disc: disc, problem: model.setFileProblemDetail) { model.cancelDiscSet() }
             }
             Divider()
             footer

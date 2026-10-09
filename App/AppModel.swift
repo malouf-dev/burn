@@ -137,6 +137,7 @@ final class AppModel {
 
     func refresh() async {
         guard activity == .idle else { return }
+        await checkSetFiles()
         if isDemo {
             if engines.isEmpty {
                 let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 2_295_104))
@@ -272,6 +273,35 @@ final class AppModel {
         discSet.map { $0.discs[setDiscNumber - 1] }
     }
 
+    /// Files the set's next disc needs that are gone or a different size. Checked each time the
+    /// drive is polled, so plugging a drive back in clears them.
+    private(set) var setFileProblems: [DiscSetPlan.FileProblem] = []
+
+    /// What's wrong with the next disc's files, naming the first, for the set's banner.
+    var setFileProblemDetail: String? {
+        guard let problem = setFileProblems.first else { return nil }
+        let more = setFileProblems.count - 1
+        if more > 0 {
+            return String(localized: "“\(problem.name)” and \(more) more are missing or have changed. Check the drive they're on is connected.")
+        }
+        return problem.isMissing
+            ? String(localized: "“\(problem.name)” is missing. Check the drive it's on is connected.")
+            : String(localized: "“\(problem.name)” has changed since the set was planned.")
+    }
+
+    /// Checks the next disc's files off the main thread: they may be on a NAS.
+    private func checkSetFiles() async {
+        guard let set = discSet else {
+            setFileProblems = []
+            return
+        }
+        let number = setDiscNumber
+        let problems = await Task.detached(priority: .utility) { set.fileProblems(onDiscs: number...number) }.value
+        // The set may have moved on while the files were checked.
+        guard discSet?.id == set.id, setDiscNumber == number else { return }
+        setFileProblems = problems
+    }
+
     /// True when the files are more than the blank disc holds, or more than a 25 GB Blu-ray
     /// when there isn't one, so it's worth offering to split them across discs.
     var canSplitAcrossDiscs: Bool {
@@ -354,8 +384,7 @@ final class AppModel {
     }
 
     /// Brings back the set that was in progress when the app last quit or crashed, with its files
-    /// listed again. The files aren't checked here: with recovery data on, a missing file stops the
-    /// burn while that's made, before the disc is touched.
+    /// listed again. Its files are checked each time the drive is polled, as for any set.
     private func loadDiscSet() {
         guard !isDemo, let url = Self.savedSetURL, let data = try? Data(contentsOf: url) else { return }
         do {
@@ -442,6 +471,16 @@ final class AppModel {
     /// Why Burn is disabled, in a few words, or nil when it's ready.
     var burnBlocker: String? {
         guard hasDrive else { return String(localized: "Connect a disc burner.") }
+        // Before the disc, so a missing file shows while there's no blank in the drive yet. The
+        // set's banner names the file.
+        if discSet != nil, let problem = setFileProblems.first {
+            if setFileProblems.count > 1 {
+                return String(localized: "\(setFileProblems.count) files this disc needs are missing or have changed.")
+            }
+            return problem.isMissing
+                ? String(localized: "A file this disc needs is missing.")
+                : String(localized: "A file this disc needs has changed.")
+        }
         switch driveState {
         case nil, .becomingReady?:
             return String(localized: "Reading the disc…")

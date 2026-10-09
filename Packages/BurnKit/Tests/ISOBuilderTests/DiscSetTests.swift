@@ -141,6 +141,36 @@ struct DiscSetTests {
         #expect(try FolderComparison.compare(original: show, copy: destination.appendingPathComponent("Show")).isIdentical)
     }
 
+    @Test func aSetFindsFilesThatAreGoneOrChanged() throws {
+        let (show, _) = try makeShow()
+        let plan = try plan(show)
+        let all = 1...plan.discs.count
+        #expect(plan.fileProblems(onDiscs: all).isEmpty)
+
+        let gone = "Show/Season 2/notes.txt"
+        let changed = "Show/Season 1/E1.bin"
+        let folder = "Show/Extras"
+        let base = show.deletingLastPathComponent()
+        try FileManager.default.removeItem(at: base.appendingPathComponent(gone))
+        try FileManager.default.removeItem(at: base.appendingPathComponent(folder))
+        let handle = try FileHandle(forWritingTo: base.appendingPathComponent(changed))
+        try handle.seekToEnd()
+        try handle.write(contentsOf: Data([0]))
+        try handle.close()
+
+        let problems = plan.fileProblems(onDiscs: all)
+        #expect(Set(problems) == [DiscSetPlan.FileProblem(path: gone, isMissing: true),
+                                  DiscSetPlan.FileProblem(path: folder, isMissing: true),
+                                  DiscSetPlan.FileProblem(path: changed, isMissing: false)])
+        // Each file counts once, even when it is cut across two discs, and only the discs asked
+        // about are checked.
+        #expect(problems.count == 3)
+        for disc in plan.discs {
+            let expected = Set(disc.pieces.map(\.path)).intersection([gone, folder, changed])
+            #expect(Set(plan.fileProblems(onDiscs: disc.number...disc.number).map(\.path)) == expected)
+        }
+    }
+
     @Test func aSavedSetMustNameOneOfItsDiscs() throws {
         let (show, _) = try makeShow()
         let plan = try plan(show)

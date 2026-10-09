@@ -155,10 +155,12 @@ private struct DiscPlanRow: View {
     }
 }
 
-/// Shown under the files while a set is being burned: which disc is next.
+/// Shown under the files while a set is being burned: which disc is next, and any of its files
+/// that are missing.
 struct DiscSetBanner: View {
     let set: DiscSetPlan
     let disc: DiscSetPlan.Disc
+    let problem: String?
     let cancel: () -> Void
 
     var body: some View {
@@ -172,6 +174,13 @@ struct DiscSetBanner: View {
                 Text(detail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if let problem {
+                    Label(problem, systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                }
             }
             Spacer()
             Button("Stop Set", action: cancel)
