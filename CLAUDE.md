@@ -11,4 +11,4 @@
 - Ask for logs by full path, such as `--log ~/Desktop/burn.log`. The app writes a log for each run to `~/Library/Logs/Burn/` as it goes and keeps the last five, so a crash or hang still leaves one; the Log panel's Show Log Files button opens it.
 - Engine logic must be testable with the simulated drive in `MMCSimulator`. When a hardware test fails, add a simulator test that reproduces it before fixing.
 - Hardware tests need the owner's Mac. Record results in docs/hardware-testing.md.
-- Commit to `main`. Keep each commit to one behaviour, and push only once CI would pass.
+- Work on the `development` branch. Keep each commit to one behaviour, and push only once CI would pass. Fast-forward `main` to `development` once CI passes on macOS.
