@@ -1,7 +1,7 @@
 import Foundation
 
 /// A disc size to plan a disc set with (decision D16).
-public struct DiscSize: Sendable, Hashable, Identifiable {
+public struct DiscSize: Sendable, Hashable, Identifiable, Codable {
     public let name: String
     public let blocks: Int
 
@@ -51,10 +51,10 @@ public enum DiscSetError: Error, Sendable, Equatable, CustomStringConvertible {
 /// `name.part1`, `name.part2` and so on, and rejoin with `cat`. Each disc is readable on its own,
 /// with its own checksums and recovery data, and its `.burn` folder also holds `set.json`, which
 /// lists the whole set, and `restore.sh` and `README.txt` for restoring without Burn.
-public struct DiscSetPlan: Sendable {
+public struct DiscSetPlan: Sendable, Codable {
     /// A file, an empty folder, or part of a file, on one disc.
-    public struct Piece: Sendable, Hashable {
-        struct Entry: Sendable, Hashable {
+    public struct Piece: Sendable, Hashable, Codable {
+        struct Entry: Sendable, Hashable, Codable {
             let name: String
             let source: URL?
             let date: Date
@@ -91,7 +91,7 @@ public struct DiscSetPlan: Sendable {
         var nameOnDisc: String { part.map { "\(name).part\($0)" } ?? name }
     }
 
-    public struct Disc: Sendable {
+    public struct Disc: Sendable, Codable {
         public let number: Int
         public let pieces: [Piece]
         /// The image's size in blocks.
@@ -119,6 +119,12 @@ public struct DiscSetPlan: Sendable {
     /// The smallest standard disc the last disc fits on.
     public var lastDiscSize: DiscSize? {
         DiscSize.smallest(holding: discs.last?.blocks ?? 0)
+    }
+
+    /// The files and folders the set was planned from, in order.
+    public var sources: [URL] {
+        var seen = Set<URL>()
+        return discs.flatMap(\.pieces).compactMap { $0.chain.first?.source }.filter { seen.insert($0).inserted }
     }
 
     /// Plans a set: `urls` are the files and folders to burn, in order, each at the top level.
@@ -430,6 +436,32 @@ public struct DiscSetPlan: Sendable {
             """
         }
         return text
+    }
+}
+
+/// A set part way through, kept on the Mac so it carries on after the app quits or crashes. The
+/// plan comes back exactly as it was, with its id and dates, so the discs still to burn belong to
+/// the same set as those already burned.
+public struct SavedDiscSet: Codable, Sendable {
+    public let plan: DiscSetPlan
+    /// The disc to burn next, from 1.
+    public let nextDisc: Int
+
+    public init(plan: DiscSetPlan, nextDisc: Int) {
+        self.plan = plan
+        self.nextDisc = nextDisc
+    }
+
+    /// Reads a saved set, refusing one whose next disc isn't in its plan.
+    public init(data: Data) throws {
+        self = try JSONDecoder().decode(Self.self, from: data)
+        guard plan.discs.indices.contains(nextDisc - 1) else {
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Disc \(nextDisc) isn't in the set"))
+        }
+    }
+
+    public func encoded() throws -> Data {
+        try JSONEncoder().encode(self)
     }
 }
 

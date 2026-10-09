@@ -99,6 +99,55 @@ struct DiscSetTests {
         #expect(try FolderComparison.compare(original: show, copy: destination.appendingPathComponent("Show")).isIdentical)
     }
 
+    @Test func aSavedSetCarriesOnAsTheSameSet() throws {
+        let (show, expected) = try makeShow()
+        let plan = try plan(show)
+        #expect(plan.discs.count >= 3)
+        let base = show.deletingLastPathComponent()
+        // Disc 1 is burned, then the app quits and reads back the set it saved.
+        let saved = try SavedDiscSet(data: SavedDiscSet(plan: plan, nextDisc: 2).encoded())
+        #expect(saved.nextDisc == 2)
+        #expect(saved.plan.id == plan.id)
+        #expect(saved.plan.created == plan.created)
+        // Every piece, with its source, offset and file dates, exactly as planned.
+        #expect(saved.plan.discs.map(\.pieces) == plan.discs.map(\.pieces))
+        #expect(saved.plan.sources == [show])
+
+        // Every disc made from the saved plan holds the same files as the original, given the same
+        // burn date: same parts, same checksums and recovery data, and set.json with the same set id.
+        // The images themselves differ only in the root folder's time, taken when each is made.
+        let burnDate = Date(timeIntervalSince1970: 1_790_100_000)
+        var discs: [[String: [UInt8]]] = []
+        for disc in plan.discs {
+            let before = base.appendingPathComponent("before\(disc.number).iso")
+            let after = base.appendingPathComponent("after\(disc.number).iso")
+            _ = try plan.builder(forDisc: disc.number).write(to: before, date: burnDate)
+            _ = try saved.plan.builder(forDisc: disc.number).write(to: after, date: burnDate)
+            let files = (before: try UDFReader(url: before).files(), after: try UDFReader(url: after).files())
+            #expect(files.before == files.after, "disc \(disc.number)")
+            // Disc 1 from before the quit, the rest from after.
+            discs.append(disc.number < saved.nextDisc ? files.before : files.after)
+        }
+
+        let destination = base.appendingPathComponent("Restored by Burn")
+        for (index, files) in discs.enumerated() {
+            let root = try materialize(files, at: base.appendingPathComponent("mounted\(index + 1)"))
+            #expect(try DiscRestore.restore(root: root, into: destination).isComplete)
+        }
+        #expect(DiscRestore.progress(in: destination).first?.isComplete == true)
+        for (path, bytes) in expected {
+            #expect([UInt8](try Data(contentsOf: destination.appendingPathComponent(path))) == bytes, "\(path)")
+        }
+        #expect(try FolderComparison.compare(original: show, copy: destination.appendingPathComponent("Show")).isIdentical)
+    }
+
+    @Test func aSavedSetMustNameOneOfItsDiscs() throws {
+        let (show, _) = try makeShow()
+        let plan = try plan(show)
+        let data = try SavedDiscSet(plan: plan, nextDisc: plan.discs.count + 1).encoded()
+        #expect(throws: DecodingError.self) { try SavedDiscSet(data: data) }
+    }
+
     @Test func restoreRepairsDamageOnTheWay() throws {
         let (show, expected) = try makeShow()
         let plan = try plan(show)

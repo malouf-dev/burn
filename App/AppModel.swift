@@ -122,6 +122,7 @@ final class AppModel {
                                                    object: nil, queue: nil) { _ in
             SessionLog.events.note("Quitting, peak memory \(SessionLog.peakMemory)")
         }
+        loadDiscSet()
         Task { await self.pollDrives() }
     }
 
@@ -319,12 +320,57 @@ final class AppModel {
         includeChecksums = true
         SessionLog.events.note("Disc set planned: \"\(plan.name)\", \(plan.discs.count) discs of \(plan.discSize.name), "
             + "last \(plan.discs.last?.blocks ?? 0) blocks")
+        saveDiscSet()
     }
 
     func cancelDiscSet() {
         guard discSet != nil else { return }
         discSet = nil
         setDiscNumber = 1
+        saveDiscSet()
+    }
+
+    /// Where the set in progress is kept, so it carries on after the app quits or crashes.
+    private static var savedSetURL: URL? {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("Burn", isDirectory: true)
+            .appendingPathComponent("Disc set.json")
+    }
+
+    /// Keeps the set in progress on disk, or removes it once there's none. Called whenever the set
+    /// or its next disc changes, so a crash loses nothing. The simulated drive leaves it alone.
+    private func saveDiscSet() {
+        guard !isDemo, let url = Self.savedSetURL else { return }
+        do {
+            if let discSet {
+                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try SavedDiscSet(plan: discSet, nextDisc: setDiscNumber).encoded().write(to: url, options: .atomic)
+            } else if FileManager.default.fileExists(atPath: url.path) {
+                try FileManager.default.removeItem(at: url)
+            }
+        } catch {
+            SessionLog.events.note("Couldn't save the disc set: \(error)")
+        }
+    }
+
+    /// Brings back the set that was in progress when the app last quit or crashed, with its files
+    /// listed again. The files aren't checked here: with recovery data on, a missing file stops the
+    /// burn while that's made, before the disc is touched.
+    private func loadDiscSet() {
+        guard !isDemo, let url = Self.savedSetURL, let data = try? Data(contentsOf: url) else { return }
+        do {
+            let saved = try SavedDiscSet(data: data)
+            add(saved.plan.sources)
+            discName = saved.plan.name
+            includeChecksums = true
+            includeRecovery = saved.plan.recoveryPercent > 0
+            discSet = saved.plan
+            setDiscNumber = saved.nextDisc
+            SessionLog.events.note("Disc set carried on from the last run: \"\(saved.plan.name)\", "
+                + "disc \(saved.nextDisc) of \(saved.plan.discs.count) next")
+        } catch {
+            SessionLog.events.note("Couldn't read the saved disc set at \(url.path): \(error)")
+        }
     }
 
     private var appVersion: String {
@@ -499,6 +545,7 @@ final class AppModel {
                         setDiscNumber = 1
                         detail += " " + String(localized: "That was the last disc: the set is complete.")
                     }
+                    saveDiscSet()
                 }
                 finish(Outcome(succeeded: true, title: title, detail: detail), log: engine.log)
             } catch DriveError.cancelled, is CancellationError {
