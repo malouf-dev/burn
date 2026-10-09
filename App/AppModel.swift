@@ -107,6 +107,9 @@ final class AppModel {
     private(set) var discVolume: IOKitTransport.MountedVolume?
     /// True when that volume carries a `.burn` checksum folder to check in Verify.
     private(set) var discHasChecksums = false
+    /// The set that volume's disc belongs to, when it's from one. With no set in progress, the
+    /// set is taken to be finished unless the user carries it on.
+    private(set) var discSetInfo: DiscSetInfo?
     private var transports: [UInt64: IOKitTransport] = [:]
     private(set) var lastLog = ""
 
@@ -182,14 +185,17 @@ final class AppModel {
             // Off the main thread: macOS may stop the read to ask for permission, and the window
             // must not freeze while it waits.
             let volume = transport.mountedVolume()
-            let hasChecksums = await Task.detached {
-                volume.map { ChecksumVerifier.hasChecksums(at: $0.url) } ?? false
+            let (hasChecksums, setInfo) = await Task.detached {
+                (volume.map { ChecksumVerifier.hasChecksums(at: $0.url) } ?? false,
+                 volume.flatMap { DiscRestore.setInfo(at: $0.url) })
             }.value
             discHasChecksums = hasChecksums
+            discSetInfo = setInfo
             discVolume = volume
         } else {
             discVolume = nil
             discHasChecksums = false
+            discSetInfo = nil
         }
     }
 
@@ -279,8 +285,13 @@ final class AppModel {
 
     /// What's wrong with the next disc's files, naming the first, for the set's banner.
     var setFileProblemDetail: String? {
-        guard let problem = setFileProblems.first else { return nil }
-        let more = setFileProblems.count - 1
+        Self.describe(setFileProblems)
+    }
+
+    /// Names the first of a set's file problems, and says how many more there are.
+    static func describe(_ problems: [DiscSetPlan.FileProblem]) -> String? {
+        guard let problem = problems.first else { return nil }
+        let more = problems.count - 1
         if more > 0 {
             return String(localized: "“\(problem.name)” and \(more) more are missing or have changed. Check the drive they're on is connected.")
         }
@@ -389,17 +400,44 @@ final class AppModel {
         guard !isDemo, let url = Self.savedSetURL, let data = try? Data(contentsOf: url) else { return }
         do {
             let saved = try SavedDiscSet(data: data)
-            add(saved.plan.sources)
-            discName = saved.plan.name
-            includeChecksums = true
-            includeRecovery = saved.plan.recoveryPercent > 0
-            discSet = saved.plan
-            setDiscNumber = saved.nextDisc
+            resume(saved.plan, at: saved.nextDisc)
             SessionLog.events.note("Disc set carried on from the last run: \"\(saved.plan.name)\", "
-                + "disc \(saved.nextDisc) of \(saved.plan.discs.count) next")
+                + "disc \(saved.nextDisc) of \(saved.plan.discs.count) next, \(saved.plan.discs[saved.nextDisc - 1].blocks) blocks")
         } catch {
             SessionLog.events.note("Couldn't read the saved disc set at \(url.path): \(error)")
         }
+    }
+
+    /// Makes the set of the disc in the drive again, finding its files under `folder`. Reads the
+    /// disc and every file's details, so it runs off the main thread.
+    func remakeDiscSet(files folder: URL) async throws -> DiscSetPlan {
+        guard let root = discVolume?.url else { throw DiscSetError.notASet }
+        return try await Task.detached(priority: .userInitiated) {
+            try DiscSetPlan.remake(fromDiscAt: root, files: folder)
+        }.value
+    }
+
+    /// Carries on with a set made again from one of its discs, at the disc chosen, then ejects
+    /// that disc so a blank can go in.
+    func continueDiscSet(_ plan: DiscSetPlan, at number: Int) {
+        resume(plan, at: number)
+        SessionLog.events.note("Disc set carried on from a disc of it: \"\(plan.name)\", "
+            + "disc \(number) of \(plan.discs.count) next, \(plan.discs[number - 1].blocks) blocks")
+        saveDiscSet()
+        eject()
+    }
+
+    /// Makes a set the one in progress at disc `number`, with its files listed again in place of
+    /// whatever was in the list.
+    private func resume(_ plan: DiscSetPlan, at number: Int) {
+        items = []
+        add(plan.sources)
+        discName = plan.name
+        includeChecksums = true
+        includeRecovery = plan.recoveryPercent > 0
+        discSet = plan
+        setDiscNumber = number
+        setFileProblems = []
     }
 
     private var appVersion: String {
@@ -485,6 +523,9 @@ final class AppModel {
         case nil, .becomingReady?:
             return String(localized: "Reading the disc…")
         case .noDisc?:
+            if let set = discSet {
+                return String(localized: "Insert a blank disc for disc \(setDiscNumber) of \(set.discs.count).")
+            }
             return String(localized: "Insert a blank disc.")
         case .disc(let disc)?:
             switch disc.writability {

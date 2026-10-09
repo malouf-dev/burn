@@ -141,6 +141,65 @@ struct DiscSetTests {
         #expect(try FolderComparison.compare(original: show, copy: destination.appendingPathComponent("Show")).isIdentical)
     }
 
+    @Test func aSetCarriesOnFromAnyOfItsDiscs() throws {
+        let (show, expected) = try makeShow()
+        let plan = try plan(show)
+        #expect(plan.discs.count >= 3)
+        let base = show.deletingLastPathComponent()
+        let burnDate = Date(timeIntervalSince1970: 1_790_100_000)
+        // The app lost the set after disc 1. Disc 1 is the only image from the original plan.
+        let firstImage = base.appendingPathComponent("disc1.iso")
+        _ = try plan.builder(forDisc: 1).write(to: firstImage, date: burnDate)
+        var discs = [try UDFReader(url: firstImage).files()]
+        let mounted = try materialize(discs[0], at: base.appendingPathComponent("mounted1"))
+
+        // Any disc gives back the whole plan, choosing the set's folder or the one holding it.
+        for folder in [show, base] {
+            let remade = try DiscSetPlan.remake(fromDiscAt: mounted, files: folder)
+            #expect(remade.id == plan.id)
+            #expect(remade.name == plan.name)
+            #expect(remade.created == plan.created)
+            #expect(remade.recoveryPercent == plan.recoveryPercent)
+            #expect(remade.applicationName == plan.applicationName)
+            #expect(remade.discs.map(\.blocks) == plan.discs.map(\.blocks))
+            #expect(remade.discs.map { $0.pieces.map(\.discPath) } == plan.discs.map { $0.pieces.map(\.discPath) })
+            #expect(remade.sources.map(\.standardizedFileURL.path) == [show.standardizedFileURL.path])
+            #expect(remade.fileProblems(onDiscs: 1...remade.discs.count).isEmpty)
+        }
+
+        // Discs 2 on, made from the remade plan, hold the same files the original plan would have.
+        let remade = try DiscSetPlan.remake(fromDiscAt: mounted, files: show)
+        for disc in plan.discs.dropFirst() {
+            let before = base.appendingPathComponent("before\(disc.number).iso")
+            let after = base.appendingPathComponent("after\(disc.number).iso")
+            _ = try plan.builder(forDisc: disc.number).write(to: before, date: burnDate)
+            _ = try remade.builder(forDisc: disc.number).write(to: after, date: burnDate)
+            let files = try UDFReader(url: after).files()
+            #expect(try UDFReader(url: before).files() == files, "disc \(disc.number)")
+            discs.append(files)
+        }
+
+        // And the whole set restores, disc 1 from before and the rest from after.
+        let destination = base.appendingPathComponent("Restored by Burn")
+        for (index, files) in discs.enumerated() {
+            let root = index == 0 ? mounted : try materialize(files, at: base.appendingPathComponent("mounted\(index + 1)"))
+            #expect(try DiscRestore.restore(root: root, into: destination).isComplete)
+        }
+        for (path, bytes) in expected {
+            #expect([UInt8](try Data(contentsOf: destination.appendingPathComponent(path))) == bytes, "\(path)")
+        }
+        #expect(try FolderComparison.compare(original: show, copy: destination.appendingPathComponent("Show")).isIdentical)
+
+        // The disc in the drive may be any of them.
+        let last = try materialize(discs[discs.count - 1], at: base.appendingPathComponent("last"))
+        #expect(try DiscSetPlan.remake(fromDiscAt: last, files: show).id == plan.id)
+    }
+
+    @Test func onlyADiscFromASetCarriesOn() throws {
+        let (show, _) = try makeShow()
+        #expect(throws: DiscSetError.notASet) { try DiscSetPlan.remake(fromDiscAt: show, files: show) }
+    }
+
     @Test func aSetFindsFilesThatAreGoneOrChanged() throws {
         let (show, _) = try makeShow()
         let plan = try plan(show)

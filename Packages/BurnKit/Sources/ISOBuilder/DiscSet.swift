@@ -35,11 +35,17 @@ public enum DiscSetError: Error, Sendable, Equatable, CustomStringConvertible {
     case nothingToBurn
     /// Not even the disc's own structures and one part of a file fit.
     case discTooSmall
+    /// The disc has no readable `.burn/set.json`.
+    case notASet
+    /// The plan made from a disc's `set.json` doesn't give back that same `set.json`.
+    case setDoesNotMatch
 
     public var description: String {
         switch self {
         case .nothingToBurn: return "There's nothing to burn."
         case .discTooSmall: return "That disc is too small to hold any of these files."
+        case .notASet: return "This disc isn't part of a set."
+        case .setDoesNotMatch: return "The set couldn't be made again exactly as this disc describes it."
         }
     }
 }
@@ -204,6 +210,72 @@ public struct DiscSetPlan: Sendable, Codable {
             }
             reserve *= 4
         }
+    }
+
+    /// Makes again the plan of the set a burned disc belongs to, so the set can carry on after the
+    /// app has lost it. `set.json` on any disc lists every disc and what it holds, and `info.json`
+    /// says how much recovery data the set has. The files are found under `folder`: the set's own
+    /// top folder, or the folder holding it. The plan keeps the set's id, name, date and pieces,
+    /// so the discs still to burn belong to the same set. A file that isn't found stays in the
+    /// plan for `fileProblems(onDiscs:)` to name. Every disc made by the app has UDF, so this plan
+    /// does too.
+    public static func remake(fromDiscAt root: URL, files folder: URL) throws -> DiscSetPlan {
+        let burn = root.appendingPathComponent(DiscChecksums.folderName)
+        let setFile = burn.appendingPathComponent("set.json")
+        guard let onDisc = try? Data(contentsOf: setFile),
+              let manifest = try? JSONDecoder().decode(DiscSetManifest.self, from: onDisc),
+              let id = UUID(uuidString: manifest.id) else { throw DiscSetError.notASet }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        guard let created = formatter.date(from: manifest.created) else { throw DiscSetError.notASet }
+        // "PAR2, 10%", or nothing when the disc has no recovery data.
+        let info = (try? Data(contentsOf: burn.appendingPathComponent(DiscChecksums.infoName)))
+            .flatMap { try? JSONDecoder().decode(DiscInfo.self, from: $0) }
+        let recoveryPercent = info?.recovery.flatMap { Int($0.split(separator: " ").last?.dropLast() ?? "") } ?? 0
+
+        let tops = Set(manifest.discs.flatMap(\.files).compactMap { $0.path.split(separator: "/").first.map(String.init) })
+        let base = tops.contains(folder.lastPathComponent.precomposedStringWithCanonicalMapping)
+            ? folder.deletingLastPathComponent() : folder
+        // A file's date as it is now, which is when it was planned unless it has changed since.
+        func entry(_ url: URL, name: String, isDirectory: Bool, size: UInt64) -> Piece.Entry {
+            let date = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
+            return Piece.Entry(name: name, source: url, date: date ?? created, isDirectory: isDirectory, size: size)
+        }
+        let discs = manifest.discs.sorted { $0.number < $1.number }.map { disc in
+            let pieces = disc.files.map { file -> Piece in
+                let names = file.path.split(separator: "/").map(String.init)
+                var url = base
+                var chain: [Piece.Entry] = []
+                for (index, name) in names.enumerated() {
+                    let isFile = index == names.count - 1 && file.folder != true
+                    url = url.appendingPathComponent(name, isDirectory: !isFile)
+                    chain.append(entry(url, name: name, isDirectory: !isFile, size: isFile ? file.size ?? 0 : 0))
+                }
+                if let part = file.part, let offset = file.offset, let length = file.length {
+                    return Piece(chain: chain, offset: offset, length: length, part: part)
+                }
+                return Piece(chain: chain, offset: 0, length: chain[chain.count - 1].size, part: nil)
+            }
+            return Disc(number: disc.number, pieces: pieces, blocks: 0)
+        }
+
+        func plan(_ discs: [Disc], size: DiscSize) -> DiscSetPlan {
+            DiscSetPlan(name: manifest.name, discSize: size, discs: discs, id: id, created: created,
+                        includesUDF: true, recoveryPercent: recoveryPercent, applicationName: manifest.application)
+        }
+        let standard = DiscSize.standard.first { $0.name == manifest.discSize }
+        let draft = plan(discs, size: standard ?? DiscSize(name: manifest.discSize, blocks: 0))
+        let sized = draft.discs.map { disc in
+            Disc(number: disc.number, pieces: disc.pieces, blocks: draft.builder(forDisc: disc.number).blockCount())
+        }
+        // A size that isn't standard was the blank disc's own, which the fullest disc fills.
+        let remade = plan(sized, size: standard ?? DiscSize(name: manifest.discSize, blocks: sized.map(\.blocks).max() ?? 0))
+        // The new plan must describe the set exactly as the disc does.
+        guard remade.discs.indices.contains(manifest.thisDisc - 1),
+              Data(remade.manifest(forDisc: manifest.thisDisc).encoded()) == onDisc else {
+            throw DiscSetError.setDoesNotMatch
+        }
+        return remade
     }
 
     /// Puts the files on discs. Each disc takes as many whole files as fit, then as much of the

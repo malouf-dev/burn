@@ -1,3 +1,4 @@
+import ISOBuilder
 import MMC
 import SwiftUI
 import UniformTypeIdentifiers
@@ -70,6 +71,8 @@ struct BurnView: View {
     @State private var showingImporter = false
     @State private var showingBurnSheet = false
     @State private var showingSetSheet = false
+    /// The set being carried on from the disc in the drive, while its sheet is open.
+    @State private var continuing: DiscSetInfo?
     @State private var confirmingErase = false
     @State private var confirmingCancel = false
 
@@ -82,6 +85,9 @@ struct BurnView: View {
             if let set = model.discSet, let disc = model.nextSetDisc {
                 Divider()
                 DiscSetBanner(set: set, disc: disc, problem: model.setFileProblemDetail) { model.cancelDiscSet() }
+            } else if let info = model.discSetInfo {
+                Divider()
+                ContinueSetBanner(info: info) { continuing = info }
             }
             Divider()
             footer
@@ -99,6 +105,11 @@ struct BurnView: View {
         }
         .sheet(isPresented: $showingSetSheet) {
             DiscSetSheet(model: model)
+        }
+        .sheet(isPresented: Binding(get: { continuing != nil }, set: { if !$0 { continuing = nil } })) {
+            if let continuing {
+                ContinueSetSheet(model: model, info: continuing)
+            }
         }
         .sheet(isPresented: .constant(model.activity != .idle)) {
             ProgressSheet(model: model, confirmingCancel: $confirmingCancel)
