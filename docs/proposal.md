@@ -277,7 +277,7 @@ About 6 to 10 weeks of focused work, most of it hardware testing. Confidence is 
 
 - `main` holds the new app. It shares no history with `legacy`.
 - `legacy` holds Burn. Read it with `git show legacy:burn/Source/KWBurner.m`.
-- New work is committed to `main`. If a session starts on a generated branch, merge it into `main` and delete it.
+- New work is committed to `development`, one behaviour per commit. `main` is fast-forwarded to it once CI passes on macOS. If a session starts on a generated branch, move its work to `development` and delete it.
 
 ### 10.2 CI
 
