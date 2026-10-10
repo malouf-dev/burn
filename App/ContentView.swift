@@ -84,7 +84,7 @@ struct BurnView: View {
             fileList
             if let set = model.discSet, let disc = model.nextSetDisc {
                 Divider()
-                DiscSetBanner(set: set, disc: disc, problem: model.setFileProblemDetail) { model.cancelDiscSet() }
+                DiscSetBanner(set: set, disc: disc, problem: model.setFileProblemDetail) { model.requestStopSet() }
             } else if let info = model.discSetInfo {
                 Divider()
                 ContinueSetBanner(info: info) { continuing = info }
@@ -114,6 +114,14 @@ struct BurnView: View {
         .sheet(isPresented: .constant(model.activity != .idle)) {
             ProgressSheet(model: model, confirmingCancel: $confirmingCancel)
         }
+        // The buttons answer; Escape picks Keep the Set. The binding only reads, so dismissing the
+        // dialog can't drop the files waiting to be added or removed.
+        .confirmationDialog(stopSetTitle, isPresented: Binding(get: { model.stopSetQuestion != nil }, set: { _ in })) {
+            Button(stopSetButton, role: .destructive) { model.answerStopSet(stop: true) }
+            Button("Keep the Set", role: .cancel) { model.answerStopSet(stop: false) }
+        } message: {
+            Text(stopSetMessage)
+        }
         .confirmationDialog("Erase this disc?", isPresented: $confirmingErase) {
             Button("Erase", role: .destructive) { model.erase() }
             Button("Cancel", role: .cancel) {}
@@ -128,6 +136,36 @@ struct BurnView: View {
         } message: { outcome in
             Text(outcome.detail)
         }
+    }
+
+    private var stopSetTitle: String {
+        guard let set = model.discSet else { return "" }
+        return String(localized: "Stop the set “\(set.name)”?")
+    }
+
+    private var stopSetButton: String {
+        switch model.stopSetQuestion {
+        case .adding?: return String(localized: "Stop Set and Add")
+        case .removing?: return String(localized: "Stop Set and Remove")
+        default: return String(localized: "Stop Set")
+        }
+    }
+
+    /// What stopping means: which discs are burned, and that the set can be carried on later.
+    private var stopSetMessage: String {
+        let burned = model.setDiscNumber - 1
+        var text: String
+        switch model.stopSetQuestion {
+        case .adding?: text = String(localized: "Adding files changes what goes on each disc, so the set stops first.") + " "
+        case .removing?: text = String(localized: "Removing files changes what goes on each disc, so the set stops first.") + " "
+        default: text = ""
+        }
+        switch burned {
+        case 0: text += String(localized: "No discs have been burned yet.")
+        case 1: text += String(localized: "Disc 1 is burned and can be restored. You can carry the set on later from it with Continue Set.")
+        default: text += String(localized: "Discs 1 to \(burned) are burned and can be restored. You can carry the set on later from any of them with Continue Set.")
+        }
+        return text
     }
 
     private var outcomeBinding: Binding<Bool> {

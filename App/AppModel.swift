@@ -224,8 +224,13 @@ final class AppModel {
 
     // MARK: - Items
 
+    /// Adds files and folders. With a set in progress, asks first, since new files stop the set.
     func add(_ urls: [URL]) {
-        cancelDiscSet()
+        guard discSet == nil else { return askToStopSet(.adding) { self.addNow(urls) } }
+        addNow(urls)
+    }
+
+    private func addNow(_ urls: [URL]) {
         for original in urls {
             // Add what an alias or symbolic link points to, not the link itself.
             let url = ((try? URL(resolvingAliasFileAt: original)) ?? original).resolvingSymlinksInPath()
@@ -258,13 +263,13 @@ final class AppModel {
     }
 
     func remove(_ ids: Set<DiscItem.ID>) {
-        cancelDiscSet()
+        guard discSet == nil else { return askToStopSet(.removing) { self.remove(ids) } }
         items.removeAll { ids.contains($0.id) }
     }
 
     /// Removes added items by URL. Rows inside an added folder can't be removed on their own.
     func remove(urls: Set<URL>) {
-        cancelDiscSet()
+        guard discSet == nil else { return askToStopSet(.removing) { self.remove(urls: urls) } }
         items.removeAll { urls.contains($0.url) }
     }
 
@@ -365,6 +370,35 @@ final class AppModel {
         saveDiscSet()
     }
 
+    /// Why stopping the set in progress is being asked about, while the question shows.
+    enum StopSetQuestion: Equatable {
+        case stopButton, adding, removing
+    }
+
+    private(set) var stopSetQuestion: StopSetQuestion?
+    private var afterStoppingSet: (() -> Void)?
+
+    /// Asks before the set in progress stops. `then` runs once the set has stopped.
+    private func askToStopSet(_ question: StopSetQuestion, then: @escaping () -> Void) {
+        stopSetQuestion = question
+        afterStoppingSet = then
+    }
+
+    /// The set banner's Stop Set button.
+    func requestStopSet() {
+        askToStopSet(.stopButton) {}
+    }
+
+    func answerStopSet(stop: Bool) {
+        let then = afterStoppingSet
+        stopSetQuestion = nil
+        afterStoppingSet = nil
+        guard stop, let set = discSet else { return }
+        SessionLog.events.note("Disc set stopped: \"\(set.name)\" at disc \(setDiscNumber) of \(set.discs.count)")
+        cancelDiscSet()
+        then?()
+    }
+
     func cancelDiscSet() {
         guard discSet != nil else { return }
         discSet = nil
@@ -432,7 +466,7 @@ final class AppModel {
     /// whatever was in the list.
     private func resume(_ plan: DiscSetPlan, at number: Int) {
         items = []
-        add(plan.sources)
+        addNow(plan.sources)
         discName = plan.name
         includeChecksums = true
         includeRecovery = plan.recoveryPercent > 0

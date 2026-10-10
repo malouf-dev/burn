@@ -184,7 +184,7 @@ struct DiscSetBanner: View {
             }
             Spacer()
             Button("Stop Set", action: cancel)
-                .help("Forget the plan. Discs already burned are complete and can be restored.")
+                .help("Forget the plan, after asking. Discs already burned can be restored, and the set carried on later with Continue Set.")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
