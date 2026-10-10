@@ -69,7 +69,7 @@ struct DiscImageTests {
         #expect(image.describe(block: 16)?.hasPrefix("disc structures") == true)
         #expect(image.describe(block: image.blockCount) == nil)
         let parts = (0..<image.blockCount).compactMap { image.describe(block: $0) }
-        #expect(parts.contains("Holiday Photos/a/b/c/d/e/deep.bin from byte 2048 of 5000"))
+        #expect(parts.contains("Holiday Photos/a/b/c/d/e/deep.bin from byte 2,048 of 5,000"))
         #expect(parts.contains { $0.hasPrefix(".burn/recovery.vol") })
     }
 

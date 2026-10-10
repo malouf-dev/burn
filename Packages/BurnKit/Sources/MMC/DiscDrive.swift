@@ -11,15 +11,59 @@ public struct WriteOptions: Sendable {
     public var eraseFirst: Bool
     /// The speed to write at, set before anything is written. Nil leaves it to the drive.
     public var writeSpeed: WriteSpeed?
+    /// How long to wait before each automatic try of a step that failed: five more tries over
+    /// about a minute, before the burn holds and asks.
+    public var retryWaits: [Duration]
+    /// Asked once a step has failed every automatic try. The burn holds the drive and the disc
+    /// until it answers. Without one, the burn stops, as burnctl's does.
+    public var whenHeld: @Sendable (HeldBurn) async -> HeldBurnChoice
+    /// Told what's being tried again while a step is retried, and nil once it works.
+    public var onRetry: @Sendable (String?) -> Void
 
     public init(simulate: Bool = false, verify: Bool = true, ejectWhenDone: Bool = false, eraseFirst: Bool = false,
-                writeSpeed: WriteSpeed? = nil) {
+                writeSpeed: WriteSpeed? = nil,
+                retryWaits: [Duration] = [.seconds(2), .seconds(5), .seconds(10), .seconds(15), .seconds(30)],
+                whenHeld: @escaping @Sendable (HeldBurn) async -> HeldBurnChoice = { _ in .abandon },
+                onRetry: @escaping @Sendable (String?) -> Void = { _ in }) {
         self.simulate = simulate
         self.verify = verify
         self.ejectWhenDone = ejectWhenDone
         self.eraseFirst = eraseFirst
         self.writeSpeed = writeSpeed
+        self.retryWaits = retryWaits
+        self.whenHeld = whenHeld
+        self.onRetry = onRetry
     }
+}
+
+/// A step of a burn that failed every automatic try. The burn holds the drive and the disc while
+/// the user decides whether to try again.
+public struct HeldBurn: Sendable, Equatable {
+    public enum Step: Sendable, Equatable {
+        case readingFiles, writing, closing, verifying
+    }
+
+    public var step: Step
+    /// What went wrong, in plain words.
+    public var problem: String
+    /// What to check before trying again.
+    public var advice: String
+    /// Tries made so far, the first included.
+    public var tries: Int
+
+    public init(step: Step, problem: String, advice: String, tries: Int) {
+        self.step = step
+        self.problem = problem
+        self.advice = advice
+        self.tries = tries
+    }
+}
+
+public enum HeldBurnChoice: Sendable {
+    /// Go round the automatic tries again.
+    case tryAgain
+    /// End the burn. The disc is settled as after any failed burn.
+    case abandon
 }
 
 public enum WritePhase: Sendable, Equatable {
@@ -348,10 +392,11 @@ public actor DiscDrive {
             let count = min(Self.transferBlocks, paddedBlocks - written)
             var data: [UInt8]
             if written + count <= imageBlocks {
-                data = try readImage(image, block: written, count: count)
+                data = try await readImage(image, block: written, count: count, step: .writing, options: options)
             } else {
                 let fromImage = max(0, imageBlocks - written)
-                data = fromImage > 0 ? try readImage(image, block: written, count: fromImage) : []
+                data = fromImage > 0
+                    ? try await readImage(image, block: written, count: fromImage, step: .writing, options: options) : []
                 data += [UInt8](repeating: 0, count: (count - fromImage) * MMC.blockSize)
             }
             if !options.simulate { discTouched = true }
@@ -392,7 +437,7 @@ public actor DiscDrive {
                     log.note("Verifying at the write speed: the drive didn't go back to its own speeds. \(error)")
                 }
             }
-            try await verify(image, startBlock: startBlock, progress: progress)
+            try await verify(image, startBlock: startBlock, options: options, progress: progress)
             verified = true
         }
 
@@ -424,7 +469,7 @@ public actor DiscDrive {
         }
     }
 
-    private func verify(_ image: any ImageSource, startBlock: UInt32,
+    private func verify(_ image: any ImageSource, startBlock: UInt32, options: WriteOptions,
                         progress: @escaping @Sendable (WriteProgress) -> Void) async throws {
         let total = image.blockCount
         var checked = 0
@@ -434,7 +479,8 @@ public actor DiscDrive {
             let count = min(Self.transferBlocks, total - checked)
             let read = MMC.read10(lba: startBlock + UInt32(checked), blocks: UInt16(count))
             var fromDisc = try await run(read, "READ", notReadyRetries: 3000)
-            let fromImage = try readImage(image, block: checked, count: count)
+            let fromImage = try await readImage(image, block: checked, count: count, step: .verifying,
+                                                options: options)
             // The drive can hand back data from the wrong place with no error, while the disc holds
             // the right data (hardware runs 18 and 20). A bad disc reads the same way every time,
             // so a mismatch fails only when it survives reading again.
@@ -519,12 +565,81 @@ public actor DiscDrive {
         return text
     }
 
-    private func readImage(_ image: any ImageSource, block: Int, count: Int) throws -> [UInt8] {
-        do {
-            return try image.read(block: block, count: count)
-        } catch {
-            throw DriveError.image("Couldn't read the image: \(error)")
+    /// Reads blocks of the image, patiently: a file on a drive that drops out for a moment is
+    /// read again once it's back (hardware run 26).
+    private func readImage(_ image: any ImageSource, block: Int, count: Int, step: HeldBurn.Step,
+                           options: WriteOptions) async throws -> [UInt8] {
+        try await patiently(step, options: options, explain: { error in
+            let place = image.describe(block: block) ?? "block \(block) of the image"
+            return (problem: "Burn couldn't read \(place): \(Self.plain(error)).",
+                    advice: "Check that the drive the files are on is connected and mounted, then try again. "
+                        + "The disc waits where it stopped.")
+        }) {
+            try image.read(block: block, count: count)
         }
+    }
+
+    // MARK: - Patience
+
+    /// Runs one step of a burn, trying it again after each wait in `options.retryWaits`. If every
+    /// try fails, the burn holds the drive and the disc and asks `options.whenHeld` whether to go
+    /// round again. `explain` turns the last error into what went wrong and what to check.
+    /// A cancel ends the waiting at once.
+    private func patiently<T>(_ step: HeldBurn.Step, options: WriteOptions,
+                              explain: (any Error) -> (problem: String, advice: String),
+                              _ body: () async throws -> T) async throws -> T {
+        var tries = 0
+        while true {
+            var lastError: (any Error)?
+            let waits = [Duration.zero] + options.retryWaits
+            for (index, wait) in waits.enumerated() {
+                if let lastError {
+                    let problem = explain(lastError).problem
+                    log.note("\(problem) Trying again in \(wait.components.seconds) s, try \(index + 1) of \(waits.count)")
+                    options.onRetry("\(problem) Trying again, \(index + 1) of \(waits.count)…")
+                    do {
+                        try await Task.sleep(for: wait)
+                    } catch {
+                        throw DriveError.cancelled
+                    }
+                }
+                do {
+                    let result = try await body()
+                    if lastError != nil {
+                        log.note("Worked on try \(index + 1)")
+                        options.onRetry(nil)
+                    }
+                    return result
+                } catch DriveError.cancelled {
+                    throw DriveError.cancelled
+                } catch {
+                    tries += 1
+                    lastError = error
+                }
+            }
+            let (problem, advice) = explain(lastError ?? DriveError.cancelled)
+            log.note("Holding the burn after \(tries) tries. \(problem)")
+            options.onRetry(nil)
+            switch await options.whenHeld(HeldBurn(step: step, problem: problem, advice: advice, tries: tries)) {
+            case .tryAgain:
+                log.note("Trying again, as asked")
+            case .abandon:
+                log.note("Stopped, as asked")
+                throw DriveError.abandoned(problem: problem, tries: tries)
+            }
+        }
+    }
+
+    /// An error in a few plain words, such as "input/output error" for EIO.
+    static func plain(_ error: any Error) -> String {
+        if let posix = error as? POSIXError {
+            return String(cString: strerror(posix.code.rawValue)).lowercased()
+        }
+        let nsError = error as NSError
+        if nsError.domain == NSPOSIXErrorDomain {
+            return String(cString: strerror(Int32(nsError.code))).lowercased()
+        }
+        return "\(error)"
     }
 
     // MARK: - After a failed burn

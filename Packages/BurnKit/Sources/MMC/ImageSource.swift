@@ -51,7 +51,7 @@ public struct MemoryImageSource: ImageSource {
 public final class FileImageSource: ImageSource, @unchecked Sendable {
     public let url: URL
     public let blockCount: Int
-    private let handle: FileHandle
+    private var handle: FileHandle
     private let lock = NSLock()
 
     public init(url: URL) throws {
@@ -69,10 +69,23 @@ public final class FileImageSource: ImageSource, @unchecked Sendable {
     public func read(block: Int, count: Int) throws -> [UInt8] {
         lock.lock()
         defer { lock.unlock() }
-        try handle.seek(toOffset: UInt64(block) * UInt64(MMC.blockSize))
-        let data = try handle.readBytes(count * MMC.blockSize)
-        guard data.count == count * MMC.blockSize else { throw ImageSourceError.shortRead(block: block) }
-        return data
+        do {
+            try handle.seek(toOffset: UInt64(block) * UInt64(MMC.blockSize))
+            let data = try handle.readBytes(count * MMC.blockSize)
+            guard data.count == count * MMC.blockSize else { throw ImageSourceError.shortRead(block: block) }
+            return data
+        } catch {
+            // The next try opens the file again, in case its drive dropped out and came back.
+            if let reopened = try? FileHandle(forReadingFrom: url) {
+                try? handle.close()
+                handle = reopened
+            }
+            throw error
+        }
+    }
+
+    public func describe(block: Int) -> String? {
+        "\(url.lastPathComponent) from byte \((UInt64(block) * UInt64(MMC.blockSize)).grouped)"
     }
 }
 

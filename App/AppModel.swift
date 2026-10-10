@@ -636,8 +636,20 @@ final class AppModel {
         let urls = items.map(\.url)
         let name = discName.isEmpty ? String(localized: "Untitled") : discName
         let speed = burnSpeed
+        // Captured weakly here, outside any task, so no closure holds `self` strongly around it.
+        let whenHeld: @Sendable (HeldBurn) async -> HeldBurnChoice = { [weak self] held in
+            await withCheckedContinuation { continuation in
+                Task { @MainActor in
+                    guard let self else { return continuation.resume(returning: .abandon) }
+                    self.hold(held, until: continuation)
+                }
+            }
+        }
+        let onRetry: @Sendable (String?) -> Void = { [weak self] text in
+            Task { @MainActor in self?.retrying = text }
+        }
         let options = WriteOptions(verify: true, ejectWhenDone: ejectWhenDone, eraseFirst: disc.canOverwrite,
-                                   writeSpeed: speed)
+                                   writeSpeed: speed, whenHeld: whenHeld, onRetry: onRetry)
         let imageFile = burningImage ? discImage?.url : nil
         let checksums = includeChecksums && imageFile == nil
         let recovery = checksums && includeRecovery ? Self.recoveryPercent : 0
@@ -763,7 +775,34 @@ final class AppModel {
     }
 
     func cancel() {
+        // A held burn is waiting for an answer, not for the task, so a cancel answers it.
+        if heldBurn != nil { answerHeldBurn(.abandon) }
         burnTask?.cancel()
+    }
+
+    // MARK: - A held burn
+
+    /// A step of the burn that failed every automatic try. The burn keeps the drive and the disc
+    /// and waits for the user to try again or abandon it.
+    private(set) var heldBurn: HeldBurn?
+    private var heldAnswer: CheckedContinuation<HeldBurnChoice, Never>?
+    /// What's being tried again while a step is retried, shown under the progress.
+    private(set) var retrying: String?
+
+    private func hold(_ held: HeldBurn, until answer: CheckedContinuation<HeldBurnChoice, Never>) {
+        heldAnswer = answer
+        heldBurn = held
+        retrying = nil
+        SessionLog.events.note("Burn held after \(held.tries) tries: \(held.problem)")
+        // The burn may have run for hours with nobody watching.
+        NSApp.requestUserAttention(.criticalRequest)
+    }
+
+    func answerHeldBurn(_ choice: HeldBurnChoice) {
+        SessionLog.events.note(choice == .tryAgain ? "Held burn: Try Again chosen" : "Held burn: Abandon Burn chosen")
+        heldAnswer?.resume(returning: choice)
+        heldAnswer = nil
+        heldBurn = nil
     }
 
     /// A burn that fails after changing the disc leaves the engine holding the drive, so macOS
@@ -821,6 +860,7 @@ final class AppModel {
     private func finish(_ result: Outcome, log: CommandLog) {
         log.note("\(result.title). \(result.detail)")
         lastLog = log.render()
+        retrying = nil
         activity = .idle
         outcome = result
         Task { await refresh() }

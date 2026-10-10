@@ -41,3 +41,19 @@ public extension Array where Element == UInt8 {
         map { String(format: "%02X", $0) }.joined(separator: " ")
     }
 }
+
+extension BinaryInteger {
+    /// The number with commas between thousands, such as "2,379,022,336", the same in every
+    /// locale, for messages and the log.
+    public var grouped: String {
+        let digits = String(self)
+        let negative = digits.hasPrefix("-")
+        var body = Array(negative ? digits.dropFirst() : Substring(digits))
+        var index = body.count - 3
+        while index > 0 {
+            body.insert(",", at: index)
+            index -= 3
+        }
+        return (negative ? "-" : "") + String(body)
+    }
+}

@@ -60,6 +60,14 @@ struct CommandTests {
         #expect(WriteSpeed.list(from: []).isEmpty)
     }
 
+    @Test func groupedNumbers() {
+        #expect(0.grouped == "0")
+        #expect(999.grouped == "999")
+        #expect(1_000.grouped == "1,000")
+        #expect(UInt64(2_379_022_336).grouped == "2,379,022,336")
+        #expect((-48_878_592).grouped == "-48,878,592")
+    }
+
     @Test func writeSpeedLabels() {
         #expect(WriteSpeed(kilobytesPerSecond: 8_990).label(for: .bluRay) == "2x")
         #expect(WriteSpeed(kilobytesPerSecond: 26_970).label(for: .bluRay) == "6x")

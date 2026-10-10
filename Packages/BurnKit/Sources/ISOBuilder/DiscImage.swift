@@ -155,13 +155,21 @@ public final class DiscImage: @unchecked Sendable {
         result.reserveCapacity(count * sectorSize)
         var current = block
         var index = regionIndex(containing: block)
-        while current < block + count {
-            let region = regions[index]
-            let from = current - region.start
-            let upTo = min(block + count, region.start + region.blocks) - region.start
-            result += try bytes(of: region, index: index, blocks: from..<upTo)
-            current = region.start + upTo
-            index += 1
+        do {
+            while current < block + count {
+                let region = regions[index]
+                let from = current - region.start
+                let upTo = min(block + count, region.start + region.blocks) - region.start
+                result += try bytes(of: region, index: index, blocks: from..<upTo)
+                current = region.start + upTo
+                index += 1
+            }
+        } catch {
+            // A file on a drive that dropped out stays unreadable through the handle opened
+            // before, so the next try opens it again.
+            try? openFile?.handle.close()
+            openFile = nil
+            throw error
         }
         return result
     }
@@ -176,7 +184,7 @@ public final class DiscImage: @unchecked Sendable {
         case .bytes: return "disc structures (blocks \(region.start) to \(region.start + region.blocks - 1))"
         case .fileEntries: return "UDF file entries"
         case .file(let node), .generated(let node):
-            return "\(layout.discPath(node)) from byte \(offset) of \(node.size)"
+            return "\(layout.discPath(node)) from byte \(offset.grouped) of \(node.size.grouped)"
         }
     }
 

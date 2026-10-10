@@ -361,8 +361,59 @@ struct CapacityView: View {
 struct ProgressSheet: View {
     let model: AppModel
     @Binding var confirmingCancel: Bool
+    @State private var confirmingAbandon = false
 
     var body: some View {
+        if let held = model.heldBurn {
+            heldView(held)
+        } else {
+            progressView
+        }
+    }
+
+    /// A step failed every automatic try. Says what went wrong and what to check, and waits.
+    private func heldView(_ held: HeldBurn) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(heldTitle(held.step)).font(.headline)
+            Label(held.problem, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(.orange)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(held.advice)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Burn tried \(held.tries) times. The drive and the disc are held as they are until you choose.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Spacer()
+                Button("Abandon Burn…") { confirmingAbandon = true }
+                Button("Try Again") { model.answerHeldBurn(.tryAgain) }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 420)
+        .interactiveDismissDisabled()
+        .confirmationDialog("Abandon the burn?", isPresented: $confirmingAbandon) {
+            Button("Abandon Burn", role: .destructive) { model.answerHeldBurn(.abandon) }
+            Button("Keep Waiting", role: .cancel) {}
+        } message: {
+            Text(model.isWriteOnceBurn
+                 ? "The disc is ejected, and a write-once disc can't be used after an abandoned burn."
+                 : "The disc is erased so it can be used again.")
+        }
+    }
+
+    private func heldTitle(_ step: HeldBurn.Step) -> String {
+        switch step {
+        case .readingFiles: return String(localized: "Reading the files has stopped")
+        case .writing: return String(localized: "Writing has stopped")
+        case .closing: return String(localized: "Closing the disc has stopped")
+        case .verifying: return String(localized: "Verifying has stopped")
+        }
+    }
+
+    private var progressView: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title).font(.headline)
             if let fraction {
@@ -374,6 +425,12 @@ struct ProgressSheet: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
+            if let retrying = model.retrying {
+                Label(retrying, systemImage: "arrow.clockwise")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             HStack {
                 Spacer()
                 if canCancel {

@@ -98,6 +98,8 @@ public enum DriveError: Error, Sendable, Equatable, CustomStringConvertible {
     case cancelled
     /// The drive doesn't offer the format type wanted. `offered` lists the types it does.
     case formatNotOffered(wanted: UInt8, offered: [UInt8])
+    /// A step failed every try, and the burn was stopped.
+    case abandoned(problem: String, tries: Int)
     /// The drive refused the write speed, before anything was written.
     case speedNotAccepted(label: String, reason: String)
     case image(String)
@@ -135,6 +137,8 @@ public enum DriveError: Error, Sendable, Equatable, CustomStringConvertible {
         case .formatNotOffered(let wanted, let offered):
             let list = offered.map { hex($0) }.joined(separator: ", ")
             return "The drive doesn't offer format type \(hex(wanted)) for this disc. It offers: \(list.isEmpty ? "none" : list)."
+        case .abandoned(let problem, let tries):
+            return "\(problem) Burn tried \(tries) times before stopping."
         case .speedNotAccepted(let label, let reason):
             return "The drive didn't accept the write speed \(label), so nothing was written. Choose another speed in the Burn sheet. (\(reason))"
         case .image(let message):

@@ -146,6 +146,14 @@ Burn writes at the slowest speed the drive offers unless told otherwise, since s
 - **The Burn sheet** has a Speed menu listing the speeds the drive offers, plus Default, which follows Settings. A speed picked there is kept for that kind of disc. A Blu-ray's kind includes its size, such as BD-R XL 100 GB, since sizes write at different speeds. If a later disc of that kind doesn't offer the kept speed, Burn uses the nearest slower one.
 - If the drive doesn't report its speeds, the menu says so and the drive picks.
 
+#### When a step fails
+
+A burn never gives up on a disc at the first error. A step that fails is tried again five more times, after waits of 2, 5, 10, 15 and 30 seconds, about a minute in all. While it waits, the progress sheet says what failed and that Burn is trying again. If every try fails, the burn holds: Burn keeps the drive and the disc as they are, bounces its Dock icon, and the progress sheet says what went wrong, in plain words, and what to check. Try Again goes round the five tries again. Abandon Burn ends the burn, and the disc is settled as after any failed burn: a rewritable disc is erased and a write-once disc ejected. The log records every try and the choice.
+
+Reading the source files while writing and verifying works this way. After a read error the file is opened again, since a file on a drive that dropped out can't be read through the old handle (hardware run 26). The message names the file and where in it the read started. Writing, closing the disc, verify's reads from the disc, and making the recovery data are next.
+
+Retrying never covers for a disc that can't pass verify. Recovery data is for damage that comes later, not for a bad write, so a burn that can't write every block as planned is abandoned.
+
 ### 5.5 Verification
 
 - While writing, the engine hashes every block range it sends (SHA-256 per 16 MiB, plus one for the whole image).
