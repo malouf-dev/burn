@@ -88,6 +88,38 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         set { withLock { _writeErrorAt = newValue } }
     }
     private var _writeErrorAt: UInt32?
+    /// How many WRITEs reaching `writeErrorAt` fail, or nil for every one.
+    public var writeErrorTimes: Int? {
+        get { withLock { _writeErrorTimes } }
+        set { withLock { _writeErrorTimes = newValue } }
+    }
+    private var _writeErrorTimes: Int?
+    /// When true, a WRITE that fails at `writeErrorAt` has recorded the blocks before that one,
+    /// and the next writable block is the one after it, so that stretch can't be written again.
+    public var writeErrorRecordsPart: Bool {
+        get { withLock { _writeErrorRecordsPart } }
+        set { withLock { _writeErrorRecordsPart = newValue } }
+    }
+    private var _writeErrorRecordsPart = false
+    /// When set, a WRITE reaching this block never gets its answer back, as when a USB drive
+    /// stops answering, `transportErrorTimes` times. With `transportErrorAfterWriting`, the
+    /// blocks were recorded before the answer was lost.
+    public var transportErrorAtWrite: UInt32? {
+        get { withLock { _transportErrorAtWrite } }
+        set { withLock { _transportErrorAtWrite = newValue } }
+    }
+    private var _transportErrorAtWrite: UInt32?
+    public var transportErrorTimes: Int {
+        get { withLock { _transportErrorTimes } }
+        set { withLock { _transportErrorTimes = newValue } }
+    }
+    private var _transportErrorTimes = 1
+    public var transportErrorAfterWriting: Bool {
+        get { withLock { _transportErrorAfterWriting } }
+        set { withLock { _transportErrorAfterWriting = newValue } }
+    }
+    private var _transportErrorAfterWriting = false
+
     public var busyAfterWriteError: Int {
         get { withLock { _busyAfterWriteError } }
         set { withLock { _busyAfterWriteError = newValue } }
@@ -322,7 +354,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         case 0x5A: return modeSense(command)
         case 0x55: return modeSelect(command)
         case 0x53: return reserveTrack(cdb)
-        case 0x2A: return write(command)
+        case 0x2A: return try write(command)
         case 0x28: return read(cdb)
         case 0x35: return synchronizeCache()
         case 0x5B: return closeTrackSession(cdb)
@@ -432,7 +464,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         return .good()
     }
 
-    private func write(_ command: SCSICommand) -> SCSIResponse {
+    private func write(_ command: SCSICommand) throws -> SCSIResponse {
         guard var media else { return .check(.mediumNotPresent) }
         guard case .toDevice(let data) = command.direction else { return .check(.invalidFieldInCDB) }
         guard !media.closed else { return .check(.invalidAddressForWrite) }
@@ -462,9 +494,22 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         guard lba == media.nextWritable else { return .check(.invalidAddressForWrite) }
         let limit = media.reserved ?? media.capacityBlocks
         guard lba + blocks <= limit else { return .check(SenseData(key: 0x05, asc: 0x63, ascq: 0x00)) }
-        if let bad = _writeErrorAt, (lba..<(lba + blocks)).contains(bad) {
+        if let bad = _writeErrorAt, (lba..<(lba + blocks)).contains(bad), _writeErrorTimes.map({ $0 > 0 }) ?? true {
+            _writeErrorTimes = _writeErrorTimes.map { $0 - 1 }
             discInformationBusy = _busyAfterWriteError
+            if _writeErrorRecordsPart {
+                media.nextWritable = bad + 1
+                self.media = media
+            }
             return .check(SenseData(key: 0x03, asc: 0x0C, ascq: 0x00))
+        }
+        let losesAnswer = _transportErrorAtWrite.map { (lba..<(lba + blocks)).contains($0) } ?? false
+            && _transportErrorTimes > 0
+        if losesAnswer {
+            _transportErrorTimes -= 1
+            if !_transportErrorAfterWriting {
+                throw TransportError.notDelivered(reason: "the drive stopped responding (simulated)")
+            }
         }
 
         let testWrite = writeParameters?.testWrite ?? false
@@ -476,6 +521,9 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         }
         media.nextWritable += blocks
         self.media = media
+        if losesAnswer {
+            throw TransportError.notDelivered(reason: "the drive stopped responding (simulated)")
+        }
 
         if let remaining = _removeMediaAfterWrites {
             if remaining <= 1 {

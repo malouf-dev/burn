@@ -234,7 +234,8 @@ struct WriteTests {
         simulator.writeErrorAt = 48
         simulator.busyAfterWriteError = 1_000
         let drive = DiscDrive(transport: simulator)
-        await #expect(throws: DriveError.self) { try await drive.write(patternImage(blocks: 100)) }
+        let quick = WriteOptions(retryWaits: Array(repeating: .milliseconds(1), count: 5))
+        await #expect(throws: DriveError.self) { try await drive.write(patternImage(blocks: 100), options: quick) }
         #expect(await drive.isHoldingDrive)
         #expect(try await drive.settleAfterFailedBurn(erase: true) == .ejected)
         #expect(simulator.currentMedia == nil)
@@ -273,7 +274,8 @@ struct WriteTests {
         simulator.removeMediaAfterWrites = 3
         let drive = DiscDrive(transport: simulator)
         await #expect(throws: DriveError.self) {
-            try await drive.write(patternImage(blocks: 500))
+            try await drive.write(patternImage(blocks: 500),
+                                  options: WriteOptions(retryWaits: Array(repeating: .milliseconds(1), count: 5)))
         }
         #expect(try await drive.settleAfterFailedBurn(erase: true) == .nothingNeeded)
         #expect(!simulator.hasExclusiveAccess)

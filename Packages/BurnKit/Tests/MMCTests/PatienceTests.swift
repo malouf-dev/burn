@@ -118,6 +118,93 @@ struct PatienceTests {
         #expect(held.all.isEmpty)
     }
 
+    /// How many WRITEs were sent for a block.
+    func writes(at block: UInt32, _ simulator: SimulatedDrive) -> Int {
+        simulator.commandHistory.filter { $0.first == 0x2A && $0.uint32(at: 2) == block }.count
+    }
+
+    @Test func aWriteErrorThatPassesIsWrittenAgain() async throws {
+        let simulator = bluRay()
+        simulator.writeErrorAt = 48
+        simulator.writeErrorTimes = 2
+        let log = CommandLog()
+        let report = try await DiscDrive(transport: simulator, log: log)
+            .write(patternImage(blocks: 100), options: WriteOptions(retryWaits: quick))
+        #expect(report.verified)
+        #expect(writes(at: 48, simulator) == 3)
+        let text = log.render()
+        #expect(text.contains("The drive couldn't write block 48, 0.0 GB into the disc: the drive couldn't write to the disc. Trying again"))
+        #expect(text.contains("Worked on try 3"))
+    }
+
+    @Test func aWriteErrorThatLastsHoldsTheBurn() async throws {
+        let simulator = bluRay()
+        simulator.writeErrorAt = 48
+        let held = Collected<HeldBurn>()
+        let drive = DiscDrive(transport: simulator)
+        await #expect {
+            try await drive.write(patternImage(blocks: 100), options: WriteOptions(retryWaits: quick, whenHeld: { burn in
+                held.append(burn)
+                return .abandon
+            }))
+        } throws: { error in
+            guard case DriveError.abandoned(_, let tries) = error else { return false }
+            return tries == 6
+        }
+        let burn = try #require(held.all.first)
+        #expect(burn.step == .writing)
+        #expect(burn.problem == "The drive couldn't write block 48, 0.0 GB into the disc: the drive couldn't write to the disc.")
+        #expect(burn.advice.contains("let it cool"))
+        #expect(writes(at: 48, simulator) == 6)
+    }
+
+    @Test func aPartlyRecordedWriteStopsTheBurnAtOnce() async throws {
+        // The drive recorded blocks 48 to 50 of the WRITE from 48 before failing at 50, so it now
+        // expects block 51. Blocks 48 to 50 can't be written again.
+        let simulator = bluRay()
+        simulator.writeErrorAt = 50
+        simulator.writeErrorRecordsPart = true
+        let held = Collected<HeldBurn>()
+        let drive = DiscDrive(transport: simulator)
+        await #expect {
+            try await drive.write(patternImage(blocks: 100), options: WriteOptions(retryWaits: quick, whenHeld: { burn in
+                held.append(burn)
+                return .tryAgain
+            }))
+        } throws: { error in
+            guard case DriveError.partlyWritten(let block, let next, _) = error else { return false }
+            return block == 48 && next == 51
+                && "\(error)".contains("It had already recorded part of that stretch")
+        }
+        #expect(held.all.isEmpty)
+        #expect(writes(at: 48, simulator) == 1)
+        #expect(await drive.isHoldingDrive)
+    }
+
+    @Test func aWriteRecordedBeforeTheAnswerWasLostIsNotSentAgain() async throws {
+        let simulator = bluRay()
+        simulator.transportErrorAtWrite = 48
+        simulator.transportErrorAfterWriting = true
+        let log = CommandLog()
+        let report = try await DiscDrive(transport: simulator, log: log)
+            .write(patternImage(blocks: 100), options: WriteOptions(retryWaits: quick))
+        #expect(report.verified)
+        #expect(writes(at: 48, simulator) == 1)
+        #expect(log.render().contains("The drive had recorded blocks 48 to 63 before the error"))
+    }
+
+    @Test func aWriteLostWhenTheDriveStoppedAnsweringIsSentAgain() async throws {
+        let simulator = bluRay()
+        simulator.transportErrorAtWrite = 48
+        simulator.transportErrorTimes = 2
+        let log = CommandLog()
+        let report = try await DiscDrive(transport: simulator, log: log)
+            .write(patternImage(blocks: 100), options: WriteOptions(retryWaits: quick))
+        #expect(report.verified)
+        #expect(writes(at: 48, simulator) == 3)
+        #expect(log.render().contains("The drive stopped answering while writing block 48"))
+    }
+
     @Test func aCancelEndsTheWaiting() async throws {
         let image = FlakyImage(patternImage(blocks: 100), block: 40) { _ in true }
         let drive = DiscDrive(transport: bluRay())

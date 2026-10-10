@@ -150,7 +150,11 @@ Burn writes at the slowest speed the drive offers unless told otherwise, since s
 
 A burn never gives up on a disc at the first error. A step that fails is tried again five more times, after waits of 2, 5, 10, 15 and 30 seconds, about a minute in all. While it waits, the progress sheet says what failed and that Burn is trying again. If every try fails, the burn holds: Burn keeps the drive and the disc as they are, bounces its Dock icon, and the progress sheet says what went wrong, in plain words, and what to check. Try Again goes round the five tries again. Abandon Burn ends the burn, and the disc is settled as after any failed burn: a rewritable disc is erased and a write-once disc ejected. The log records every try and the choice.
 
-Reading the source files while writing and verifying works this way. After a read error the file is opened again, since a file on a drive that dropped out can't be read through the old handle (hardware run 26). The message names the file and where in it the read started. Writing, closing the disc, verify's reads from the disc, and making the recovery data are next.
+Reading the source files while writing and verifying works this way. After a read error the file is opened again, since a file on a drive that dropped out can't be read through the old handle (hardware run 26). The message names the file and where in it the read started.
+
+Writing works this way too. After a WRITE fails, or its answer is lost because the drive stopped answering over USB, Burn asks the drive which block it expects next. If it's still the first block of that WRITE, nothing was recorded, so the WRITE is sent again. If it's the block after the WRITE, the WRITE was recorded after all, and the burn carries on. Anything else means the drive recorded part of it before failing. Those blocks can't be written again, so the disc would fail verify, and the burn stops at once with a message saying so (hardware run 28).
+
+Closing the disc, verify's reads from the disc, and making the recovery data are next.
 
 Retrying never covers for a disc that can't pass verify. Recovery data is for damage that comes later, not for a bad write, so a burn that can't write every block as planned is abandoned.
 

@@ -98,6 +98,8 @@ public enum DriveError: Error, Sendable, Equatable, CustomStringConvertible {
     case cancelled
     /// The drive doesn't offer the format type wanted. `offered` lists the types it does.
     case formatNotOffered(wanted: UInt8, offered: [UInt8])
+    /// The drive recorded part of a WRITE that failed, so those blocks can't be written again.
+    case partlyWritten(block: Int, nextBlock: Int, reason: String)
     /// A step failed every try, and the burn was stopped.
     case abandoned(problem: String, tries: Int)
     /// The drive refused the write speed, before anything was written.
@@ -137,6 +139,10 @@ public enum DriveError: Error, Sendable, Equatable, CustomStringConvertible {
         case .formatNotOffered(let wanted, let offered):
             let list = offered.map { hex($0) }.joined(separator: ", ")
             return "The drive doesn't offer format type \(hex(wanted)) for this disc. It offers: \(list.isEmpty ? "none" : list)."
+        case .partlyWritten(let block, _, let reason):
+            return "The drive couldn't write block \(block.grouped), \(DiscDrive.gigabytes(UInt32(clamping: block))) into the disc: "
+                + "\(reason). It had already recorded part of that stretch, which can't be written again, so the disc "
+                + "would fail verify. This disc can't be finished."
         case .abandoned(let problem, let tries):
             return "\(problem) Burn tried \(tries) times before stopping."
         case .speedNotAccepted(let label, let reason):

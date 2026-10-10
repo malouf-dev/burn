@@ -400,8 +400,7 @@ public actor DiscDrive {
                 data += [UInt8](repeating: 0, count: (count - fromImage) * MMC.blockSize)
             }
             if !options.simulate { discTouched = true }
-            _ = try await run(MMC.write10(lba: startBlock + UInt32(written), data: data), "WRITE",
-                              notReadyRetries: 3000)
+            try await writeBlocks(data, at: startBlock + UInt32(written), track: trackNumber, options: options)
             written += count
             if Date().timeIntervalSince(lastReport) > 0.2 || written == paddedBlocks {
                 lastReport = Date()
@@ -579,6 +578,66 @@ public actor DiscDrive {
         }
     }
 
+    /// Writes blocks patiently. After a failed WRITE, the drive is asked which block it expects
+    /// next. If it's still the first of these, nothing was recorded, so the WRITE is sent again.
+    /// If it's the block after them, the WRITE was recorded after all. Anything else means part
+    /// of them was recorded and can't be written again, so the disc can't pass verify and the
+    /// burn stops at once (hardware run 28).
+    private func writeBlocks(_ data: [UInt8], at lba: UInt32, track: Int, options: WriteOptions) async throws {
+        let count = UInt32(data.count / MMC.blockSize)
+        try await patiently(.writing, options: options, explain: { error in
+            let place = "block \(lba.grouped), \(Self.gigabytes(lba)) into the disc"
+            if case DriveError.transport(let transport) = error {
+                return (problem: "The drive stopped answering while writing \(place): \(transport).",
+                        advice: "Check the drive's USB cable and power, then try again. The disc waits where it stopped.")
+            }
+            return (problem: "The drive couldn't write \(place): \(Self.reason(error)).",
+                    advice: "Check the drive's cable and power. If it has been writing for hours, let it cool for a while, "
+                        + "then try again. The disc waits where it stopped.")
+        }, canRetry: { error in
+            if case DriveError.partlyWritten = error { return false }
+            return true
+        }) {
+            do {
+                _ = try await run(MMC.write10(lba: lba, data: data), "WRITE", notReadyRetries: 3000)
+            } catch {
+                let next = await nextWritable(track: track)
+                if next == lba + count {
+                    log.note("The drive had recorded blocks \(lba) to \(lba + count - 1) before the error")
+                } else if let next, next != lba {
+                    throw DriveError.partlyWritten(block: Int(lba), nextBlock: Int(next), reason: Self.reason(error))
+                } else {
+                    throw error
+                }
+            }
+        }
+    }
+
+    /// The block the drive expects to write next in a track, or nil when it can't say.
+    private func nextWritable(track: Int) async -> UInt32? {
+        guard let bytes = try? await run(MMC.readTrackInformation(track: UInt32(track)), "READ TRACK INFORMATION",
+                                         notReadyRetries: 3000),
+              let info = TrackInformation(bytes: bytes), info.nextWritableValid else { return nil }
+        return info.nextWritable
+    }
+
+    /// How far into the disc a block is, such as "4.1 GB".
+    static func gigabytes(_ block: UInt32) -> String {
+        String(format: "%.1f GB", Double(block) * Double(MMC.blockSize) / 1e9)
+    }
+
+    /// Why a command failed, in a few plain words that fit after a colon.
+    static func reason(_ error: any Error) -> String {
+        var text: String
+        switch error {
+        case DriveError.commandFailed(_, _, let sense?): text = sense.explanation
+        case DriveError.transport(let transport): text = transport.description
+        default: text = plain(error)
+        }
+        if text.hasSuffix(".") { text.removeLast() }
+        return text.prefix(1).lowercased() + text.dropFirst()
+    }
+
     // MARK: - Patience
 
     /// Runs one step of a burn, trying it again after each wait in `options.retryWaits`. If every
@@ -587,6 +646,7 @@ public actor DiscDrive {
     /// A cancel ends the waiting at once.
     private func patiently<T>(_ step: HeldBurn.Step, options: WriteOptions,
                               explain: (any Error) -> (problem: String, advice: String),
+                              canRetry: (any Error) -> Bool = { _ in true },
                               _ body: () async throws -> T) async throws -> T {
         var tries = 0
         while true {
@@ -613,6 +673,7 @@ public actor DiscDrive {
                 } catch DriveError.cancelled {
                     throw DriveError.cancelled
                 } catch {
+                    guard canRetry(error) else { throw error }
                     tries += 1
                     lastError = error
                 }
