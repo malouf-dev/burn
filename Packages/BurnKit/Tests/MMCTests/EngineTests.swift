@@ -12,6 +12,9 @@ func patternImage(blocks: Int) -> MemoryImageSource {
     return MemoryImageSource(bytes: bytes)
 }
 
+/// Retries without the real waits, for tests of failures.
+let quickRetries = WriteOptions(retryWaits: Array(repeating: .milliseconds(1), count: 5))
+
 func discState(_ drive: DiscDrive) async throws -> DiscState? {
     if case .disc(let disc) = try await drive.state() { return disc }
     return nil
@@ -133,8 +136,11 @@ struct WriteTests {
         let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 20_000))
         simulator.corruptReadBlock = 42
         let drive = DiscDrive(transport: simulator)
-        await #expect(throws: DriveError.verificationFailed(block: 42)) {
-            try await drive.write(patternImage(blocks: 100))
+        await #expect {
+            try await drive.write(patternImage(blocks: 100), options: quickRetries)
+        } throws: { error in
+            guard case DriveError.abandoned(let problem, let tries) = error else { return false }
+            return tries == 6 && problem == "Block 42, 0.0 GB into the disc, read back different from what was written."
         }
         // The drive stays out of macOS's hands until it's settled. The disc closed before verify,
         // so it reads like any finished disc and stays in the drive to be checked.
@@ -151,11 +157,12 @@ struct WriteTests {
         let simulator = SimulatedDrive(media: .init(profile: .bdRSequential, capacityBlocks: 20_000))
         simulator.misplacedReadAt = 48
         let log = CommandLog()
-        let report = try await DiscDrive(transport: simulator, log: log).write(patternImage(blocks: 100))
+        let report = try await DiscDrive(transport: simulator, log: log).write(patternImage(blocks: 100),
+                                                                                options: quickRetries)
         #expect(report.verified)
         #expect(simulator.misplacedReadAt == nil)
         let text = log.render()
-        #expect(text.contains("Verification mismatch at image block 48, read 1 of 3"))
+        #expect(text.contains("Verification mismatch at image block 48, read 1\n"))
         #expect(text.contains("match the image 8184 bytes further on"))
         #expect(text.contains("Blocks 48 to 63 read back correctly on read 2"))
     }
@@ -164,8 +171,8 @@ struct WriteTests {
         let simulator = SimulatedDrive(media: .init(profile: .dvdRWSequential, capacityBlocks: 2_297_888))
         simulator.corruptReadBlock = 5
         let drive = DiscDrive(transport: simulator)
-        await #expect(throws: DriveError.verificationFailed(block: 5)) {
-            try await drive.write(patternImage(blocks: 100))
+        await #expect(throws: DriveError.self) {
+            try await drive.write(patternImage(blocks: 100), options: quickRetries)
         }
         #expect(simulator.hasExclusiveAccess)
         #expect(try await drive.settleAfterFailedBurn(erase: true) == .erased)
@@ -246,7 +253,7 @@ struct WriteTests {
         let simulator = SimulatedDrive(media: .init(profile: .dvdRWSequential, capacityBlocks: 2_297_888))
         simulator.corruptReadBlock = 5
         let drive = DiscDrive(transport: simulator)
-        _ = try? await drive.write(patternImage(blocks: 100))
+        _ = try? await drive.write(patternImage(blocks: 100), options: quickRetries)
         #expect(try await drive.settleAfterFailedBurn(erase: false) == .ejected)
         #expect(simulator.currentMedia == nil)
         #expect(!simulator.hasExclusiveAccess)

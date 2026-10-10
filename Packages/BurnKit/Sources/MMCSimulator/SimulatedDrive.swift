@@ -65,6 +65,19 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     }
     private var _corruptReadBlock: UInt32?
 
+    /// When set, READs covering this block fail with an unrecovered read error, `readErrorTimes`
+    /// times, or every time when that's nil.
+    public var readErrorAt: UInt32? {
+        get { withLock { _readErrorAt } }
+        set { withLock { _readErrorAt = newValue } }
+    }
+    private var _readErrorAt: UInt32?
+    public var readErrorTimes: Int? {
+        get { withLock { _readErrorTimes } }
+        set { withLock { _readErrorTimes = newValue } }
+    }
+    private var _readErrorTimes: Int?
+
     /// When set, the next READ starting at this block returns its data 8,184 bytes late, with no
     /// error, then reads work again. The BD-R drive did this during verify in hardware runs 18
     /// and 20, while the disc itself held the right data.
@@ -569,6 +582,10 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         let blocks = UInt32(cdb.uint16(at: 7))
         guard lba + blocks <= media.nextWritable else { return .check(.lbaOutOfRange) }
         if media.unreadable { return .check(.unrecoveredReadError) }
+        if let bad = _readErrorAt, (lba..<(lba + blocks)).contains(bad), _readErrorTimes.map({ $0 > 0 }) ?? true {
+            _readErrorTimes = _readErrorTimes.map { $0 - 1 }
+            return .check(.unrecoveredReadError)
+        }
         var result: [UInt8] = []
         result.reserveCapacity(Int(blocks) * MMC.blockSize)
         for block in lba..<(lba + blocks) {

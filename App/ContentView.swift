@@ -398,10 +398,17 @@ struct ProgressSheet: View {
             Button("Abandon Burn", role: .destructive) { model.answerHeldBurn(.abandon) }
             Button("Keep Waiting", role: .cancel) {}
         } message: {
-            Text(model.isWriteOnceBurn
-                 ? "The disc is ejected, and a write-once disc can't be used after an abandoned burn."
-                 : "The disc is erased so it can be used again.")
+            Text(abandonOutcome(held.step))
         }
+    }
+
+    /// What happens to the disc if the burn is abandoned at this step.
+    private func abandonOutcome(_ step: HeldBurn.Step) -> String {
+        if !model.isWriteOnceBurn { return String(localized: "The disc is erased so it can be used again.") }
+        if step == .verifying {
+            return String(localized: "The disc is already closed, so it stays in the drive. Check it in Verify: a failed verify can be the drive misreading a good disc.")
+        }
+        return String(localized: "The disc is ejected, and a write-once disc can't be used after an abandoned burn.")
     }
 
     private func heldTitle(_ step: HeldBurn.Step) -> String {

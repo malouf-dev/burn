@@ -267,6 +267,36 @@ struct PatienceTests {
         #expect(burn.advice.hasPrefix("Everything has been written, and only closing the disc is left."))
     }
 
+    @Test func aReadErrorDuringVerifyIsReadAgain() async throws {
+        let simulator = bluRay()
+        simulator.readErrorAt = 48
+        simulator.readErrorTimes = 2
+        let log = CommandLog()
+        let report = try await DiscDrive(transport: simulator, log: log)
+            .write(patternImage(blocks: 100), options: WriteOptions(retryWaits: quick))
+        #expect(report.verified)
+        let text = log.render()
+        #expect(text.contains("The drive couldn't read back block 48, 0.0 GB into the disc: the drive couldn't read part of the disc. Trying again"))
+        #expect(text.contains("Blocks 48 to 63 read back correctly on read 3"))
+    }
+
+    @Test func aBlockThatNeverVerifiesHoldsTheBurn() async throws {
+        let simulator = bluRay()
+        simulator.corruptReadBlock = 42
+        let held = Collected<HeldBurn>()
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.self) {
+            try await drive.write(patternImage(blocks: 100), options: WriteOptions(retryWaits: quick, whenHeld: { burn in
+                held.append(burn)
+                return held.all.count < 2 ? .tryAgain : .abandon
+            }))
+        }
+        // Held twice: once after the first six reads, and again after Try Again's six.
+        #expect(held.all.map(\.tries) == [6, 12])
+        #expect(held.all.first?.step == .verifying)
+        #expect(held.all.first?.problem == "Block 42, 0.0 GB into the disc, read back different from what was written.")
+    }
+
     @Test func aCancelEndsTheWaiting() async throws {
         let image = FlakyImage(patternImage(blocks: 100), block: 40) { _ in true }
         let drive = DiscDrive(transport: bluRay())

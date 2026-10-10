@@ -123,8 +123,6 @@ public actor DiscDrive {
 
     /// Blocks per WRITE(10) and READ(10): 32 KiB, a whole DVD ECC block pair.
     static let transferBlocks = 16
-    /// How many times verify reads blocks that don't match before calling the burn failed.
-    static let verifyReads = 3
 
     /// How long to wait between polls while the drive finishes a long operation.
     private let pollInterval: Duration
@@ -505,6 +503,22 @@ public actor DiscDrive {
         return (problem: "The drive couldn't finish closing the disc: \(reason(error)).", advice: advice)
     }
 
+    private static func explainVerifying(_ error: any Error, lba: UInt32) -> (problem: String, advice: String) {
+        let advice = "The drive sometimes misreads a good disc, and reading again often works. Check the drive's "
+            + "cable and power, then try again."
+        switch error {
+        case DriveError.verificationFailed(let block):
+            return (problem: "Block \(block.grouped), \(gigabytes(UInt32(clamping: block))) into the disc, read back "
+                        + "different from what was written.", advice: advice)
+        case DriveError.transport(let transport):
+            return (problem: "The drive stopped answering while reading back block \(lba.grouped), "
+                        + "\(gigabytes(lba)) into the disc: \(transport).", advice: advice)
+        default:
+            return (problem: "The drive couldn't read back block \(lba.grouped), \(gigabytes(lba)) into the disc: "
+                        + "\(reason(error)).", advice: advice)
+        }
+    }
+
     /// A long command the drive won't take in its immediate form isn't tried again: the other
     /// form can time out part-way and spoil the disc (hardware run 7).
     private static func canRetryLong(_ error: any Error) -> Bool {
@@ -523,30 +537,30 @@ public actor DiscDrive {
         while checked < total {
             if Task.isCancelled { throw DriveError.cancelled }
             let count = min(Self.transferBlocks, total - checked)
-            let read = MMC.read10(lba: startBlock + UInt32(checked), blocks: UInt16(count))
-            var fromDisc = try await run(read, "READ", notReadyRetries: 3000)
-            let fromImage = try await readImage(image, block: checked, count: count, step: .verifying,
-                                                options: options)
-            // The drive can hand back data from the wrong place with no error, while the disc holds
-            // the right data (hardware runs 18 and 20). A bad disc reads the same way every time,
-            // so a mismatch fails only when it survives reading again.
-            var attempt = 1
-            while fromDisc != fromImage {
-                let firstBad = (0..<count).first { index in
-                    let range = index * MMC.blockSize..<(index + 1) * MMC.blockSize
-                    return fromDisc.count < range.upperBound || fromDisc[range] != fromImage[range]
-                } ?? 0
-                log.note("Verification mismatch at image block \(checked + firstBad), "
-                    + "read \(attempt) of \(Self.verifyReads)")
-                log.note(Self.mismatchDetail(disc: fromDisc, image: fromImage, blockInRead: firstBad,
-                                             part: image.describe(block: checked + firstBad)))
-                guard attempt < Self.verifyReads else {
-                    throw DriveError.verificationFailed(block: checked + firstBad)
+            let first = checked
+            let lba = startBlock + UInt32(first)
+            let fromImage = try await readImage(image, block: first, count: count, step: .verifying, options: options)
+            // The drive can hand back data from the wrong place with no error while the disc holds
+            // the right data (hardware runs 18 and 20), or fail a read that works later. A bad disc
+            // reads the same way every time, so verify fails only when every try does.
+            var reads = 0
+            try await patiently(.verifying, options: options, explain: { error in
+                Self.explainVerifying(error, lba: lba)
+            }) {
+                reads += 1
+                let fromDisc = try await run(MMC.read10(lba: lba, blocks: UInt16(count)), "READ", notReadyRetries: 3000)
+                guard fromDisc == fromImage else {
+                    let firstBad = (0..<count).first { index in
+                        let range = index * MMC.blockSize..<(index + 1) * MMC.blockSize
+                        return fromDisc.count < range.upperBound || fromDisc[range] != fromImage[range]
+                    } ?? 0
+                    log.note("Verification mismatch at image block \(first + firstBad), read \(reads)")
+                    log.note(Self.mismatchDetail(disc: fromDisc, image: fromImage, blockInRead: firstBad,
+                                                 part: image.describe(block: first + firstBad)))
+                    throw DriveError.verificationFailed(block: first + firstBad)
                 }
-                attempt += 1
-                fromDisc = try await run(read, "READ", notReadyRetries: 3000)
-                if fromDisc == fromImage {
-                    log.note("Blocks \(checked) to \(checked + count - 1) read back correctly on read \(attempt)")
+                if reads > 1 {
+                    log.note("Blocks \(first) to \(first + count - 1) read back correctly on read \(reads)")
                 }
             }
             checked += count
