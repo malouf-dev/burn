@@ -109,12 +109,52 @@ A cloud session. The owner asked for Blu-ray data discs in the best format, with
 - **CI's Xcode can be older than the owner's.** CI passed a `[weak self]` inside a `Task` nested in another `Task`, and the owner's Xcode rejected it: the outer closure had already captured `self` strongly. Make the weak capture at function level, outside any task, as `RestoreModel` does.
 - **Watch for names that hide the method you mean.** `let handle = try handle(for: node)` doesn't compile in Swift; the new constant shadows the method. Use `self.handle(for:)`.
 
+## Session 3: 9 to 11 October 2026
+
+The first session on the owner's Mac, after the cloud session that built disc sets, Restore and disc images (5 to 7 October, described in sections 9.10 and 11 of the proposal and hardware runs 22 to 24). It began with the "Cold Case" set: six 100 GB BD-R XL discs. Two blanks were lost, and that set the direction for the rest of the session.
+
+### What went wrong
+
+- **Disc 3 lost to one failed read (run 26).** Reading a source file from an external SSD returned an input/output error once, five minutes into writing. Burn gave up at the first error, and the blank was left with an unfinished session. The SSD stayed connected, and nothing was logged, so the cause is still unknown.
+- **Disc 4 lost to a write error (run 28).** The drive reported it couldn't write one spot, about 4 GB in, with no warning beforehand. Most likely a flaw in the blank. Burn then said it couldn't eject the disc when it had.
+- **A set lived only in memory.** Quitting the app would have lost Cold Case, and planning again would have made a set the burned discs didn't belong to.
+- **An 885 MB log.** Folding a run of writes into one line broke whenever the Log panel was open or the log passed 20,000 lines, and polling an empty drive logged every answer.
+- **The Mac froze twice, not because of Burn.** Both times Time Machine was backing up to a NAS through a disk image on an SMB share. The first time the kernel's watchdog restarted the Mac; the second time Disk Arbitration and Finder hung until a restart. Burn was idle both times.
+
+### What was built
+
+In order, one commit each:
+
+- Restore starts a disc on its own only while the Restore view is open.
+- The set in progress is saved and comes back at launch. It came back for real after the second freeze.
+- Before a set's disc is burned, its files are checked, and a missing or changed one blocks the burn and is named.
+- Continue Set makes a set's plan again from any of its discs. It carried Cold Case on from disc 2 (run 27).
+- Work moved to a `development` branch.
+- The eject message after a failed burn tells the truth.
+- The log records an answer only when it changes, and keeps runs of writes folded.
+- Write speed: the slowest the drive offers by default, a Speed menu in the Burn sheet that remembers a choice for each kind of disc, and Slowest or Fastest in Settings.
+- Retry, then hold, for every step: reading the files, writing, closing, verifying and making recovery data. Section 5.4 of the proposal has the rules.
+- Stopping a set asks first.
+- CI moved into `scripts/check.sh` on the owner's Mac.
+
+### What we learned
+
+- **Never give up on a disc at the first error.** Blanks are expensive, and a burn that waits a minute and tries again would have saved disc 3. The owner had to ask for this more than once; it's now a rule in `CLAUDE.md`.
+- **Never cover a bad write with recovery data.** Recovery data is for damage that comes later. A disc that can't be written exactly as planned is abandoned.
+- **Ask the drive where it is after a write fails.** The next writable block says whether nothing, all or part of the failed WRITE was recorded, and only the first two can carry on.
+- **A test that times something can fail on a busy machine for no real reason.** CI's few processors delayed a cancelled burn by 52 seconds while other tests ran. Time limits in tests should leave room, or test the outcome instead.
+- **Network Time Machine can stop the whole Mac.** When the disk image service gets stuck writing to the share, macOS can't unmount it, and anything that lists disks waits. Even `mount` and `umount -f` hang or are refused. Don't touch `/Volumes` when it happens; read the logs instead.
+- **The Claude app can open a session in a separate copy of the repository.** Edits there don't reach the main folder until they're committed and merged. Start sessions in `~/Developer/burn` itself.
+
 ## Open items
 
-- **Hardware still untested:** DVD+R (no media on hand), BD-R, CD-RW erase, a failed burn going through the keep-the-drive path, and a burn from the app itself.
-- **UDF on a burned disc:** a BD-R, and a CD-R or DVD-R, should be burned and read on macOS, and ideally Windows, before relying on it.
-- **Recovery data on hardware:** time it on the owner's Mac, burn a disc with it, and repair a deliberately damaged copy.
+- **Hardware still untested:** DVD+R (no media on hand), CD-RW erase, Windows reading a burned disc, the write speed setting, and a real failure going through retry and hold.
+- **Recovery data on hardware:** burned on every Cold Case disc and timed at 11 minutes to 1.7 hours a disc. Repairing a damaged copy of a real disc hasn't been tried.
 - **More than 32,768 files** get no recovery data yet; several recovery sets would fix it.
+- **Spare areas:** BD-R formatted with spare areas lets the drive move a bad spot elsewhere instead of failing. It depends on the drive, costs about 3% of the disc and some speed, and would apply to future sets only.
+- **The Log panel** still rebuilds up to 20,000 lines every second while it's open.
+- **Cold Case:** discs 4, 5 and 6 are still to burn. Disc 6 is 67.4 GB, so it might fit in a failed blank's unused space as a second session, which Burn can't write yet.
+- **Branches:** fast-forward `main` to `development` after discs 4 and 5 pass, and delete the old `claude/vibrant-hawking-r0olne` branch on GitHub.
 - **Name and bundle identifier (D6):** see below.
 
 ### Naming the project (D6)
