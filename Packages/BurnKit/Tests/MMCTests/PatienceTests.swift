@@ -298,15 +298,18 @@ struct PatienceTests {
     }
 
     @Test func aCancelEndsTheWaiting() async throws {
+        // The wait is an hour, so finishing well inside it means the cancel cut it short. The
+        // limit is loose because CI's few processors are busy with other tests at the same time,
+        // which delayed this one by up to 52 seconds.
         let image = FlakyImage(patternImage(blocks: 100), block: 40) { _ in true }
         let drive = DiscDrive(transport: bluRay())
         let started = Date()
         let burn = Task {
-            try await drive.write(image, options: WriteOptions(retryWaits: [.seconds(60)]))
+            try await drive.write(image, options: WriteOptions(retryWaits: [.seconds(3600)]))
         }
         try await Task.sleep(for: .milliseconds(300))
         burn.cancel()
         await #expect(throws: DriveError.cancelled) { try await burn.value }
-        #expect(Date().timeIntervalSince(started) < 10)
+        #expect(Date().timeIntervalSince(started) < 600)
     }
 }
