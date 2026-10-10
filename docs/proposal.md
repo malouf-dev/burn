@@ -165,7 +165,7 @@ The visual design is open. 0.1 uses standard controls.
 3. **Licence hygiene (D5).** Don't copy or translate code from Burn, libburn or cdrecord. Work from the MMC and ISO 9660 standards and from observed behaviour.
 4. **Standard SwiftUI controls and SF Symbols.**
 5. **Everything testable without hardware** except the transport. The simulated drive covers the engine in CI.
-6. **Log every command.** Each operation writes the commands sent, the data sizes, the sense data and the timings to a diagnostic log.
+6. **Log every command.** Each operation writes the commands sent, the data sizes, the sense data and the timings to a diagnostic log. A command that gets the same answer as last time, such as the drive being checked every 2 seconds while it's empty, is logged again only when the answer changes or a new operation starts. A run of successful writes or reads is one line for its first command and one summary line, with a progress line every 30 seconds. Errors are always logged.
 7. **No binaries in git.** Helper tools, if any are added later, are built by CI from pinned sources.
 8. **Few dependencies, all through Swift Package Manager.** 0.1 has none.
 9. **A thin Xcode project.** Code lives in `Packages/BurnKit`.

@@ -15,10 +15,21 @@ public final class CommandLog: @unchecked Sendable {
     private let lock = NSLock()
     private var entries: [Entry] = []
     private var notes: [(Date, String)] = []
-    /// Consecutive identical WRITE and READ commands are counted, not stored, to keep logs small.
+    /// Consecutive successful WRITE or READ commands are counted, not stored, to keep logs small.
+    /// The run is the operation code being counted; its first command is logged in full.
+    private var runOpcode: UInt8?
     private var repeatedTransfers = 0
     private var repeatStart: Date?
     private var repeatDuration: TimeInterval = 0
+    /// Each other command's last answer since the last note. A command that gets the same answer
+    /// again, as TEST UNIT READY does every 2 s while the drive is polled, isn't logged again
+    /// until the answer changes or a note starts something new.
+    private var lastAnswers: [[UInt8]: Answer] = [:]
+    private struct Answer: Equatable {
+        let status: UInt8?
+        let sense: SenseData?
+        let error: String?
+    }
     private let limit: Int
     /// A file every line is appended to as it's logged, so a crash or a hang leaves the log behind.
     private let mirror: FileHandle?
@@ -44,10 +55,10 @@ public final class CommandLog: @unchecked Sendable {
     public func record(_ entry: Entry) {
         lock.lock()
         defer { lock.unlock() }
-        let isTransfer = entry.cdb.first == 0x2A || entry.cdb.first == 0x28
+        let opcode = entry.cdb.first
+        let isTransfer = opcode == 0x2A || opcode == 0x28
         let isGood = entry.status == SCSIStatus.good.rawValue && entry.error == nil
-        if isTransfer, isGood, let last = entries.last, last.cdb.first == entry.cdb.first,
-           last.status == SCSIStatus.good.rawValue {
+        if isTransfer, isGood, runOpcode == opcode {
             repeatedTransfers += 1
             if repeatStart == nil { repeatStart = entry.time }
             repeatDuration += entry.duration
@@ -58,7 +69,13 @@ public final class CommandLog: @unchecked Sendable {
             }
             return
         }
+        if !isTransfer {
+            let answer = Answer(status: entry.status, sense: entry.sense, error: entry.error)
+            if lastAnswers[entry.cdb] == answer { return }
+            lastAnswers[entry.cdb] = answer
+        }
         flushRepeats()
+        runOpcode = isTransfer && isGood ? opcode : nil
         if entries.count < limit {
             entries.append(entry)
         }
@@ -69,6 +86,8 @@ public final class CommandLog: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         flushRepeats()
+        runOpcode = nil
+        lastAnswers = [:]
         notes.append((Date(), text))
         let entry = Entry(time: Date(), cdb: [], dataLength: 0, status: nil, sense: nil, error: text, duration: 0)
         entries.append(entry)
@@ -76,11 +95,7 @@ public final class CommandLog: @unchecked Sendable {
     }
 
     private func flushRepeats() {
-        if repeatedTransfers > 0 {
-            let summary = "… \(repeatedTransfers) more transfers of the same kind succeeded, "
-                + String(format: "%.3fs in total", repeatDuration)
-            let entry = Entry(time: repeatStart ?? Date(), cdb: [], dataLength: 0, status: nil, sense: nil,
-                              error: summary, duration: 0)
+        if let entry = repeatSummary {
             entries.append(entry)
             write(entry)
             repeatedTransfers = 0
@@ -89,11 +104,21 @@ public final class CommandLog: @unchecked Sendable {
         }
     }
 
+    /// The line for the run being counted, if any.
+    private var repeatSummary: Entry? {
+        guard repeatedTransfers > 0 else { return nil }
+        let summary = "… \(repeatedTransfers) more transfers of the same kind succeeded, "
+            + String(format: "%.3fs in total", repeatDuration)
+        return Entry(time: repeatStart ?? Date(), cdb: [], dataLength: 0, status: nil, sense: nil,
+                     error: summary, duration: 0)
+    }
+
+    /// Everything logged, with the run being counted so far. Reading the log leaves the run
+    /// going, so a Log panel that reads it every second doesn't split a burn into many lines.
     public func render() -> String {
         lock.lock()
         defer { lock.unlock() }
-        flushRepeats()
-        return entries.map(line).joined(separator: "\n")
+        return (entries + [repeatSummary].compactMap { $0 }).map(line).joined(separator: "\n")
     }
 
     /// One write per line, straight to the file, so nothing waits in a buffer if the app dies.
