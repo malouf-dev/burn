@@ -80,6 +80,21 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     }
     private var _longWriteEvery: Int?
 
+    /// When set, a WRITE that reaches this block fails with a write error, 03/0C/00, as the BD-R
+    /// XL in hardware run 28 did. READ DISC INFORMATION then answers "operation in progress"
+    /// `busyAfterWriteError` times, as that drive did for longer than the engine waits.
+    public var writeErrorAt: UInt32? {
+        get { withLock { _writeErrorAt } }
+        set { withLock { _writeErrorAt = newValue } }
+    }
+    private var _writeErrorAt: UInt32?
+    public var busyAfterWriteError: Int {
+        get { withLock { _busyAfterWriteError } }
+        set { withLock { _busyAfterWriteError = newValue } }
+    }
+    private var _busyAfterWriteError = 0
+    private var discInformationBusy = 0
+
     /// When set, the disc disappears after this many successful writes.
     public var removeMediaAfterWrites: Int? {
         get { withLock { _removeMediaAfterWrites } }
@@ -336,6 +351,10 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
 
     private func readDiscInformation(_ command: SCSICommand) -> SCSIResponse {
         guard let media else { return .check(.mediumNotPresent) }
+        if discInformationBusy > 0 {
+            discInformationBusy -= 1
+            return .check(.operationInProgress)
+        }
         let status: DiscInformation.Status = media.closed ? .complete : (media.isBlank ? .blank : .appendable)
         let info = DiscInformation(status: status, lastSessionState: media.closeInterrupted ? .incomplete : nil,
                                    isErasable: media.profile.isRewritable, sessions: 1,
@@ -423,6 +442,10 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         guard lba == media.nextWritable else { return .check(.invalidAddressForWrite) }
         let limit = media.reserved ?? media.capacityBlocks
         guard lba + blocks <= limit else { return .check(SenseData(key: 0x05, asc: 0x63, ascq: 0x00)) }
+        if let bad = _writeErrorAt, (lba..<(lba + blocks)).contains(bad) {
+            discInformationBusy = _busyAfterWriteError
+            return .check(SenseData(key: 0x03, asc: 0x0C, ascq: 0x00))
+        }
 
         let testWrite = writeParameters?.testWrite ?? false
         if !testWrite {

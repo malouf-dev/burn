@@ -531,10 +531,17 @@ public actor DiscDrive {
             await releaseDrive()
             return .ejected
         } catch {
-            // Get the disc out before macOS can read it.
-            try? await ejectLocked()
+            // Get the disc out before macOS can read it. Once it's out, that's what happened to
+            // it, whatever stopped the disc being read first (hardware run 28).
+            do {
+                try await ejectLocked()
+            } catch {
+                await releaseDrive()
+                throw error
+            }
+            log.note("Ejected the disc, since its state couldn't be read: \(error)")
             await releaseDrive()
-            throw error
+            return .ejected
         }
     }
 

@@ -173,6 +173,21 @@ struct WriteTests {
         #expect(try await discState(drive)?.writability == .blank)
     }
 
+    @Test func aDiscEjectedAfterAWriteErrorIsReportedAsEjected() async throws {
+        // Hardware run 28: a BD-R XL write failed with 03/0C/00, then READ DISC INFORMATION
+        // answered "operation in progress" for longer than the engine waits. The disc was
+        // ejected anyway, but the app said it couldn't be.
+        let simulator = SimulatedDrive(media: .init(profile: .bdRSequential, capacityBlocks: 20_000))
+        simulator.writeErrorAt = 48
+        simulator.busyAfterWriteError = 1_000
+        let drive = DiscDrive(transport: simulator)
+        await #expect(throws: DriveError.self) { try await drive.write(patternImage(blocks: 100)) }
+        #expect(await drive.isHoldingDrive)
+        #expect(try await drive.settleAfterFailedBurn(erase: true) == .ejected)
+        #expect(simulator.currentMedia == nil)
+        #expect(!simulator.hasExclusiveAccess)
+    }
+
     @Test func failedBurnOnARewritableDiscCanBeEjectedInstead() async throws {
         let simulator = SimulatedDrive(media: .init(profile: .dvdRWSequential, capacityBlocks: 2_297_888))
         simulator.corruptReadBlock = 5
