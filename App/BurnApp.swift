@@ -13,5 +13,9 @@ struct BurnApp: App {
         }
         .defaultSize(width: 820, height: 620)
         .windowResizability(.contentMinSize)
+
+        Settings {
+            SettingsView(model: model)
+        }
     }
 }

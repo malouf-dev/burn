@@ -144,6 +144,7 @@ final class AppModel {
         if isDemo {
             if engines.isEmpty {
                 let simulator = SimulatedDrive(media: .init(profile: .dvdPlusR, capacityBlocks: 2_295_104))
+                simulator.offeredWriteSpeeds = [5_540, 11_080, 22_160].map { WriteSpeed(kilobytesPerSecond: $0) }
                 engines[1] = DiscDrive(transport: simulator, log: SessionLog.driveLog())
                 drives = [DriveInfo(id: 1, name: "Simulated DVD burner")]
             }
@@ -562,13 +563,81 @@ final class AppModel {
         return nil
     }
 
+    // MARK: - Write speed
+
+    /// The speed to write at for every disc type without a speed of its own. Kept in Settings.
+    enum SpeedDefault: String, CaseIterable {
+        case slowest, fastest
+    }
+
+    var speedDefault: SpeedDefault = SpeedDefault(rawValue: UserDefaults.standard.string(forKey: "speedDefault") ?? "")
+        ?? .slowest {
+        didSet { UserDefaults.standard.set(speedDefault.rawValue, forKey: "speedDefault") }
+    }
+
+    /// Speeds picked in the Burn sheet, in kilobytes a second, by disc type. Kept between runs.
+    private(set) var chosenSpeeds: [String: Int] =
+        UserDefaults.standard.dictionary(forKey: "chosenSpeeds") as? [String: Int] ?? [:] {
+        didSet { UserDefaults.standard.set(chosenSpeeds, forKey: "chosenSpeeds") }
+    }
+
+    /// The speeds the drive offers for the disc in it, slowest first, once asked.
+    private(set) var offeredSpeeds: [WriteSpeed] = []
+    private(set) var speedsRead = false
+
+    /// The disc type a picked speed is kept for: a Blu-ray's size, such as "BD-R XL 100 GB",
+    /// since one kind of Blu-ray comes in sizes that write at different speeds, or else the
+    /// kind of disc, such as "DVD+R".
+    var speedDiscType: String? {
+        guard let disc = writableDisc else { return nil }
+        if disc.profile.mediaClass == .bluRay, !disc.canOverwrite,
+           let size = DiscSize.standard.first(where: { $0.blocks == Int(disc.freeBlocks) }) {
+            return size.name
+        }
+        return disc.profile.name
+    }
+
+    /// The speed picked for this disc type, as the nearest the drive offers at or below it, or
+    /// nil when none was picked and the Settings default applies.
+    var chosenSpeed: WriteSpeed? {
+        get {
+            guard let type = speedDiscType, let picked = chosenSpeeds[type], !offeredSpeeds.isEmpty else { return nil }
+            return offeredSpeeds.last { Int($0.kilobytesPerSecond) <= picked } ?? offeredSpeeds.first
+        }
+        set {
+            guard let type = speedDiscType else { return }
+            chosenSpeeds[type] = newValue.map { Int($0.kilobytesPerSecond) }
+        }
+    }
+
+    /// The speed the burn writes at: the one picked for this disc type, or the Settings default.
+    /// Nil when the drive doesn't say what it offers, which leaves the speed to the drive.
+    var burnSpeed: WriteSpeed? {
+        if let chosenSpeed { return chosenSpeed }
+        return speedDefault == .fastest ? offeredSpeeds.last : offeredSpeeds.first
+    }
+
+    func speedLabel(_ speed: WriteSpeed) -> String {
+        speed.label(for: writableDisc?.profile.mediaClass ?? .other)
+    }
+
+    /// Asks the drive which speeds it offers for the disc in it, for the Burn sheet.
+    func readWriteSpeeds() async {
+        speedsRead = false
+        let speeds = await (try? selectedEngine?.writeSpeeds()) ?? []
+        offeredSpeeds = speeds
+        speedsRead = true
+    }
+
     // MARK: - Burning
 
     func burn() {
         guard canBurn, let engine = selectedEngine, let disc = writableDisc else { return }
         let urls = items.map(\.url)
         let name = discName.isEmpty ? String(localized: "Untitled") : discName
-        let options = WriteOptions(verify: true, ejectWhenDone: ejectWhenDone, eraseFirst: disc.canOverwrite)
+        let speed = burnSpeed
+        let options = WriteOptions(verify: true, ejectWhenDone: ejectWhenDone, eraseFirst: disc.canOverwrite,
+                                   writeSpeed: speed)
         let imageFile = burningImage ? discImage?.url : nil
         let checksums = includeChecksums && imageFile == nil
         let recovery = checksums && includeRecovery ? Self.recoveryPercent : 0
@@ -587,6 +656,15 @@ final class AppModel {
         } else {
             log.note("Burn requested: \"\(name)\", \(urls.count) items, checksums \(checksums ? "on" : "off"), "
                 + "recovery \(recovery)%, onto \(disc.profile.name) with \(disc.freeBlocks) free blocks")
+        }
+
+        if let speed {
+            let reason = chosenSpeed != nil
+                ? "picked for \(speedDiscType ?? disc.profile.name) discs"
+                : "the \(speedDefault == .fastest ? "fastest" : "slowest") the drive offers, as set in Settings"
+            log.note("Speed: \(speedLabel(speed)), \(reason)")
+        } else {
+            log.note("Speed: the drive's own, since it didn't say which speeds it offers")
         }
 
         burnTask = Task {

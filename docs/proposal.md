@@ -138,6 +138,14 @@ Everything above the transport is plain Swift. It builds and tests on any platfo
 
 All writes use WRITE(10) in 2,048-byte blocks, followed by SYNCHRONIZE CACHE. Every method needs testing on real drives, and the table will change as we learn.
 
+#### Write speed
+
+Burn writes at the slowest speed the drive offers unless told otherwise, since slower burns are less likely to fail. Burn asks the drive which speeds it offers for the disc in it with GET PERFORMANCE (type 03h), which macOS lets an app send without taking the drive. Before anything is written, it sets the speed with SET STREAMING, or SET CD SPEED for a CD. SET STREAMING holds reading to the same speed, so the engine restores the drive's own speeds before verifying. A drive that refuses the speed stops the burn while the disc is still blank.
+
+- **Settings** has one choice, Slowest or Fastest, with Slowest as the default. It applies to every kind of disc without a speed of its own.
+- **The Burn sheet** has a Speed menu listing the speeds the drive offers, plus Default, which follows Settings. A speed picked there is kept for that kind of disc. A Blu-ray's kind includes its size, such as BD-R XL 100 GB, since sizes write at different speeds. If a later disc of that kind doesn't offer the kept speed, Burn uses the nearest slower one.
+- If the drive doesn't report its speeds, the menu says so and the drive picks.
+
 ### 5.5 Verification
 
 - While writing, the engine hashes every block range it sends (SHA-256 per 16 MiB, plus one for the whole image).

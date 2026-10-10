@@ -53,6 +53,8 @@ struct BurnSheet: View {
                 Toggle("Eject when done", isOn: $model.ejectWhenDone)
             }
 
+            speed
+
             HStack {
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
@@ -62,12 +64,56 @@ struct BurnSheet: View {
                     model.burn()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(model.discSet == nil && !model.burningImage && model.discName.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(!model.speedsRead
+                          || model.discSet == nil && !model.burningImage && model.discName.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .padding(20)
         .frame(width: 440)
         .onAppear { nameFocused = true }
+        .task { await model.readWriteSpeeds() }
+    }
+
+    /// The write speed: Default follows Settings, and a speed picked here is kept for this kind
+    /// of disc.
+    private var speed: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Picker("Speed", selection: $model.chosenSpeed) {
+                Text(defaultTitle).tag(WriteSpeed?.none)
+                if !model.offeredSpeeds.isEmpty {
+                    Divider()
+                }
+                ForEach(model.offeredSpeeds, id: \.self) { speed in
+                    Text(model.speedLabel(speed)).tag(WriteSpeed?.some(speed))
+                }
+            }
+            .fixedSize()
+            .disabled(model.offeredSpeeds.isEmpty)
+            Text(speedNote)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var defaultTitle: String {
+        let setting = model.speedDefault == .fastest ? String(localized: "Fastest") : String(localized: "Slowest")
+        guard model.speedsRead else { return String(localized: "Default: \(setting)") }
+        guard let speed = model.speedDefault == .fastest ? model.offeredSpeeds.last : model.offeredSpeeds.first else {
+            return String(localized: "The drive's choice")
+        }
+        return String(localized: "Default: \(setting), \(model.speedLabel(speed))")
+    }
+
+    private var speedNote: String {
+        if !model.speedsRead { return String(localized: "Asking the drive which speeds it offers…") }
+        if model.offeredSpeeds.isEmpty {
+            return String(localized: "The drive doesn't say which speeds it offers for this disc, so it picks one itself.")
+        }
+        if model.chosenSpeed != nil, let type = model.speedDiscType {
+            return String(localized: "Kept for \(type) discs. Choose Default to follow Settings again.")
+        }
+        return String(localized: "Default follows Settings. A speed picked here is kept for this kind of disc.")
     }
 
     private var title: String {

@@ -447,6 +447,12 @@ static int32_t BKMMCExecuteShared(BKMMCDevice *device, const uint8_t *cdb, uint8
         return (*mmc)->ReadTableOfContents(mmc, (cdb[1] >> 1) & 0x01, cdb[2] & 0x0F, cdb[6],
                                            buffer, length16, status, sense);
 
+    case 0xAC: // GET PERFORMANCE, with its TYPE field, such as 03h for write speeds
+        if (cdbLength < 12) return kIOReturnBadArgument;
+        return (*mmc)->GetPerformanceV2(mmc, cdb[1] & 0x1F, BKMMCReadUInt32(&cdb[2]),
+                                        (uint16_t)((cdb[8] << 8) | cdb[9]), cdb[10],
+                                        buffer, length16, status, sense);
+
     case 0x1B: { // START STOP UNIT, only for moving the tray
         if (cdbLength < 6 || (cdb[4] & 0x02) == 0) return BKMMC_ERROR_NEEDS_EXCLUSIVE_ACCESS;
         UInt8 tray = (cdb[4] & 0x01) ? kMMCDeviceTrayClosed : kMMCDeviceTrayOpen;

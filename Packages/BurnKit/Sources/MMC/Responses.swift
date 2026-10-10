@@ -316,6 +316,67 @@ public enum ModePage {
 }
 
 /// One format the drive can apply to the disc, from READ FORMAT CAPACITIES.
+/// A speed the drive can write the disc in it at, from GET PERFORMANCE (type 03h).
+public struct WriteSpeed: Sendable, Hashable, Comparable, Codable {
+    /// Kilobytes (1,000 bytes) a second, as the drive reports it.
+    public var kilobytesPerSecond: UInt32
+
+    public init(kilobytesPerSecond: UInt32) {
+        self.kilobytesPerSecond = kilobytesPerSecond
+    }
+
+    public static func < (lhs: WriteSpeed, rhs: WriteSpeed) -> Bool {
+        lhs.kilobytesPerSecond < rhs.kilobytesPerSecond
+    }
+
+    /// The disc type's 1x in kilobytes a second: a CD's 75 blocks of 2,352 bytes, and the
+    /// DVD and Blu-ray standards' own.
+    public static func single(for mediaClass: MediaProfile.MediaClass) -> Double {
+        switch mediaClass {
+        case .cd: return 176.4
+        case .bluRay: return 4_495.5
+        default: return 1_385
+        }
+    }
+
+    /// Such as "2x", or "2.4x" when it isn't a whole multiple.
+    public func label(for mediaClass: MediaProfile.MediaClass) -> String {
+        let multiple = Double(kilobytesPerSecond) / Self.single(for: mediaClass)
+        let rounded = multiple.rounded()
+        if abs(multiple - rounded) < 0.1 { return "\(Int(rounded))x" }
+        return String(format: "%.1fx", multiple)
+    }
+
+    /// The speeds in a GET PERFORMANCE (type 03h) answer, slowest first, each once. Drives list
+    /// a speed again for each way of spinning the disc.
+    public static func list(from bytes: [UInt8]) -> [WriteSpeed] {
+        guard bytes.count >= 8 else { return [] }
+        let end = min(bytes.count, 4 + Int(bytes.uint32(at: 0)))
+        var speeds = Set<WriteSpeed>()
+        var offset = 8
+        while offset + 16 <= end {
+            let speed = bytes.uint32(at: offset + 12)
+            if speed > 0 { speeds.insert(WriteSpeed(kilobytesPerSecond: speed)) }
+            offset += 16
+        }
+        return speeds.sorted()
+    }
+
+    /// Write speed descriptors in the form GET PERFORMANCE returns them, for the simulated drive.
+    public static func descriptors(_ speeds: [WriteSpeed], endBlock: UInt32) -> [UInt8] {
+        var bytes = [UInt8](repeating: 0, count: 8)
+        bytes.put(UInt32(4 + speeds.count * 16), at: 0)
+        for speed in speeds {
+            var descriptor = [UInt8](repeating: 0, count: 16)
+            descriptor.put(endBlock, at: 4)
+            descriptor.put(speed.kilobytesPerSecond, at: 8)
+            descriptor.put(speed.kilobytesPerSecond, at: 12)
+            bytes += descriptor
+        }
+        return bytes
+    }
+}
+
 public struct FormatDescriptor: Sendable, Equatable {
     public var blocks: UInt32
     /// Such as 10h, a full format of a DVD-RW.

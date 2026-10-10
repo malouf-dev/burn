@@ -95,6 +95,23 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     private var _busyAfterWriteError = 0
     private var discInformationBusy = 0
 
+    /// The write speeds GET PERFORMANCE reports for the disc. None by default, as for a drive
+    /// that doesn't say.
+    public var offeredWriteSpeeds: [WriteSpeed] {
+        get { withLock { _offeredWriteSpeeds } }
+        set { withLock { _offeredWriteSpeeds = newValue } }
+    }
+    private var _offeredWriteSpeeds: [WriteSpeed] = []
+    /// When true, SET STREAMING and SET CD SPEED are refused as an invalid field.
+    public var refusesWriteSpeed: Bool {
+        get { withLock { _refusesWriteSpeed } }
+        set { withLock { _refusesWriteSpeed = newValue } }
+    }
+    private var _refusesWriteSpeed = false
+    /// The write speed last set, in kilobytes a second, or nil for the drive's own.
+    public var writeSpeedSet: UInt32? { withLock { _writeSpeedSet } }
+    private var _writeSpeedSet: UInt32?
+
     /// When set, the disc disappears after this many successful writes.
     public var removeMediaAfterWrites: Int? {
         get { withLock { _removeMediaAfterWrites } }
@@ -251,7 +268,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         try withLock { try handle(command) }
     }
 
-    private static let sharedCommands: Set<UInt8> = [0x00, 0x12, 0x46, 0x51, 0x52, 0x5A, 0x43, 0x1B]
+    private static let sharedCommands: Set<UInt8> = [0x00, 0x12, 0x46, 0x51, 0x52, 0x5A, 0x43, 0x1B, 0xAC]
 
     private func handle(_ command: SCSICommand) throws -> SCSIResponse {
         let cdb = command.cdb
@@ -313,6 +330,9 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         case 0x23: return readFormatCapacities(command)
         case 0x04: return formatUnit(command)
         case 0x1B: return startStopUnit(cdb)
+        case 0xAC: return getPerformance(command)
+        case 0xB6: return setStreaming(command)
+        case 0xBB: return setCDSpeed(cdb)
         case 0x1E:
             _mediumRemovalPrevented = cdb[4] & 0x01 != 0
             return .good()
@@ -578,6 +598,26 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         media.unreadable = false
         media.reserved = nil
         self.media = media
+        return .good()
+    }
+
+    private func getPerformance(_ command: SCSICommand) -> SCSIResponse {
+        guard let media else { return .check(.mediumNotPresent) }
+        guard command.cdb[10] == 0x03 else { return .check(.invalidFieldInCDB) }
+        let bytes = WriteSpeed.descriptors(_offeredWriteSpeeds, endBlock: media.capacityBlocks - 1)
+        return .good(Array(bytes.prefix(allocation(command))))
+    }
+
+    private func setStreaming(_ command: SCSICommand) -> SCSIResponse {
+        guard case .toDevice(let data) = command.direction, data.count == 28 else { return .check(.invalidFieldInCDB) }
+        guard !_refusesWriteSpeed else { return .check(SenseData(key: 0x05, asc: 0x26, ascq: 0x00)) }
+        _writeSpeedSet = data[0] & 0x04 != 0 ? nil : data.uint32(at: 20)
+        return .good()
+    }
+
+    private func setCDSpeed(_ cdb: [UInt8]) -> SCSIResponse {
+        guard !_refusesWriteSpeed else { return .check(.invalidFieldInCDB) }
+        _writeSpeedSet = UInt32(cdb.uint16(at: 4))
         return .good()
     }
 

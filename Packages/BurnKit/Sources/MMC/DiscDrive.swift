@@ -9,12 +9,16 @@ public struct WriteOptions: Sendable {
     /// Erase a rewritable disc that has data on it, then burn. The drive is held throughout, so
     /// macOS never reads the disc in between.
     public var eraseFirst: Bool
+    /// The speed to write at, set before anything is written. Nil leaves it to the drive.
+    public var writeSpeed: WriteSpeed?
 
-    public init(simulate: Bool = false, verify: Bool = true, ejectWhenDone: Bool = false, eraseFirst: Bool = false) {
+    public init(simulate: Bool = false, verify: Bool = true, ejectWhenDone: Bool = false, eraseFirst: Bool = false,
+                writeSpeed: WriteSpeed? = nil) {
         self.simulate = simulate
         self.verify = verify
         self.ejectWhenDone = ejectWhenDone
         self.eraseFirst = eraseFirst
+        self.writeSpeed = writeSpeed
     }
 }
 
@@ -146,6 +150,13 @@ public actor DiscDrive {
     public func state() async throws -> DriveState {
         guard !isBusy else { throw DriveError.busy }
         return try await readState()
+    }
+
+    /// The speeds the drive can write the disc in it at, slowest first, or none when the drive
+    /// doesn't say. Needs no exclusive access, so it can be asked while macOS has the drive.
+    public func writeSpeeds() async throws -> [WriteSpeed] {
+        guard !isBusy else { throw DriveError.busy }
+        return WriteSpeed.list(from: try await run(MMC.getWriteSpeeds(), "GET PERFORMANCE (write speeds)"))
     }
 
     private func readState() async throws -> DriveState {
@@ -294,6 +305,10 @@ public actor DiscDrive {
                              progress: @escaping @Sendable (WriteProgress) -> Void) async throws -> WriteReport {
         let imageBlocks = image.blockCount
         _ = try? await perform(MMC.preventAllowMediumRemoval(prevent: true))
+        if let speed = options.writeSpeed {
+            let endBlock = UInt32(max(Int(disc.freeBlocks), paddedBlocks) - 1)
+            try await setWriteSpeed(speed, profile: disc.profile, endBlock: endBlock)
+        }
 
         switch method {
         case .cdTrackAtOnce:
@@ -369,6 +384,14 @@ public actor DiscDrive {
         // Verify.
         var verified = false
         if options.verify && !options.simulate {
+            // SET STREAMING held reading to the write speed too. Verify reads at the drive's own.
+            if options.writeSpeed != nil && disc.profile.mediaClass != .cd {
+                do {
+                    _ = try await run(MMC.restoreDefaultSpeeds(), "SET STREAMING (drive's own speeds)")
+                } catch {
+                    log.note("Verifying at the write speed: the drive didn't go back to its own speeds. \(error)")
+                }
+            }
             try await verify(image, startBlock: startBlock, progress: progress)
             verified = true
         }
@@ -441,6 +464,21 @@ public actor DiscDrive {
             }
         }
         log.note("Verified \(total) blocks")
+    }
+
+    /// Sets the write speed before anything is written. A drive that won't take it stops the
+    /// burn while the disc is still as it was, rather than writing at a speed nobody chose.
+    private func setWriteSpeed(_ speed: WriteSpeed, profile: MediaProfile, endBlock: UInt32) async throws {
+        let label = speed.label(for: profile.mediaClass)
+        let command = profile.mediaClass == .cd
+            ? MMC.setCDSpeed(writeKilobytesPerSecond: UInt16(clamping: speed.kilobytesPerSecond))
+            : MMC.setStreaming(writeKilobytesPerSecond: speed.kilobytesPerSecond, endBlock: endBlock)
+        do {
+            _ = try await run(command, profile.mediaClass == .cd ? "SET CD SPEED" : "SET STREAMING")
+        } catch {
+            throw DriveError.speedNotAccepted(label: label, reason: "\(error)")
+        }
+        log.note("Write speed set to \(label), \(speed.kilobytesPerSecond) kB/s")
     }
 
     private func setWriteParameters(_ parameters: WriteParameters) async throws {

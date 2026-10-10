@@ -25,6 +25,49 @@ struct CommandTests {
         #expect(command.cdb == [0x46, 0x01, 0x01, 0x02, 0, 0, 0, 0x04, 0x00, 0])
     }
 
+    @Test func getWriteSpeeds() {
+        let command = MMC.getWriteSpeeds(maxDescriptors: 4)
+        #expect(command.cdb == [0xAC, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0x03, 0])
+        #expect(command.direction == .fromDevice(length: 8 + 4 * 16))
+    }
+
+    @Test func setStreamingSetsWritingAndReadingSpeed() {
+        let command = MMC.setStreaming(writeKilobytesPerSecond: 8_990, endBlock: 48_878_591)
+        #expect(command.cdb == [0xB6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 28, 0])
+        guard case .toDevice(let parameters) = command.direction else { Issue.record("no parameters"); return }
+        #expect(parameters.count == 28)
+        #expect(parameters[0] == 0)
+        #expect(parameters.uint32(at: 4) == 0)
+        #expect(parameters.uint32(at: 8) == 48_878_591)
+        #expect(parameters.uint32(at: 12) == 8_990)
+        #expect(parameters.uint32(at: 16) == 1_000)
+        #expect(parameters.uint32(at: 20) == 8_990)
+        #expect(parameters.uint32(at: 24) == 1_000)
+        guard case .toDevice(let restore) = MMC.restoreDefaultSpeeds().direction else { return }
+        #expect(restore == [0x04] + [UInt8](repeating: 0, count: 27))
+    }
+
+    @Test func setCDSpeedLeavesReadingAtItsFastest() {
+        #expect(MMC.setCDSpeed(writeKilobytesPerSecond: 2_822).cdb == [0xBB, 0, 0xFF, 0xFF, 0x0B, 0x06, 0, 0, 0, 0, 0, 0])
+    }
+
+    @Test func writeSpeedsAreListedOnceSlowestFirst() {
+        let speeds = [26_970, 8_990, 17_980, 8_990, 0].map { WriteSpeed(kilobytesPerSecond: UInt32($0)) }
+        let bytes = WriteSpeed.descriptors(speeds, endBlock: 100)
+        #expect(WriteSpeed.list(from: bytes).map(\.kilobytesPerSecond) == [8_990, 17_980, 26_970])
+        // A short answer gives what it holds.
+        #expect(WriteSpeed.list(from: Array(bytes.prefix(8 + 16))).map(\.kilobytesPerSecond) == [26_970])
+        #expect(WriteSpeed.list(from: []).isEmpty)
+    }
+
+    @Test func writeSpeedLabels() {
+        #expect(WriteSpeed(kilobytesPerSecond: 8_990).label(for: .bluRay) == "2x")
+        #expect(WriteSpeed(kilobytesPerSecond: 26_970).label(for: .bluRay) == "6x")
+        #expect(WriteSpeed(kilobytesPerSecond: 3_324).label(for: .dvd) == "2.4x")
+        #expect(WriteSpeed(kilobytesPerSecond: 11_080).label(for: .dvd) == "8x")
+        #expect(WriteSpeed(kilobytesPerSecond: 7_056).label(for: .cd) == "40x")
+    }
+
     @Test func reserveTrack() {
         let command = MMC.reserveTrack(blocks: 0x0001_0000)
         #expect(command.cdb == [0x53, 0, 0, 0, 0, 0x00, 0x01, 0x00, 0x00, 0])

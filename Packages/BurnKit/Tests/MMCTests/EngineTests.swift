@@ -173,6 +173,59 @@ struct WriteTests {
         #expect(try await discState(drive)?.writability == .blank)
     }
 
+    @Test func theWriteSpeedIsSetBeforeAnythingIsWritten() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .bdRSequential, capacityBlocks: 20_000))
+        let speeds = [26_970, 8_990, 17_980, 8_990].map { WriteSpeed(kilobytesPerSecond: UInt32($0)) }
+        simulator.offeredWriteSpeeds = speeds
+        let log = CommandLog()
+        let drive = DiscDrive(transport: simulator, log: log)
+        // Asked without taking the drive, slowest first, each once.
+        let offered = try await drive.writeSpeeds()
+        #expect(offered.map(\.kilobytesPerSecond) == [8_990, 17_980, 26_970])
+        #expect(!simulator.hasExclusiveAccess)
+
+        let report = try await drive.write(patternImage(blocks: 100), options: WriteOptions(writeSpeed: offered[0]))
+        #expect(report.verified)
+        let codes = simulator.operationCodes
+        let speedSet = try #require(codes.firstIndex(of: 0xB6))
+        let firstWrite = try #require(codes.firstIndex(of: 0x2A))
+        let firstRead = try #require(codes.firstIndex(of: 0x28))
+        #expect(speedSet < firstWrite)
+        // Verify reads at the drive's own speed again.
+        let restored = try #require(codes.lastIndex(of: 0xB6))
+        #expect(restored > firstWrite && restored < firstRead)
+        #expect(simulator.writeSpeedSet == nil)
+        #expect(log.render().contains("Write speed set to 2x, 8990 kB/s"))
+    }
+
+    @Test func aCDTakesItsSpeedFromSetCDSpeed() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .cdR, capacityBlocks: 359_844))
+        let speed = WriteSpeed(kilobytesPerSecond: 2_822)
+        let drive = DiscDrive(transport: simulator)
+        _ = try await drive.write(patternImage(blocks: 100), options: WriteOptions(writeSpeed: speed))
+        let codes = simulator.operationCodes
+        #expect(try #require(codes.firstIndex(of: 0xBB)) < (try #require(codes.firstIndex(of: 0x2A))))
+        #expect(!codes.contains(0xB6))
+        #expect(simulator.writeSpeedSet == 2_822)
+    }
+
+    @Test func aRefusedSpeedStopsTheBurnBeforeAnythingIsWritten() async throws {
+        let simulator = SimulatedDrive(media: .init(profile: .bdRSequential, capacityBlocks: 20_000))
+        simulator.refusesWriteSpeed = true
+        let drive = DiscDrive(transport: simulator)
+        await #expect {
+            try await drive.write(patternImage(blocks: 100),
+                                  options: WriteOptions(writeSpeed: WriteSpeed(kilobytesPerSecond: 8_990)))
+        } throws: { error in
+            guard case DriveError.speedNotAccepted(let label, _) = error else { return false }
+            return label == "2x"
+        }
+        #expect(!simulator.operationCodes.contains(0x2A))
+        #expect(!(await drive.isHoldingDrive))
+        #expect(!simulator.hasExclusiveAccess)
+        #expect(try await discState(drive)?.writability == .blank)
+    }
+
     @Test func aDiscEjectedAfterAWriteErrorIsReportedAsEjected() async throws {
         // Hardware run 28: a BD-R XL write failed with 03/0C/00, then READ DISC INFORMATION
         // answered "operation in progress" for longer than the engine waits. The disc was

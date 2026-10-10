@@ -78,6 +78,52 @@ public enum MMC {
                            timeout: immediate ? 60 : 3600)
     }
 
+    /// GET PERFORMANCE for write speed descriptors (type 03h): the speeds the drive can write the
+    /// disc in it at.
+    public static func getWriteSpeeds(maxDescriptors: UInt16 = 32) -> SCSICommand {
+        var cdb = [UInt8](repeating: 0, count: 12)
+        cdb[0] = 0xAC
+        cdb.put(maxDescriptors, at: 8)
+        cdb[10] = 0x03
+        return SCSICommand(cdb: cdb, direction: .fromDevice(length: 8 + Int(maxDescriptors) * 16), timeout: 10)
+    }
+
+    /// SET STREAMING with one performance descriptor: write at `speed` kilobytes (1,000 bytes) a
+    /// second from block 0 to `endBlock`. DVD and Blu-ray drives take their write speed this way.
+    /// Reading is held to the same speed until `restoreDefaultSpeeds`.
+    public static func setStreaming(writeKilobytesPerSecond speed: UInt32, endBlock: UInt32) -> SCSICommand {
+        var parameters = [UInt8](repeating: 0, count: 28)
+        parameters.put(endBlock, at: 8)
+        parameters.put(speed, at: 12)
+        parameters.put(UInt32(1000), at: 16)
+        parameters.put(speed, at: 20)
+        parameters.put(UInt32(1000), at: 24)
+        return setStreaming(parameters)
+    }
+
+    /// SET STREAMING with Restore Drive Defaults set: the drive goes back to its own speeds.
+    public static func restoreDefaultSpeeds() -> SCSICommand {
+        var parameters = [UInt8](repeating: 0, count: 28)
+        parameters[0] = 0x04
+        return setStreaming(parameters)
+    }
+
+    private static func setStreaming(_ parameters: [UInt8]) -> SCSICommand {
+        var cdb = [UInt8](repeating: 0, count: 12)
+        cdb[0] = 0xB6
+        cdb.put(UInt16(parameters.count), at: 9)
+        return SCSICommand(cdb: cdb, direction: .toDevice(parameters), timeout: 30)
+    }
+
+    /// SET CD SPEED: CD drives take their write speed this way. Reading stays at its fastest.
+    public static func setCDSpeed(writeKilobytesPerSecond speed: UInt16) -> SCSICommand {
+        var cdb = [UInt8](repeating: 0, count: 12)
+        cdb[0] = 0xBB
+        cdb.put(UInt16(0xFFFF), at: 2)
+        cdb.put(speed, at: 4)
+        return SCSICommand(cdb: cdb, timeout: 30)
+    }
+
     /// RESERVE TRACK for a size in blocks.
     public static func reserveTrack(blocks: UInt32) -> SCSICommand {
         var cdb = [UInt8](repeating: 0, count: 10)
