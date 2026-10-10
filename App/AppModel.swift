@@ -641,9 +641,18 @@ final class AppModel {
             await withCheckedContinuation { continuation in
                 Task { @MainActor in
                     guard let self else { return continuation.resume(returning: .abandon) }
-                    self.hold(held, until: continuation)
+                    self.hold(held) { continuation.resume(returning: $0) }
                 }
             }
+        }
+        // Making the recovery data runs on its own thread, which waits here for the answer.
+        let whenHeldPreparing: @Sendable (HeldBurn) -> HeldBurnChoice = { [weak self] held in
+            let answer = HeldAnswer()
+            Task { @MainActor in
+                guard let self else { return answer.give(.abandon) }
+                self.hold(held) { answer.give($0) }
+            }
+            return answer.wait()
         }
         let onRetry: @Sendable (String?) -> Void = { [weak self] text in
             Task { @MainActor in self?.retrying = text }
@@ -691,7 +700,8 @@ final class AppModel {
                     log.note("Disc image opened: \(image.blockCount) blocks")
                 } else {
                     image = try await makeImage(log: log, set: set, setNumber: setNumber, name: name, urls: urls,
-                                                checksums: checksums, recovery: recovery, version: version)
+                                                checksums: checksums, recovery: recovery, version: version,
+                                                whenHeld: whenHeldPreparing, onRetry: onRetry)
                 }
                 try Task.checkCancellation()
                 guard disc.canOverwrite || image.blockCount <= Int(disc.freeBlocks) else {
@@ -736,7 +746,9 @@ final class AppModel {
     /// first, before the drive is taken. The image itself is made as the drive asks for it, so
     /// nothing is written to disk first.
     private func makeImage(log: CommandLog, set: DiscSetPlan?, setNumber: Int, name: String, urls: [URL],
-                           checksums: Bool, recovery: Int, version: String) async throws -> DiscImage {
+                           checksums: Bool, recovery: Int, version: String,
+                           whenHeld: @escaping @Sendable (HeldBurn) -> HeldBurnChoice,
+                           onRetry: @escaping @Sendable (String?) -> Void) async throws -> DiscImage {
         let image = try await Task.detached(priority: .userInitiated) {
             if let set { return try set.builder(forDisc: setNumber).image() }
             var builder = ISOImageBuilder(volumeName: name)
@@ -754,7 +766,7 @@ final class AppModel {
             let started = Date()
             try await withTaskCancellationHandler {
                 try await Task.detached(priority: .userInitiated) {
-                    try image.prepare { fraction in
+                    try image.prepare(progress: { fraction in
                         Task { @MainActor in
                             if case .preparingRecovery(let previous) = self.activity {
                                 if Int(fraction * 10) > Int(previous * 10) {
@@ -764,7 +776,7 @@ final class AppModel {
                                 self.activity = .preparingRecovery(fraction: fraction)
                             }
                         }
-                    }
+                    }, whenHeld: whenHeld, onRetry: onRetry)
                 }.value
             } onCancel: {
                 image.cancelPreparing()
@@ -785,11 +797,11 @@ final class AppModel {
     /// A step of the burn that failed every automatic try. The burn keeps the drive and the disc
     /// and waits for the user to try again or abandon it.
     private(set) var heldBurn: HeldBurn?
-    private var heldAnswer: CheckedContinuation<HeldBurnChoice, Never>?
+    private var heldAnswer: ((HeldBurnChoice) -> Void)?
     /// What's being tried again while a step is retried, shown under the progress.
     private(set) var retrying: String?
 
-    private func hold(_ held: HeldBurn, until answer: CheckedContinuation<HeldBurnChoice, Never>) {
+    private func hold(_ held: HeldBurn, answer: @escaping (HeldBurnChoice) -> Void) {
         heldAnswer = answer
         heldBurn = held
         retrying = nil
@@ -800,7 +812,7 @@ final class AppModel {
 
     func answerHeldBurn(_ choice: HeldBurnChoice) {
         SessionLog.events.note(choice == .tryAgain ? "Held burn: Try Again chosen" : "Held burn: Abandon Burn chosen")
-        heldAnswer?.resume(returning: choice)
+        heldAnswer?(choice)
         heldAnswer = nil
         heldBurn = nil
     }
@@ -869,5 +881,21 @@ final class AppModel {
     func copyDiagnosticReport() {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(lastLog, forType: .string)
+    }
+}
+
+/// An answer a background thread waits for while the main thread asks the user.
+private final class HeldAnswer: @unchecked Sendable {
+    private let ready = DispatchSemaphore(value: 0)
+    private var choice = HeldBurnChoice.abandon
+
+    func give(_ choice: HeldBurnChoice) {
+        self.choice = choice
+        ready.signal()
+    }
+
+    func wait() -> HeldBurnChoice {
+        ready.wait()
+        return choice
     }
 }

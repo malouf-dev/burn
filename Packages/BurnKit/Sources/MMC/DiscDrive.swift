@@ -753,7 +753,7 @@ public actor DiscDrive {
     }
 
     /// An error in a few plain words, such as "input/output error" for EIO.
-    static func plain(_ error: any Error) -> String {
+    public static func plain(_ error: any Error) -> String {
         if let posix = error as? POSIXError {
             return String(cString: strerror(posix.code.rawValue)).lowercased()
         }

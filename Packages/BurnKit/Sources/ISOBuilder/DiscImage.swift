@@ -57,6 +57,18 @@ public final class DiscImage: @unchecked Sendable {
     private var checksums: [UInt8]?
     private var recovery: (index: [UInt8], volume: URL)?
     private let cancelled = Atomic<Bool>(false)
+    /// How `prepare` retries and holds while it reads the files. Nil outside `prepare`.
+    private var patience: Patience?
+    /// For tests: called before each read while preparing, with the file's path on the disc and
+    /// the offset, so a read can be made to fail.
+    var readFault: ((String, UInt64) throws -> Void)?
+
+    /// What `prepare` does when a file can't be read: wait and read again, then ask.
+    private struct Patience {
+        let waits: [TimeInterval]
+        let whenHeld: ((HeldBurn) -> HeldBurnChoice)?
+        let onRetry: ((String?) -> Void)?
+    }
 
     init(layout: Layout, volumeName: String, date: Date) {
         self.layout = layout
@@ -133,11 +145,25 @@ public final class DiscImage: @unchecked Sendable {
         lock.withLock { layout.recovery != nil && recovery == nil }
     }
 
+    /// Waits before each try of a file read that failed: five more tries over about a minute.
+    public static let standardRetryWaits: [TimeInterval] = [2, 5, 10, 15, 30]
+
     /// Reads every file to hash it and make the recovery data, reporting the fraction done.
     /// Blocks until done, so call it off the main thread. Does nothing without recovery data.
-    public func prepare(progress: ((Double) -> Void)? = nil) throws {
+    ///
+    /// A read that fails is tried again after each of `retryWaits`, with the file opened again,
+    /// since a file on a drive that dropped out can't be read through the old handle (hardware
+    /// run 26). If every try fails, `whenHeld` decides whether to go round again; it blocks this
+    /// thread until it answers. The work done so far is kept, so trying again carries on from
+    /// the same place. Without `whenHeld`, the last error is thrown.
+    public func prepare(progress: ((Double) -> Void)? = nil,
+                        retryWaits: [TimeInterval] = DiscImage.standardRetryWaits,
+                        whenHeld: ((HeldBurn) -> HeldBurnChoice)? = nil,
+                        onRetry: ((String?) -> Void)? = nil) throws {
         lock.lock()
         defer { lock.unlock() }
+        patience = Patience(waits: retryWaits, whenHeld: whenHeld, onRetry: onRetry)
+        defer { patience = nil }
         try prepareLocked(progress: progress)
     }
 
@@ -353,9 +379,7 @@ private extension DiscImage {
         var first16K: [[UInt8]] = []
         var names: [[UInt8]] = []
         for file in files {
-            let handle = try self.handle(for: file)
-            try handle.seek(toOffset: file.sourceOffset)
-            let head = try handle.readBytes(16384)
+            let head = try patientRead(file, at: 0, count: 16384)
             guard head.count == Int(min(16384, file.size)) else { throw changed(file) }
             let name = Array(layout.discPath(file).utf8)
             let hash = PAR2.md5(head[...])
@@ -396,8 +420,6 @@ private extension DiscImage {
         for (pass, batch) in batches.enumerated() {
             let encoder = PAR2Encoder(sliceSize: sliceSize, exponents: Array(batch))
             for (number, file) in files.enumerated() {
-                let handle = try self.handle(for: file)
-                try handle.seek(toOffset: file.sourceOffset)
                 var sha = SHA256()
                 var md5 = Insecure.MD5()
                 var sums: [UInt8] = []
@@ -406,7 +428,7 @@ private extension DiscImage {
                 while remaining > 0 {
                     if cancelled.load(ordering: .relaxed) { throw CancellationError() }
                     let count = Int(min(remaining, UInt64(sliceSize)))
-                    let chunk = try handle.readBytes(count)
+                    let chunk = try patientRead(file, at: file.size - remaining, count: count)
                     guard chunk.count == count else { throw changed(file) }
                     chunk.withUnsafeBytes { encoder.add($0, inputLog: logs[firstSlice[number] + slice]) }
                     if pass == 0 {
@@ -422,7 +444,7 @@ private extension DiscImage {
                     progress?(done / work)
                 }
                 if pass == 0 {
-                    if file.partOf == nil, try !handle.readBytes(1).isEmpty { throw changed(file) }
+                    if file.partOf == nil, try !patientRead(file, at: file.size, count: 1).isEmpty { throw changed(file) }
                     digests[layout.discPath(file)] = DiscChecksums.hex(sha.finalize())
                     md5s[number] = Array(md5.finalize())
                     sliceSums[number] = sums
@@ -449,6 +471,58 @@ private extension DiscImage {
         }
         finished = true
         recovery = (index, volume)
+    }
+
+    /// Reads `count` bytes from `offset` in a file's part, patiently while `prepare` runs. A read
+    /// that fails adds nothing to the running sums, so trying again carries on from the same
+    /// place. The caller holds the lock.
+    func patientRead(_ node: Node, at offset: UInt64, count: Int) throws -> [UInt8] {
+        var tries = 0
+        while true {
+            var lastError: (any Error)?
+            for wait in [0] + (patience?.waits ?? []) {
+                if let lastError {
+                    patience?.onRetry?(readProblem(node, offset: offset, lastError) + " Trying again…")
+                    try pause(wait)
+                }
+                do {
+                    try readFault?(layout.discPath(node), offset)
+                    let handle = try self.handle(for: node)
+                    try handle.seek(toOffset: node.sourceOffset + offset)
+                    let data = try handle.readBytes(count)
+                    if lastError != nil { patience?.onRetry?(nil) }
+                    return data
+                } catch {
+                    tries += 1
+                    lastError = error
+                    try? openFile?.handle.close()
+                    openFile = nil
+                }
+            }
+            let failure = lastError ?? ISOBuilderError.unreadable(node.source?.path ?? node.name)
+            patience?.onRetry?(nil)
+            guard let whenHeld = patience?.whenHeld else { throw failure }
+            let problem = readProblem(node, offset: offset, failure)
+            let held = HeldBurn(step: .readingFiles, problem: problem,
+                                advice: "Check that the drive the files are on is connected and mounted, then try "
+                                    + "again. The recovery data made so far is kept, and nothing has been written to the disc.",
+                                tries: tries)
+            if whenHeld(held) == .abandon { throw DriveError.abandoned(problem: problem, tries: tries) }
+        }
+    }
+
+    func readProblem(_ node: Node, offset: UInt64, _ error: any Error) -> String {
+        "Burn couldn't read \(layout.discPath(node)) from byte \(offset.grouped) of \(node.size.grouped): "
+            + "\(DiscDrive.plain(error))."
+    }
+
+    /// Waits, ending early with `CancellationError` when `cancelPreparing` is called.
+    func pause(_ seconds: TimeInterval) throws {
+        let end = Date().addingTimeInterval(seconds)
+        while Date() < end {
+            if cancelled.load(ordering: .relaxed) { throw CancellationError() }
+            Thread.sleep(forTimeInterval: max(0, min(0.1, end.timeIntervalSinceNow)))
+        }
     }
 
     func readRecoveryVolume(_ node: Node, offset: UInt64, length: Int) throws -> [UInt8] {

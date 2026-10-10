@@ -404,6 +404,7 @@ struct ProgressSheet: View {
 
     /// What happens to the disc if the burn is abandoned at this step.
     private func abandonOutcome(_ step: HeldBurn.Step) -> String {
+        if step == .readingFiles { return String(localized: "Nothing has been written to the disc, so it's left as it is.") }
         if !model.isWriteOnceBurn { return String(localized: "The disc is erased so it can be used again.") }
         if step == .verifying {
             return String(localized: "The disc is already closed, so it stays in the drive. Check it in Verify: a failed verify can be the drive misreading a good disc.")

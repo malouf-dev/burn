@@ -2,6 +2,7 @@ import CryptoKit
 import Foundation
 import Testing
 @testable import ISOBuilder
+import MMC
 
 /// Reads PAR2 packets, written separately from the encoder, checking each packet's MD5.
 struct PAR2Packet {
@@ -207,6 +208,101 @@ struct PAR2Tests {
         #expect(try PAR2Packet.read(try #require(first[volume])).filter { $0.type == "PAR 2.0\0RecvSlic" }.count == 3)
         #expect(first[volume] == second[volume])
         #expect(first[".burn/recovery.par2"] == second[".burn/recovery.par2"])
+    }
+
+    /// Counts and switches shared with the closures `prepare` calls.
+    final class Box<Value>: @unchecked Sendable {
+        private let lock = NSLock()
+        private var stored: Value
+        init(_ value: Value) { stored = value }
+        var value: Value {
+            get { lock.withLock { stored } }
+            set { lock.withLock { stored = newValue } }
+        }
+    }
+
+    let quickWaits: [TimeInterval] = Array(repeating: 0.001, count: 5)
+
+    /// A file the recovery data reads in part, with a read partway through it.
+    func midFileRead(_ image: DiscImage) throws -> (path: String, offset: UInt64) {
+        var reads: [(String, UInt64)] = []
+        image.readFault = { path, offset in reads.append((path, offset)) }
+        try image.prepare(retryWaits: [])
+        image.readFault = nil
+        // Past the start, with more of the same file read after it.
+        let read = try #require(reads.first { read in
+            read.1 > 0 && reads.contains { $0.0 == read.0 && $0.1 > read.1 }
+        })
+        return (read.0, read.1)
+    }
+
+    @Test func aFileReadThatFailsWhileMakingRecoveryDataIsReadAgain() throws {
+        // Hardware run 26: a file on a drive that dropped out. The read is tried again from the
+        // same place, so the recovery data comes out exactly as it would have.
+        let (clean, _, base) = try image()
+        let (probe, _, _) = try image()
+        let target = try midFileRead(probe)
+        let (flaky, _, _) = try image()
+        let failures = Box(0)
+        flaky.readFault = { path, offset in
+            if path == target.path, offset == target.offset, failures.value < 2 {
+                failures.value += 1
+                throw POSIXError(.EIO)
+            }
+        }
+        let retries = Box<[String?]>([])
+        try flaky.prepare(retryWaits: quickWaits, onRetry: { retries.value.append($0) })
+        #expect(failures.value == 2)
+        #expect(retries.value.count == 3)
+        #expect(retries.value.first??.hasPrefix("Burn couldn't read \(target.path) from byte \(target.offset.grouped)") == true)
+        #expect(retries.value.last == .some(nil))
+
+        let first = try files(clean, at: base, name: "clean.iso")
+        let second = try files(flaky, at: base, name: "flaky.iso")
+        let volume = try #require(first.keys.first { $0.hasPrefix(".burn/recovery.vol") })
+        #expect(first[volume] == second[volume])
+        #expect(first[".burn/recovery.par2"] == second[".burn/recovery.par2"])
+        #expect(first[".burn/SHA256SUMS"] == second[".burn/SHA256SUMS"])
+    }
+
+    @Test func aFileThatStaysUnreadableHoldsUntilTriedAgain() throws {
+        let (image, _, _) = try image()
+        let back = Box(false)
+        image.readFault = { path, _ in
+            if path.hasSuffix("readme.txt"), !back.value { throw POSIXError(.EIO) }
+        }
+        let held = Box<[HeldBurn]>([])
+        try image.prepare(retryWaits: quickWaits, whenHeld: { burn in
+            held.value.append(burn)
+            back.value = true
+            return .tryAgain
+        })
+        let burn = try #require(held.value.first)
+        #expect(held.value.count == 1)
+        #expect(burn.step == .readingFiles)
+        #expect(burn.tries == 6)
+        #expect(burn.problem.contains("readme.txt from byte 0 of"))
+        #expect(burn.problem.hasSuffix("input/output error."))
+        #expect(burn.advice.contains("nothing has been written to the disc"))
+        #expect(!image.needsPreparing)
+    }
+
+    @Test func makingRecoveryDataCanBeAbandoned() throws {
+        let (image, _, _) = try image()
+        image.readFault = { path, _ in if path.hasSuffix("readme.txt") { throw POSIXError(.EIO) } }
+        #expect {
+            try image.prepare(retryWaits: quickWaits, whenHeld: { _ in .abandon })
+        } throws: { error in
+            guard case DriveError.abandoned(_, let tries) = error else { return false }
+            return tries == 6
+        }
+        #expect(image.needsPreparing)
+    }
+
+    @Test func withNobodyToAskTheReadErrorIsThrown() throws {
+        let (image, _, _) = try image()
+        image.readFault = { path, _ in if path.hasSuffix("readme.txt") { throw POSIXError(.EIO) } }
+        #expect(throws: POSIXError.self) { try image.prepare(retryWaits: quickWaits) }
     }
 
     @Test func recoveryCanBeLeftOut() throws {

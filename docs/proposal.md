@@ -158,7 +158,7 @@ Closing the disc works this way too. Flushing the drive's memory is simply sent 
 
 Verify's reads from the disc work this way too. A block that reads back different from what was written, or that the drive reports it can't read, is read again after each wait, since the drive sometimes misreads a good disc (hardware runs 18, 20, 25 and 27). Verify fails only when every try does and the user abandons the burn. A write-once disc abandoned during verify is already closed, so it stays in the drive to be checked in Verify.
 
-Making the recovery data is next.
+Making the recovery data works this way too. It reads every file before the drive is touched, which took up to 1.7 hours a disc for the Cold Case set. A read that fails is tried again from the same place, with the file opened again, and the running checksums and recovery sums are kept, so Try Again carries on rather than starting over. The recovery data comes out exactly as it would have without the error. Abandoning at this step leaves the disc untouched.
 
 Retrying never covers for a disc that can't pass verify. Recovery data is for damage that comes later, not for a bad write, so a burn that can't write every block as planned is abandoned.
 
