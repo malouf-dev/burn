@@ -22,7 +22,7 @@ This is the plan for the new app on the `main` branch of `malouf-dev/burn`. It i
 7. Engineering rules
 8. Architecture
 9. Milestone 0.1 alpha
-10. Repository, CI and testing
+10. Repository, checks and testing
 11. Roadmap after 0.1
 12. Risks and unknowns
 13. Reference map of Burn's source
@@ -107,7 +107,7 @@ App (SwiftUI)
             └─ Transport (one small module)
                  ├─ IOKit MMCDeviceInterface / SCSITask   today
                  ├─ DriverKit type 05 driver              fallback if Apple removes the IOKit path
-                 └─ Simulated drive                       tests and CI
+                 └─ Simulated drive                       tests and checks
 ```
 
 Everything above the transport is plain Swift. It builds and tests on any platform.
@@ -188,13 +188,13 @@ The visual design is open. 0.1 uses standard controls.
 2. **Swift 6 language mode with complete concurrency checking.** Zero warnings.
 3. **Licence hygiene (D5).** Don't copy or translate code from Burn, libburn or cdrecord. Work from the MMC and ISO 9660 standards and from observed behaviour.
 4. **Standard SwiftUI controls and SF Symbols.**
-5. **Everything testable without hardware** except the transport. The simulated drive covers the engine in CI.
+5. **Everything testable without hardware** except the transport. The simulated drive covers the engine in the tests.
 6. **Log every command.** Each operation writes the commands sent, the data sizes, the sense data and the timings to a diagnostic log. A command that gets the same answer as last time, such as the drive being checked every 2 seconds while it's empty, is logged again only when the answer changes or a new operation starts. A run of successful writes or reads is one line for its first command and one summary line, with a progress line every 30 seconds. Errors are always logged.
-7. **No binaries in git.** Helper tools, if any are added later, are built by CI from pinned sources.
+7. **No binaries in git.** Helper tools, if any are added later, are built from pinned sources.
 8. **Few dependencies, all through Swift Package Manager.** 0.1 has none.
 9. **A thin Xcode project.** Code lives in `Packages/BurnKit`.
 10. **Rolling minimum macOS (D4).** Review each September.
-11. **CI on every push**, plus a job against each year's Xcode beta.
+11. **Checks before every push.** `scripts/check.sh` builds everything with zero warnings, runs every test, and puts disc images and recovery data through macOS's own tools and `par2`.
 12. **String Catalogs from the first string.**
 
 ## 8. Architecture
@@ -217,7 +217,7 @@ Packages/BurnKit/
     burnctl/                  command-line tool for hardware tests
   Tests/
 Burn.xcodeproj, App/          SwiftUI app
-.github/workflows/ci.yml
+scripts/                      check.sh, run-app.sh, compare-trees.py
 ```
 
 ### 8.2 Concurrency
@@ -237,7 +237,7 @@ An app that opens, sees a disc, and writes files to it with verification.
 1. Branch, docs, licence and CI. Done.
 2. MMC commands and parsers with tests, and the simulated drive. Done.
 3. The engine: drive status, write and verify, quick erase, against the simulated drive. Done.
-4. The ISO 9660 + Joliet builder, tested by mounting its output in CI with `hdiutil`. Done.
+4. The ISO 9660 + Joliet builder, tested by mounting its output with `hdiutil` in the checks. Done.
 5. The IOKit transport and `burnctl`. Done, and tested on a Pioneer BDR-UD04 (runs 1 to 17).
 6. The SwiftUI app: drive and disc state, adding files, burning with progress, results. Done, and reworked after its first use on the owner's Mac: burn sheet, file table, log panel, Verify.
 7. First hardware sessions: CD-R, DVD-R and DVD-RW burned and verified. See `docs/hardware-testing.md`.
@@ -269,7 +269,7 @@ An app that opens, sees a disc, and writes files to it with verification.
 
 ### 9.5 Acceptance criteria
 
-1. CI builds everything with zero warnings, and all tests pass.
+1. The checks build everything with zero warnings, and all tests pass.
 2. The app runs on macOS 15 and on the current macOS.
 3. With no drive, the window shows the no-drive state. Plugging in a USB drive updates it within a few seconds.
 4. Inserting a disc updates the state. The window shows the media type and free space, and says whether the disc is blank.
@@ -287,21 +287,23 @@ An app that opens, sees a disc, and writes files to it with verification.
 
 About 6 to 10 weeks of focused work, most of it hardware testing. Confidence is low until the first hardware session (task 6).
 
-## 10. Repository, CI and testing
+## 10. Repository, checks and testing
 
 ### 10.1 Branches
 
 - `main` holds the new app. It shares no history with `legacy`.
 - `legacy` holds Burn. Read it with `git show legacy:burn/Source/KWBurner.m`.
-- New work is committed to `development`, one behaviour per commit. `main` is fast-forwarded to it once CI passes on macOS. If a session starts on a generated branch, move its work to `development` and delete it.
+- New work is committed to `development`, one behaviour per commit. `main` is fast-forwarded to it when the owner says so, usually after a hardware test. Push only once `scripts/check.sh` passes.
 
-### 10.2 CI
+### 10.2 Checks
 
-GitHub Actions on macOS runners builds the package and runs its tests on every push. This repository is public, so the runs are free. Runners have no disc drives. The simulated drive stands in for one.
+`scripts/check.sh` runs on the owner's Mac before every push. It builds the package and the app with warnings as errors and runs every test. It then builds a fresh copy of the last commit, which catches a file that was never committed. It makes test disc images, mounts them with `hdiutil`, and compares their files and checksums with the originals. It checks Burn's recovery data with `par2` both ways, and measures how fast recovery data is made and how much memory it uses. It also simulates burns and puts a file over 4 GB through macOS. `scripts/check.sh --quick` does only the builds and tests.
+
+Until 11 October 2026 these checks ran on GitHub's macOS runners, because the first sessions ran in the cloud without Swift or Xcode. Once work moved to the owner's Mac they caught nothing a local run didn't, so they moved into the script.
 
 ### 10.3 Hardware testing
 
-Hardware tests need the owner's Mac, a drive and blank media. The easiest way is to run Claude Code on that Mac, in the Claude Desktop app or with `claude remote-control` in a terminal in the repository folder. That session can build, run `burnctl` against the drive, and read the logs. The owner inserts and swaps discs. Record every run in `docs/hardware-testing.md`.
+Hardware tests need the owner's Mac, a drive and blank media. Claude Code runs on that Mac: it builds, runs the checks and reads the app's logs in `~/Library/Logs/Burn/`. The owner runs the app and inserts and swaps discs. Record every run in `docs/hardware-testing.md`.
 
 ### 9.7 Where things stand, 30 September 2026
 
@@ -336,12 +338,12 @@ The original plan:
 - New structures: Anchor Volume Descriptor Pointer at block 256, the Volume Descriptor Sequence (Primary, Implementation Use, Partition, Logical Volume, Unallocated Space, Terminating) and its reserve copy, the Logical Volume Integrity Descriptor, the File Set Descriptor, and a File Entry plus File Identifier Descriptors for every file and folder. Each needs its descriptor tag, tag checksum and CRC.
 - Names are OSTA CS0 (compressed Unicode). Files over 1 GB need several allocation descriptors, since one extent holds under 1 GB.
 - Keep the ISO 9660 tree, but a file of 4 GB or more can only appear in UDF.
-- Test it the way ISO 9660 is tested: a reader written separately in the tests, then mount the image in CI with `hdiutil` and run `scripts/compare-trees.py` and `shasum -a 256 -c .burn/SHA256SUMS`.
+- Test it the way ISO 9660 is tested: a reader written separately in the tests, then mount the image with `hdiutil` in the checks and run `scripts/compare-trees.py` and `shasum -a 256 -c .burn/SHA256SUMS`.
 - Work from ECMA-167 and the OSTA UDF 2.01 specification. Rough size: one or two focused sessions, most of it getting macOS's UDF reader to accept the image.
 
 ### 9.9 Recovery data and repair (D15)
 
-Done on 4 October 2026, in `PAR2.swift`, `DiscImage.swift`, `RecoveryRepair.swift` and the C target `CGF16`. CI checks it against par2cmdline both ways: `par2 verify` and `par2 repair` accept Burn's recovery data, and `burnctl repair` rebuilds files from recovery data that `par2 create` made. Not yet tested on a burned disc.
+Done on 4 October 2026, in `PAR2.swift`, `DiscImage.swift`, `RecoveryRepair.swift` and the C target `CGF16`. The checks test it against par2cmdline both ways: `par2 verify` and `par2 repair` accept Burn's recovery data, and `burnctl repair` rebuilds files from recovery data that `par2 create` made. Not yet tested on a burned disc.
 
 - **Files on the disc.** `.burn/recovery.par2` holds the packets that describe the files: the main packet, the creator, and a description and slice checksums for each file. `.burn/recovery.vol0+N.par2` repeats them, then holds the N recovery slices. File names are the paths on the disc, through UDF names. Empty files have nothing to recover, so they're left out.
 - **Slices.** The work grows with the data times the number of recovery slices, so `PAR2.plan` aims for about 10^12 word operations: about 2,000 recovery slices for a CD, 400 for a DVD, 80 for a 25 GB Blu-ray, 20 at least. Slices are 4 KB or more, and grow if the files would need more than PAR2's 32,768 input slices. A disc of more than 32,768 files gets no recovery data for now; splitting into several recovery sets would fix that.
@@ -353,7 +355,7 @@ Done on 4 October 2026, in `PAR2.swift`, `DiscImage.swift`, `RecoveryRepair.swif
 
 For collections bigger than any disc, such as a TV series of several 60 to 70 GB seasons on 100 GB BD-R XL discs.
 
-Built on 5 October 2026 in `DiscSet.swift`, `DiscRestore.swift`, the app's `DiscSetSheet.swift` and `RestoreView.swift`. CI plans a small set, burns it to images, rejoins the parts, runs each disc's `restore.sh` out of order and restores through the app's code, and plans eight 65 GB seasons on 100 GB discs from sparse files: six discs, each full to within about 4 MB. Not yet tried on hardware.
+Built on 5 October 2026 in `DiscSet.swift`, `DiscRestore.swift`, the app's `DiscSetSheet.swift` and `RestoreView.swift`. The tests plan a small set, burn it to images, rejoins the parts, runs each disc's `restore.sh` out of order and restores through the app's code, and plans eight 65 GB seasons on 100 GB discs from sparse files: six discs, each full to within about 4 MB. Not yet tried on hardware.
 
 - **When.** The Burn view offers "Split Across Discs" when the files don't fit the disc. Its plan sheet asks for the disc size, from the blank disc in the drive or a list of standard sizes, and shows each disc's contents and size before anything is burned.
 - **Filling.** Files go on in the order they're listed. Each disc but the last is filled to its last block: the file that crosses the edge is cut where the disc is full, to the nearest MiB, and the rest starts the next disc. A file under 64 MB isn't cut; it moves to the next disc. A file bigger than a disc is cut into as many parts as it needs. The last disc holds what's left, and the plan names the smallest standard disc it fits.
@@ -371,7 +373,7 @@ Built on 5 October 2026 in `DiscSet.swift`, `DiscRestore.swift`, the app's `Disc
 
 - **0.2 Data discs done well.** UDF for large files (9.8). Editing the folder structure on the disc. Adding to discs that already have data. Notarised builds and Sparkle 2. (The per-file checksum file and check came early, in 0.1.)
 - **0.3 Disc images.** Burn cue/bin images. Save a disc layout as an ISO image. (Burning an ISO or raw `.cdr` image as it is came early, in 0.1.)
-- **0.4 Audio CD.** Decoding, gaps and CD-Text, written disc-at-once with a cue sheet. Decoding may need ffmpeg as a helper tool built in CI.
+- **0.4 Audio CD.** Decoding, gaps and CD-Text, written disc-at-once with a cue sheet. Decoding may need ffmpeg as a helper tool built from pinned sources.
 - **0.5 Disc copy.**
 - **0.6 DVD-Video.** Conversion, authoring and menus.
 - **1.0** Localisation, help, an accessibility review, a wide hardware test matrix, and release.
@@ -384,8 +386,7 @@ Built on 5 October 2026 in `DiscSet.swift`, `DiscRestore.swift`, the app's `Disc
 | R2 | Exclusive access may conflict with macOS's own disc handling, such as the prompt for a blank disc. | Check in the first hardware session. Unmount through Disk Arbitration before taking access. |
 | R3 | Apple removes the IOKit authoring interface. | Move the transport to a DriverKit type 05 driver. That needs Apple-approved entitlements and a user-approved system extension. |
 | R4 | Writing a disc engine is a large job. | Keep 0.1 to data discs, and grow media support step by step. |
-| R5 | Cloud sessions can't use hardware. | CI plus the simulated drive for logic. A local Claude Code session for hardware. |
-| R6 | Licence hygiene (D5). | Reference behaviour and standards only. Review pull requests for copied code. |
+| R5 | Licence hygiene (D5). | Reference behaviour and standards only. Review pull requests for copied code. |
 
 ## 13. Reference map of Burn's source
 
