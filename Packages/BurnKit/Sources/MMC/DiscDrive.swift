@@ -415,13 +415,16 @@ public actor DiscDrive {
             progress(WriteProgress(phase: .closing, completedBlocks: writtenBlocks, totalBlocks: paddedBlocks,
                                    driveProgress: fraction))
         }
-        try await runLong(MMC.synchronizeCache(immediate: true), "SYNCHRONIZE CACHE", progress: reportClosing)
+        // Flushing again is harmless, so a failed flush is simply sent again.
+        try await patiently(.closing, options: options, explain: Self.explainClosing, canRetry: Self.canRetryLong) {
+            try await runLong(MMC.synchronizeCache(immediate: true), "SYNCHRONIZE CACHE", progress: reportClosing)
+        }
         if cancelled {
             log.note("Cancelled after \(written) blocks")
             throw DriveError.cancelled
         }
         if !options.simulate {
-            try await close(method: method, track: track.track, progress: reportClosing)
+            try await close(method: method, track: track.track, options: options, progress: reportClosing)
         }
         _ = try? await perform(MMC.preventAllowMediumRemoval(prevent: false))
 
@@ -449,7 +452,8 @@ public actor DiscDrive {
                            duration: Date().timeIntervalSince(started))
     }
 
-    private func close(method: WriteMethod, track: Int, progress: @escaping @Sendable (Double?) -> Void) async throws {
+    private func close(method: WriteMethod, track: Int, options: WriteOptions,
+                       progress: @escaping @Sendable (Double?) -> Void) async throws {
         let trackNumber = UInt16(clamping: track)
         var functions: [(MMC.CloseFunction, UInt16, String)] = []
         switch method {
@@ -464,8 +468,51 @@ public actor DiscDrive {
             functions = [(.track, trackNumber, "CLOSE TRACK"), (.finaliseDisc, 0, "FINALISE")]
         }
         for (function, number, name) in functions {
-            try await runLong(MMC.closeTrackSession(function, track: number, immediate: true), name, progress: progress)
+            // A close step that failed may have finished before its error, so the disc is checked
+            // before the step is sent again. A disc is never closed twice.
+            var sent = false
+            try await patiently(.closing, options: options, explain: Self.explainClosing, canRetry: Self.canRetryLong) {
+                if sent, await closeStepDone(function, track: track) {
+                    log.note("\(name) had finished after all")
+                    return
+                }
+                sent = true
+                try await runLong(MMC.closeTrackSession(function, track: number, immediate: true), name, progress: progress)
+            }
         }
+    }
+
+    /// Whether a close step has happened: a closed track has no next writable block, and a
+    /// closed session or finalised disc reads as complete. Unknown counts as not done.
+    private func closeStepDone(_ function: MMC.CloseFunction, track: Int) async -> Bool {
+        if function == .track {
+            guard let bytes = try? await run(MMC.readTrackInformation(track: UInt32(track)), "READ TRACK INFORMATION",
+                                             notReadyRetries: 3000),
+                  let info = TrackInformation(bytes: bytes) else { return false }
+            return !info.nextWritableValid
+        }
+        guard let bytes = try? await run(MMC.readDiscInformation(), "READ DISC INFORMATION", notReadyRetries: 3000),
+              let info = DiscInformation(bytes: bytes) else { return false }
+        return info.status == .complete
+    }
+
+    private static func explainClosing(_ error: any Error) -> (problem: String, advice: String) {
+        let advice = "Everything has been written, and only closing the disc is left. Check the drive's cable and "
+            + "power, then try again."
+        if case DriveError.transport(let transport) = error {
+            return (problem: "The drive stopped answering while closing the disc: \(transport).", advice: advice)
+        }
+        return (problem: "The drive couldn't finish closing the disc: \(reason(error)).", advice: advice)
+    }
+
+    /// A long command the drive won't take in its immediate form isn't tried again: the other
+    /// form can time out part-way and spoil the disc (hardware run 7).
+    private static func canRetryLong(_ error: any Error) -> Bool {
+        if case DriveError.commandFailed(_, _, let sense?) = error, sense.key == 0x05,
+           sense.asc == 0x24 || sense.asc == 0x26 {
+            return false
+        }
+        return true
     }
 
     private func verify(_ image: any ImageSource, startBlock: UInt32, options: WriteOptions,

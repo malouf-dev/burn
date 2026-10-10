@@ -205,6 +205,68 @@ struct PatienceTests {
         #expect(log.render().contains("The drive stopped answering while writing block 48"))
     }
 
+    /// How many CLOSE TRACK/SESSION commands were sent with a function.
+    func closes(_ function: UInt8, _ simulator: SimulatedDrive) -> Int {
+        simulator.commandHistory.filter { $0.first == 0x5B && $0[2] & 0x07 == function }.count
+    }
+
+    @Test func aFailedCloseIsSentAgain() async throws {
+        let simulator = bluRay()
+        simulator.closeFailures = 2
+        simulator.closeFailureFunction = 0x01
+        let log = CommandLog()
+        let report = try await DiscDrive(transport: simulator, log: log)
+            .write(patternImage(blocks: 100), options: WriteOptions(retryWaits: quick))
+        #expect(report.verified)
+        #expect(closes(0x01, simulator) == 3)
+        #expect(closes(0x06, simulator) == 1)
+        #expect(log.render().contains("The drive couldn't finish closing the disc: the drive couldn't close the session. Trying again"))
+    }
+
+    @Test func aCloseThatFinishedBeforeItsAnswerWasLostIsNotSentAgain() async throws {
+        for function: UInt8 in [0x01, 0x06] {
+            let simulator = bluRay()
+            simulator.closeFailures = 1
+            simulator.closeFailsAfterClosing = true
+            simulator.closeFailureFunction = function
+            let log = CommandLog()
+            let report = try await DiscDrive(transport: simulator, log: log)
+                .write(patternImage(blocks: 100), options: WriteOptions(retryWaits: quick))
+            #expect(report.verified)
+            #expect(closes(0x01, simulator) == 1)
+            #expect(closes(0x06, simulator) == 1)
+            #expect(log.render().contains(function == 0x01 ? "CLOSE TRACK had finished after all" : "FINALISE had finished after all"))
+        }
+    }
+
+    @Test func aFailedFlushIsSentAgain() async throws {
+        let simulator = bluRay()
+        simulator.syncCacheFailures = 2
+        let report = try await DiscDrive(transport: simulator)
+            .write(patternImage(blocks: 100), options: WriteOptions(retryWaits: quick))
+        #expect(report.verified)
+        #expect(simulator.operationCodes.filter { $0 == 0x35 }.count == 3)
+    }
+
+    @Test func aCloseThatKeepsFailingHoldsTheBurn() async throws {
+        let simulator = bluRay()
+        simulator.closeFailures = 100
+        let held = Collected<HeldBurn>()
+        let drive = DiscDrive(transport: simulator)
+        await #expect {
+            try await drive.write(patternImage(blocks: 100), options: WriteOptions(retryWaits: quick, whenHeld: { burn in
+                held.append(burn)
+                return .abandon
+            }))
+        } throws: { error in
+            guard case DriveError.abandoned(_, let tries) = error else { return false }
+            return tries == 6
+        }
+        let burn = try #require(held.all.first)
+        #expect(burn.step == .closing)
+        #expect(burn.advice.hasPrefix("Everything has been written, and only closing the disc is left."))
+    }
+
     @Test func aCancelEndsTheWaiting() async throws {
         let image = FlakyImage(patternImage(blocks: 100), block: 40) { _ in true }
         let drive = DiscDrive(transport: bluRay())

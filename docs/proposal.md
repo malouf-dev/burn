@@ -154,7 +154,9 @@ Reading the source files while writing and verifying works this way. After a rea
 
 Writing works this way too. After a WRITE fails, or its answer is lost because the drive stopped answering over USB, Burn asks the drive which block it expects next. If it's still the first block of that WRITE, nothing was recorded, so the WRITE is sent again. If it's the block after the WRITE, the WRITE was recorded after all, and the burn carries on. Anything else means the drive recorded part of it before failing. Those blocks can't be written again, so the disc would fail verify, and the burn stops at once with a message saying so (hardware run 28).
 
-Closing the disc, verify's reads from the disc, and making the recovery data are next.
+Closing the disc works this way too. Flushing the drive's memory is simply sent again, since flushing twice is harmless. A close step that fails may still have finished before its error, so before sending it again Burn checks the disc: a closed track has no next block to write, and a finalised disc reads as complete. A disc is never closed twice. The retries use the same immediate form as the first try, and a drive that refuses that form isn't tried again (hardware run 7). The normal close, when nothing fails, sends the same commands as before.
+
+Verify's reads from the disc, and making the recovery data, are next.
 
 Retrying never covers for a disc that can't pass verify. Recovery data is for damage that comes later, not for a bad write, so a burn that can't write every block as planned is abandoned.
 

@@ -13,6 +13,8 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         public var blocks: [UInt32: [UInt8]] = [:]
         public var nextWritable: UInt32 = 0
         public var closed = false
+        /// CLOSE TRACK has closed the track, so it has no next writable block.
+        public var trackClosed = false
         /// A close that was cut off part-way, as when the connection reset during it.
         public var closeInterrupted = false
         /// The drive reports a quick erase of this disc as failed. A full erase works.
@@ -143,6 +145,31 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
     /// The write speed last set, in kilobytes a second, or nil for the drive's own.
     public var writeSpeedSet: UInt32? { withLock { _writeSpeedSet } }
     private var _writeSpeedSet: UInt32?
+
+    /// How many CLOSE TRACK/SESSION commands fail: with 03/72/00 and nothing closed, or, with
+    /// `closeFailsAfterClosing`, with the answer lost after the close has happened. Only closes
+    /// with the function `closeFailureFunction` fail, when it's set.
+    public var closeFailures: Int {
+        get { withLock { _closeFailures } }
+        set { withLock { _closeFailures = newValue } }
+    }
+    private var _closeFailures = 0
+    public var closeFailsAfterClosing: Bool {
+        get { withLock { _closeFailsAfterClosing } }
+        set { withLock { _closeFailsAfterClosing = newValue } }
+    }
+    private var _closeFailsAfterClosing = false
+    public var closeFailureFunction: UInt8? {
+        get { withLock { _closeFailureFunction } }
+        set { withLock { _closeFailureFunction = newValue } }
+    }
+    private var _closeFailureFunction: UInt8?
+    /// How many SYNCHRONIZE CACHE commands fail with a write error, 03/0C/00.
+    public var syncCacheFailures: Int {
+        get { withLock { _syncCacheFailures } }
+        set { withLock { _syncCacheFailures = newValue } }
+    }
+    private var _syncCacheFailures = 0
 
     /// When set, the disc disappears after this many successful writes.
     public var removeMediaAfterWrites: Int? {
@@ -357,7 +384,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         case 0x2A: return try write(command)
         case 0x28: return read(cdb)
         case 0x35: return synchronizeCache()
-        case 0x5B: return closeTrackSession(cdb)
+        case 0x5B: return try closeTrackSession(cdb)
         case 0xA1: return blank(cdb)
         case 0x23: return readFormatCapacities(command)
         case 0x04: return formatUnit(command)
@@ -422,7 +449,7 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         let free = media.closed ? 0 : limit - min(limit, media.nextWritable)
         let info = TrackInformation(track: 1, session: 1, isBlank: media.nextWritable == 0,
                                     isReserved: media.reserved != nil, start: 0,
-                                    nextWritable: media.nextWritable, nextWritableValid: !media.closed,
+                                    nextWritable: media.nextWritable, nextWritableValid: !media.closed && !media.trackClosed,
                                     freeBlocks: free, size: media.closed ? media.nextWritable : limit)
         return .good(Array(info.bytes.prefix(allocation(command))))
     }
@@ -563,6 +590,10 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
 
     private func synchronizeCache() -> SCSIResponse {
         guard var media else { return .check(.mediumNotPresent) }
+        if _syncCacheFailures > 0 {
+            _syncCacheFailures -= 1
+            return .check(SenseData(key: 0x03, asc: 0x0C, ascq: 0x00))
+        }
         // Disc at once closes the disc once the reserved track is full.
         if media.profile.writeMethod == .dvdMinusDiscAtOnce, let reserved = media.reserved,
            media.nextWritable == reserved, !(writeParameters?.testWrite ?? false) {
@@ -572,20 +603,26 @@ public final class SimulatedDrive: SCSITransport, @unchecked Sendable {
         return .good()
     }
 
-    private func closeTrackSession(_ cdb: [UInt8]) -> SCSIResponse {
+    private func closeTrackSession(_ cdb: [UInt8]) throws -> SCSIResponse {
         guard var media else { return .check(.mediumNotPresent) }
         let function = cdb[2] & 0x07
+        let fails = _closeFailures > 0 && (_closeFailureFunction.map { $0 == function } ?? true)
+        if fails {
+            _closeFailures -= 1
+            if !_closeFailsAfterClosing { return .check(SenseData(key: 0x03, asc: 0x72, ascq: 0x00)) }
+        }
         switch function {
         case 0x01:
-            return .good()
+            media.trackClosed = true
         case 0x02, 0x05, 0x06:
             guard media.nextWritable > 0 else { return .check(SenseData(key: 0x05, asc: 0x2C, ascq: 0x00)) }
             media.closed = true
-            self.media = media
-            return .good()
         default:
             return .check(.invalidFieldInCDB)
         }
+        self.media = media
+        if fails { throw TransportError.notDelivered(reason: "the drive stopped responding (simulated)") }
+        return .good()
     }
 
     private func readFormatCapacities(_ command: SCSICommand) -> SCSIResponse {
